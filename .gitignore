@@ -1,0 +1,7 @@
+.venv
+examples/repos
+src/obs-product-builder.egg-info
+src/obs-product-builder/__pycache__
+src/obs-product-builder/core/__pycache__
+src/obs-product-builder/api/__pycache__
+output

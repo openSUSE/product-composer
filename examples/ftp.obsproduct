@@ -1,0 +1,46 @@
+obsproduct_schema: 0
+vendor: SUSE
+name: openSUSE_Factory
+version: 1.0
+
+summary: openSUSE Tumbleweed
+description: >
+  openSUSE Tumbleweed is the rolling distribution by the
+  openSUSE.org project.
+
+build_options:
+ source_media: 2
+ debug_media: 3
+# product_directory_name: "openSUSE-Tumbleweed"
+# flavors:
+# - default
+#   combined_archs:
+#   - i586
+#   - i686
+#     opt_in
+#   - x86_64
+# - s390x
+# - ppc
+#   combined_archs:
+#   - ppc64
+#   - ppc64le
+
+# take_all_packages: true
+
+repositories:
+ - openSUSE:Factory/standard
+
+unpack_packages:
+# - instlux
+ - skelcd-installer-openSUSE
+ - skelcd-openSUSE
+
+packages:
+  - glibc
+  - glibc-devel
+# - kernel-default
+# - kernel-pae:
+#   only:
+#   - i586
+# - skelcd-openSUSE
+
