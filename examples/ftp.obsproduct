@@ -12,23 +12,19 @@ build_options:
  source_media: 2
  debug_media: 3
 # product_directory_name: "openSUSE-Tumbleweed"
-# flavors:
-# - default
-#   combined_archs:
-#   - i586
-#   - i686
-#     opt_in
-#   - x86_64
-# - s390x
-# - ppc
-#   combined_archs:
-#   - ppc64
-#   - ppc64le
+ flavors:
+ - default:
+   combined_archs:
+   - i586
+   - i686
+   - x86_64
+ - s390x
+ - ppc:
+   combined_archs:
+   - ppc64
+   - ppc64le
 
-# take_all_packages: true
-
-repositories:
- - openSUSE:Factory/standard
+take_all_packages: true
 
 unpack_packages:
 # - instlux

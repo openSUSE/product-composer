@@ -43,7 +43,7 @@ def main(argv=None) -> int:
 
     # Generic options
     for cmd_parser in [verify_parser, build_parser]:
-        cmd_parser.add_argument('-f', '--flavor', default=None,  help='Build a given flavor')
+        cmd_parser.add_argument('-f', '--flavor', default='.x86_64',  help='Build a given flavor')
         cmd_parser.add_argument('-v', '--verbose', action='store_true',  help='Enable verbose output')
         cmd_parser.add_argument('filename', default='default.obsproduct',  help='Filename of product YAML spec')
 
@@ -74,7 +74,16 @@ def main(argv=None) -> int:
  
 
 def build(args):
-    yml = parse_yaml(args.filename, args.flavor)
+    f = args.flavor.split('.')
+    flavor = None
+    if f[0] != '':
+      flavor = f[0]
+    if len(f) == 2:
+      default_arch = f[1]
+    else:
+      default_arch = 'x86_64'
+
+    yml, archlist = parse_yaml(args.filename, flavor, default_arch)
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -83,16 +92,16 @@ def build(args):
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
 
-    product_base_dir = get_product_dir(yml, args.flavor, args.release)
+    product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
 
     kwdfile = args.filename.removesuffix('.obsproduct') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, kwdfile, args.flavor)
+    create_tree(args.out, product_base_dir, yml, kwdfile, flavor, archlist)
 
 
 def verify(args):
     parse_yaml(args.filename, args.flavor)
 
-def parse_yaml(filename, flavor):
+def parse_yaml(filename, flavor, default_arch):
 
     with open(filename, 'r') as file:
        yml = yaml.safe_load(file)
@@ -102,30 +111,44 @@ def parse_yaml(filename, flavor):
         print("Unsupported obsproduct_schema")
         raise SystemExit(1)
     if flavor and yml['build_options'] and 'combined_archs' in yml['build_options'].keys():
-        print("Builds for combined architectures can not be done in a flavor")
+        print("WARNING: Defined flavor overwrites manual architecture setting via flavor")
+
+    archlist = None
+    found = False
+    if flavor and 'flavors' in yml['build_options'].keys():
+      for f in yml['build_options']['flavors']:
+        if next(iter(f)) != flavor:
+            continue
+        found = True
+        if 'combined_archs' in f.keys():
+          archlist = f['combined_archs']
+    if not found:
+        print("Flavor not found: ", flavor)
         raise SystemExit(1)
+    if archlist == None:
+      archlist = [default_arch]
 
-    return yml
+    return yml, archlist
 
-def get_product_dir(yml, flavor, release):
+def get_product_dir(yml, flavor, archlist, release):
     name = yml['name'] + "-" + str(yml['version'])
     if 'product_directory_name' in yml['build_options'].keys():
         # manual override
         name = yml['build_options']['product_directory_name']
-        if flavor:
-            name += "-" + flavor
-    else:
-        if flavor:
-            name += "-" + flavor
-        if release:
-            name += "-Build" + str(release)
+    if flavor:
+        name += "-" + flavor
+    if archlist:
+        name += "-"
+        name += "-".join(archlist)
+    if release:
+        name += "-Build" + str(release)
     if '/' in name:
         print("Illegal product name")
         raise SystemExit(1)
     return name
 
 
-def create_tree(outdir, product_base_dir, yml, kwdfile, flavor):
+def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
       os.mkdir(outdir)
 
@@ -136,11 +159,6 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor):
 
     sourcedir = outdir + '/' + product_base_dir + '-Media3'
     debugdir = outdir + '/' + product_base_dir + '-Media2'
-
-    if yml['build_options'] and 'combined_archs' in yml['build_options'].keys():
-      archlist = yml['build_options']['combined_archs']
-    else:
-      archlist = [flavor]
 
     for arch in archlist:
       setup_rpms_to_install(rpmdir, yml, arch, debugdir, sourcedir)
