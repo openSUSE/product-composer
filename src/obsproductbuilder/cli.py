@@ -122,7 +122,7 @@ def parse_yaml(filename, flavor, default_arch):
         found = True
         if 'combined_archs' in f.keys():
           archlist = f['combined_archs']
-    if not found:
+    if flavor and not found:
         print("Flavor not found: ", flavor)
         raise SystemExit(1)
     if archlist == None:
@@ -157,8 +157,16 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     sourcedir = debugdir = None
 
-    sourcedir = outdir + '/' + product_base_dir + '-Media3'
-    debugdir = outdir + '/' + product_base_dir + '-Media2'
+    if "source" in yml['build_options'].keys():
+      if yml['build_options']['source'] == 'split':
+        sourcedir += '-Media3'
+      else:
+        sourcedir += '-Media1'
+    if "debug" in yml['build_options'].keys():
+      if yml['build_options']['debug'] == 'split':
+        debugdir += '-Media2'
+      else:
+        debugdir += '-Media1'
 
     for arch in archlist:
       setup_rpms_to_install(rpmdir, yml, arch, debugdir, sourcedir)
@@ -227,7 +235,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         os.unlink(rpmdir + 'license.tar')
 
     # detached signature
-    args = [ 'sign', '-d', rpmdir + "/repodata/repomd.xml" ]
+    args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     if popen.wait():
         print("ERROR: Failed to created detached signature")
@@ -236,7 +244,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     output = popen.stdout.read()
 
     # detached pubkey
-    args = [ 'sign', '-p', rpmdir + "/repodata/repomd.xml" ]
+    args = [ '/usr/lib/build/signdummy', '-p', rpmdir + "/repodata/repomd.xml" ]
     pubkey_file = open(rpmdir + "/repodata/repomd.xml.key", 'w')
     popen = subprocess.Popen(args, stdout=pubkey_file)
     if popen.wait():
