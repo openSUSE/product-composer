@@ -1,6 +1,6 @@
 """ Main application entry point.
 
-    python -m obsproductbuilder  ...
+    python -m productcomposer  ...
 
 """
 def main():

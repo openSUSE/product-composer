@@ -39,7 +39,7 @@ Install the application to a self-contained Python virtual environment:
     $ python -m venv .venv
     $ .venv/bin/python -m pip install <project source>
     $ cp -r <project source>/etc .venv/
-    $ .venv/bin/obsproductbuilder --help
+    $ .venv/bin/productcomposer --help
 
 
 

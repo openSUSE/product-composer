@@ -1,5 +1,5 @@
 [project]
-name = "obsproductbuilder"
+name = "productcomposer"
 description = "OBS product image creator"
 
 authors = [
@@ -17,7 +17,7 @@ dynamic = ["version", "readme"]
 "Homepage" = "https://somewhere"
 
 [project.scripts]
-obsproductbuilder = "obsproductbuilder.cli:main"
+productcomposer = "productcomposer.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -31,7 +31,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = {attr = "obsproductbuilder.__version__"}
+version = {attr = "productcomposer.__version__"}
 readme = {file = ["README.rst"], content-type = "text/x-rst"}
 
 [tool.setuptools.packages.find]

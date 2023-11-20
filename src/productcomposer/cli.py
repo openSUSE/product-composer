@@ -31,7 +31,7 @@ def main(argv=None) -> int:
     #
     # Setup CLI parser
     #
-    parser = ArgumentParser('obsproductbuilder', description='An example sub-command implementation')
+    parser = ArgumentParser('productcomposer', description='An example sub-command implementation')
     subparsers = parser.add_subparsers(help='sub-command help')
 
     # One sub parser for each command

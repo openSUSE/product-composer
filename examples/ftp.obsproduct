@@ -8,6 +8,8 @@ description: >
   openSUSE Tumbleweed is the rolling distribution by the
   openSUSE.org project.
 
+iso:
+
 build_options:
  source_media: 2
  debug_media: 3
