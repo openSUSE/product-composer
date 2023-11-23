@@ -236,7 +236,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
               uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
     if uitemp:
       uitemp.write('</updates>')
-      uitemp.flush()
+      uitemp.close()
       args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
                rpmdir + '/updateinfo.xml',
                rpmdir + '/repodata' ]
@@ -245,7 +245,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
           print("ERROR: Unable to add updateinfo.xml to repo meta data")
           print(popen.stdout.read())
           raise SystemExit(1)
-      uitemp.close()
+      os.unlink(rpmdir + '/updateinfo.xml')
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar"):
