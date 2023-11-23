@@ -10,17 +10,23 @@ from . import __version__
 from .core.config import config
 from .core.logger import logger
 
+from xml.etree import ElementTree as ET
+ET_ENCODING = "unicode"
+
 import os
 import re
 import rpm
 import yaml
 import shutil
 import subprocess
+import tempfile
 
 __all__ = "main",
 
 local_files = {} # sorted by project/repo/arch
 local_rpms = {}  # sorted by name/version/release
+local_updateinfos = {}  # sorted by updateinfo_id
+
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -152,19 +158,19 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
       os.mkdir(outdir)
 
-    media1 = outdir + '/' + product_base_dir + '-Media1'
-    rpmdir = media1 # we may offer to set it up in sub directories
+    maindir = outdir + '/' + product_base_dir + '-Media1'
+    rpmdir = maindir # we may offer to set it up in sub directories
 
     sourcedir = debugdir = None
 
     if "source" in yml['build_options'].keys():
       if yml['build_options']['source'] == 'split':
-        sourcedir += '-Media3'
+        sourcedir += '-Media2'
       else:
         sourcedir += '-Media1'
     if "debug" in yml['build_options'].keys():
       if yml['build_options']['debug'] == 'split':
-        debugdir += '-Media2'
+        debugdir += '-Media3'
       else:
         debugdir += '-Media1'
 
@@ -205,6 +211,41 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
           print(popen.stdout.read())
           raise SystemExit(1)
       output = popen.stdout.read()
+
+    # Adding updateinfo.xml
+    uitemp = None
+    for ui in local_updateinfos:
+        print("Add updateinfo", ui)
+        u = ET.parse(ui).getroot()
+        for update in u.findall('update'):
+          needed=False
+          parent = update.findall('pkglist')[0].findall('collection')[0]
+          for pkgentry in parent.findall('package'):
+              src = pkgentry.get('src')
+              if os.path.exists(rpmdir + '/' + src):
+                  needed=True
+              else:
+                  # FIXME: special handling for debug and src rpms are needed
+                  parent.remove(pkgentry)
+
+          if needed:
+              if not uitemp:
+                  uitemp = open(rpmdir + '/updateinfo.xml', 'x')
+                  uitemp.write("<updates>\n  ")
+
+              uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
+    if uitemp:
+      uitemp.write('</updates>')
+      uitemp.flush()
+      args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
+               rpmdir + '/updateinfo.xml',
+               rpmdir + '/repodata' ]
+      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+      if popen.wait():
+          print("ERROR: Unable to add updateinfo.xml to repo meta data")
+          print(popen.stdout.read())
+          raise SystemExit(1)
+      uitemp.close()
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar"):
@@ -252,6 +293,31 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         print(popen.stderr.read())
         raise SystemExit(1)
     pubkey_file.close()
+
+    # do we need an ISO file?
+    if 'iso' in yml.keys():
+      application_id = re.sub(r'^.*/', '', maindir)
+      args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
+      if True: # x86_64 efi only atm
+        args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
+        args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
+        args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
+#        args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
+        args += [ '-no-emul-boot' ]
+        #args += [ '-sort', $sort_file ]
+        #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
+        args += [ '-b', "boot/"+arch+"/loader/isolinux.bin"]
+      if 'publisher' in yml['iso'].keys():
+        args += [ '-publisher', yml['iso']['publisher'] ]
+      if 'volume_id' in yml['iso'].keys():
+        args += [ '-V', yml['iso']['volume_id'] ]
+      args += [ '-A', application_id ]
+      args += [ '-o', maindir + '.iso', maindir ]
+      popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=maindir)
+      if popen.wait():
+          print("ERROR: Failed to create iso file")
+          print(popen.stderr.read())
+          raise SystemExit(1)
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
@@ -311,6 +377,8 @@ def post_createrepo(rpmdir, product_name, content=None):
 
 
 def unpack_meta_rpms(rpmdir, yml, arch, medium):
+    if not yml['unpack_packages']:
+        return
     for package in list(yml['unpack_packages']):
         if type(package)==dict:
             if 'only' in package.keys():
@@ -437,8 +505,11 @@ def scan_rpms(directory, yml):
       if not arch in local_files[project][repository].keys():
         local_files[project][repository][arch] = {}
       for filename in files:
+        fname = os.path.join(dirpath,filename)
+        if arch == 'updateinfo':
+            local_updateinfos[fname] = ET.parse(fname).getroot()
+            continue
         if filename.endswith('.rpm'):
-          fname = os.path.join(dirpath,filename)
           fd = os.open(fname, os.O_RDONLY)
           h = ts.hdrFromFdno(fd)
           os.close(fd)
