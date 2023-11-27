@@ -175,10 +175,10 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         debugdir += '-Media1'
 
     for arch in archlist:
-      setup_rpms_to_install(rpmdir, yml, arch, debugdir, sourcedir)
+      setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir, sourcedir)
 
     for arch in archlist:
-      unpack_meta_rpms(rpmdir, yml, arch, medium=1) # only for first medium am
+      unpack_meta_rpms(rpmdir, yml, arch, flavor, medium=1) # only for first medium am
 
     post_createrepo(rpmdir, yml['name'])
     if debugdir:
@@ -376,24 +376,20 @@ def post_createrepo(rpmdir, product_name, content=None):
     output = popen.stdout.read()
 
 
-def unpack_meta_rpms(rpmdir, yml, arch, medium):
+def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     if not yml['unpack_packages']:
         return
-    for package in list(yml['unpack_packages']):
-        if type(package)==dict:
-            if 'only' in package.keys():
-                if not arch in package['only']:
-                    continue
-            package_name = list(package)[0]
-        else:
-            package_name = package
+    for package in create_package_list(yml['unpack_packages'], arch, flavor):
+        if package not in local_rpms.keys():
+            if 'ignore_missing_packages' in yml['build_options'].keys():
+               print("WARNING: package " + package + " not found")
+               continue
+            else:
+               print("ERROR: package " + package + " not found")
+               raise SystemExit(1)
 
-        if package_name not in local_rpms.keys():
-            print("ERROR: package " + package_name + " not found")
-            raise SystemExit(1)
-
-        print(package_name)
-        rpm = lookup_rpm(arch, package_name)
+        print(package)
+        rpm = lookup_rpm(arch, package)
 
         tempdir = rpmdir + "/temp"
         os.mkdir(tempdir)
@@ -411,30 +407,46 @@ def unpack_meta_rpms(rpmdir, yml, arch, medium):
 
         shutil.rmtree(tempdir)
 
-def setup_rpms_to_install(rpmdir, yml, arch, debugdir=None, sourcedir=None):
+def create_package_list(yml, arch, flavor):
+
+    packages = []
+    for entry in list(yml):
+        if type(entry)==dict:
+            if 'flavors' in entry.keys():
+                if not flavor in entry['flavors']:
+                    continue
+            if 'architectures' in entry.keys():
+                if not arch in entry['architectures']:
+                    continue
+            packages += entry['packages']
+        else:
+            packages.append(entry)
+
+    return packages
+
+def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
     os.mkdir(rpmdir)
     if debugdir:
        os.mkdir(debugdir)
     if sourcedir:
        os.mkdir(sourcedir)
 
-    for package in list(yml['packages']):
-        if type(package)==dict:
-            if 'only' in package.keys():
-                if not arch in package['only']:
-                    continue
-            package_name = list(package)[0]
-        else:
-            package_name = package
+    for package in create_package_list(yml['packages'], arch, flavor):
+        if package not in local_rpms.keys():
+            if 'ignore_missing_packages' in yml['build_options'].keys():
+               print("WARNING: package " + package + " not found")
+               continue
+            else:
+               print("ERROR: package " + package + " not found")
+               raise SystemExit(1)
 
-        if package_name not in local_rpms.keys():
-            print("ERROR: package " + package_name + " not found")
-            raise SystemExit(1)
-
-        rpm = lookup_rpm(arch, package_name)
+        rpm = lookup_rpm(arch, package)
         if not rpm:
-            print("ERROR: package " + package_name + " not found for " + arch)
-            raise SystemExit(1)
+            if 'ignore_missing_packages' in yml['build_options'].keys():
+               print("WARNING: package " + package + " not found")
+            else:
+               print("ERROR: package " + package + " not found for " + arch)
+               raise SystemExit(1)
         
         _rpmdir = rpmdir + '/' + rpm['tags']['arch']
 
@@ -457,9 +469,9 @@ def setup_rpms_to_install(rpmdir, yml, arch, debugdir=None, sourcedir=None):
               raise SystemExit(1)
           link_file_into_dir(rpm['filename'], debugdir + '/' + rpm['tags']['arch'])
 
-          rpm = lookup_rpm(arch, package_name + "-debuginfo")
+          rpm = lookup_rpm(arch, package + "-debuginfo")
           if not rpm:
-              print("ERROR: debug info rpm package " + package_name + "-debuginfo not found")
+              print("ERROR: debug info rpm package " + package + "-debuginfo not found")
               raise SystemExit(1)
           link_file_into_dir(rpm['filename'], debugdir + '/' + rpm['tags']['arch'])
 
