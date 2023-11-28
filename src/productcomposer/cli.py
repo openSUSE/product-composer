@@ -490,6 +490,8 @@ def lookup_rpm(arch, name, version=0, release=0):
     for rpm in local_rpms[name][best_version][best_release]:
         if rpm['tags']['arch'] == arch:
             return rpm
+        if arch != 'src' and rpm['tags']['arch'] == 'noarch':
+            return rpm
     return None
 
 def scan_rpms(directory, yml):
