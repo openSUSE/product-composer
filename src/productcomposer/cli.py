@@ -431,22 +431,18 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
     if sourcedir:
        os.mkdir(sourcedir)
 
+    missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
         if package not in local_rpms.keys():
-            if 'ignore_missing_packages' in yml['build_options'].keys():
-               print("WARNING: package " + package + " not found")
-               continue
-            else:
-               print("ERROR: package " + package + " not found")
-               raise SystemExit(1)
+            print("WARNING: package " + package + " not found")
+            missing_package = True
+            continue
 
         rpm = lookup_rpm(arch, package)
         if not rpm:
-            if 'ignore_missing_packages' in yml['build_options'].keys():
-               print("WARNING: package " + package + " not found")
-            else:
-               print("ERROR: package " + package + " not found for " + arch)
-               raise SystemExit(1)
+            print("WARNING: package " + package + " not found for " + arch)
+            missing_package = True
+            continue
         
         _rpmdir = rpmdir + '/' + rpm['tags']['arch']
 
@@ -458,22 +454,29 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
         if sourcedir:
           rpm = lookup_rpm('src', source_package_name)
           if not rpm:
-              print("ERROR: source rpm package " + package_name + " not found")
-              raise SystemExit(1)
+              print("WARNING: source rpm package " + package_name + " not found")
+              missing_package = True
+              continue
           link_file_into_dir(rpm['filename'], sourcedir + '/' + rpm['tags']['arch'])
 
         if debugdir:
           rpm = lookup_rpm(arch, source_package_name + "-debugsource")
           if not rpm:
-              print("ERROR: debug source rpm package " + source_package_name + "-debugsource not found")
-              raise SystemExit(1)
+              print("WARNING: debug source rpm package " + source_package_name + "-debugsource not found")
+              missing_package = True
+              continue
           link_file_into_dir(rpm['filename'], debugdir + '/' + rpm['tags']['arch'])
 
           rpm = lookup_rpm(arch, package + "-debuginfo")
           if not rpm:
-              print("ERROR: debug info rpm package " + package + "-debuginfo not found")
-              raise SystemExit(1)
+              print("WARNING: debug info rpm package " + package + "-debuginfo not found")
+              missing_package = True
+              continue
           link_file_into_dir(rpm['filename'], debugdir + '/' + rpm['tags']['arch'])
+
+    if missing_package and not 'ignore_missing_packages' in yml['build_options'].keys():
+       print('ERROR: Abort due to missing packages')
+       raise SystemExit(1)
 
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
