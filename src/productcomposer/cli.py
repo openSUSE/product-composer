@@ -24,7 +24,7 @@ import tempfile
 __all__ = "main",
 
 local_files = {} # sorted by project/repo/arch
-local_rpms = {}  # sorted by name/version/release
+local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
 
 
@@ -435,6 +435,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
     for package in create_package_list(yml['packages'], arch, flavor):
         if package not in local_rpms.keys():
             print("WARNING: package " + package + " not found")
+            raise SystemExit(1)
             missing_package = True
             continue
 
@@ -486,16 +487,29 @@ def link_file_into_dir(filename, directory):
         os.link(filename, outname)
 
 
-def lookup_rpm(arch, name, version=0, release=0):
+def lookup_rpm(arch, name, version=None, release=None):
     # FIXME: ordering for best version by default
-    best_version=list(local_rpms[name])[version]
-    best_release=list(local_rpms[name][best_version])[release] # FIXME: order
-    for rpm in local_rpms[name][best_version][best_release]:
-        if rpm['tags']['arch'] == arch:
-            return rpm
-        if arch != 'src' and rpm['tags']['arch'] == 'noarch':
-            return rpm
-    return None
+    candidate = None
+    if name == "audit":
+      print(local_rpms[name])
+    for lrpm in local_rpms[name]:
+        tags = lrpm['tags']
+        if version and version != tags['version']:
+            next
+        if release and release != tags['release']:
+            next
+        if tags['arch'] != arch:
+            next
+        if arch == 'src' or tags['arch'] != 'noarch':
+            next
+        # first hit?
+        if candidate == None:
+            candidate = lrpm
+            next
+        # version compare
+        if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (candidate['tags']['epoch'], candidate['tags']['version'], candidate['tags']['release'])):
+            candidate = lrpm
+    return candidate
 
 def scan_rpms(directory, yml):
     # This function scans all local available rpms and builds up the
@@ -532,7 +546,7 @@ def scan_rpms(directory, yml):
           os.close(fd)
           rpm_object = {}
           for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
-            rpm_object[tag] = h[tag]
+            rpm_object[tag] = str(h[tag])
 
           if not rpm_object['sourcerpm']:
               rpm_object['arch'] = 'src'
@@ -545,15 +559,8 @@ def scan_rpms(directory, yml):
           local_files[project][repository][arch] = item
 
           if not rpm_object['name'] in local_rpms.keys():
-            local_rpms[rpm_object['name']] = {}
-          if not rpm_object['version'] in local_rpms[rpm_object['name']].keys():
-            local_rpms[rpm_object['name']][rpm_object['version']] = {}
-          if not rpm_object['release'] in local_rpms[rpm_object['name']][rpm_object['version']].keys():
-            local_rpms[rpm_object['name']][rpm_object['version']][rpm_object['release']] = {}
-
-          if not local_rpms[rpm_object['name']][rpm_object['version']][rpm_object['release']]:
-             local_rpms[rpm_object['name']][rpm_object['version']][rpm_object['release']] = []
-          local_rpms[rpm_object['name']][rpm_object['version']][rpm_object['release']].append(item)
+            local_rpms[rpm_object['name']] = []
+          local_rpms[rpm_object['name']].append(item)
 
 if __name__ == "__main__":
     try:
