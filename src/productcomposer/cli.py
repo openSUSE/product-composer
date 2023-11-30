@@ -427,14 +427,14 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
     if sourcedir:
        os.mkdir(sourcedir)
 
-    singleone = True
+    singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
-        singleone = False
+        singlemode = False
 
     missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
         name = package
-        op = version = release = None
+        op = epoch = version = release = None
 
         # Is the user requesting a specific version?
         match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
@@ -456,7 +456,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
             continue
 
         # We may want to put multiple candidates on the medium
-        if singleone:
+        if singlemode:
             rpms = [lookup_rpm(arch, name, op, epoch, version, release)]
         else:
             rpms = lookup_all_rpms(arch, name, op, epoch, version, release)
