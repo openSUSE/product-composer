@@ -51,7 +51,7 @@ def main(argv=None) -> int:
     for cmd_parser in [verify_parser, build_parser]:
         cmd_parser.add_argument('-f', '--flavor', default='.x86_64',  help='Build a given flavor')
         cmd_parser.add_argument('-v', '--verbose', action='store_true',  help='Enable verbose output')
-        cmd_parser.add_argument('filename', default='default.obsproduct',  help='Filename of product YAML spec')
+        cmd_parser.add_argument('filename', default='default.productcompose',  help='Filename of product YAML spec')
 
     # build command options
     build_parser.add_argument('-r', '--release', default=None,  help='Define a build release counter')
@@ -100,7 +100,7 @@ def build(args):
 
     product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
 
-    kwdfile = args.filename.removesuffix('.obsproduct') + '.kwd'
+    kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
     create_tree(args.out, product_base_dir, yml, kwdfile, flavor, archlist)
 
 
@@ -112,17 +112,15 @@ def parse_yaml(filename, flavor, default_arch):
     with open(filename, 'r') as file:
        yml = yaml.safe_load(file)
 
-    if yml['obsproduct_schema'] != 0:
-        print(yml['obsproduct_schema'])
-        print("Unsupported obsproduct_schema")
+    if yml['product_compose_schema'] != 0:
+        print(yml['product_compose_schema'])
+        print("Unsupported product composer schema")
         raise SystemExit(1)
-    if flavor and yml['build_options'] and 'combined_archs' in yml['build_options'].keys():
-        print("WARNING: Defined flavor overwrites manual architecture setting via flavor")
 
     archlist = None
     found = False
-    if flavor and 'flavors' in yml['build_options'].keys():
-      for f in yml['build_options']['flavors']:
+    if flavor and 'flavors' in yml.keys():
+      for f in yml['flavors']:
         if next(iter(f)) != flavor:
             continue
         found = True
@@ -138,9 +136,9 @@ def parse_yaml(filename, flavor, default_arch):
 
 def get_product_dir(yml, flavor, archlist, release):
     name = yml['name'] + "-" + str(yml['version'])
-    if 'product_directory_name' in yml['build_options'].keys():
+    if 'product_directory_name' in yml.keys():
         # manual override
-        name = yml['build_options']['product_directory_name']
+        name = yml['product_directory_name']
     if flavor:
         name += "-" + flavor
     if archlist:
@@ -163,13 +161,13 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     sourcedir = debugdir = None
 
-    if "source" in yml['build_options'].keys():
-      if yml['build_options']['source'] == 'split':
+    if "source" in yml.keys():
+      if yml['source'] == 'split':
         sourcedir = outdir + '/' + product_base_dir + '-Source'
       else:
         sourcedir = maindir
-    if "debug" in yml['build_options'].keys():
-      if yml['build_options']['debug'] == 'split':
+    if "debug" in yml.keys():
+      if yml['debug'] == 'split':
         debugdir = outdir + '/' + product_base_dir + '-Debug'
       else:
         debugdir = maindir
@@ -381,7 +379,7 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
         return
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
         if package not in local_rpms.keys():
-            if 'ignore_missing_packages' in yml['build_options'].keys():
+            if 'ignore_missing_packages' in yml['build_options']:
                print("WARNING: package " + package + " not found")
                continue
             else:
@@ -430,7 +428,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
        os.mkdir(sourcedir)
 
     singleone = True
-    if 'take_all_available_versions' in yml['build_options'].keys():
+    if 'take_all_available_versions' in yml['build_options']:
         singleone = False
 
     missing_package = None
@@ -444,7 +442,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
         if singleone:
             rpms = [lookup_rpm(arch, package)]
         else:
-            rpms = [lookup_all_rpms(arch, package)]
+            rpms = lookup_all_rpms(arch, package)
 
         if not rpms:
             print("WARNING: package " + package + " not found for " + arch)
@@ -481,7 +479,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
               if drpm:
                   link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
 
-    if missing_package and not 'ignore_missing_packages' in yml['build_options'].keys():
+    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
        print('ERROR: Abort due to missing packages')
        raise SystemExit(1)
 
