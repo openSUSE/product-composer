@@ -126,10 +126,10 @@ def parse_yaml(filename, flavor, default_arch):
         if next(iter(f)) != flavor:
             continue
         found = True
-        if 'combined_archs' in f.keys():
-          archlist = f['combined_archs']
+        if 'architectures' in f[flavor]:
+            archlist = f[flavor]['architectures']
     if flavor and not found:
-        print("Flavor not found: ", flavor)
+        print("ERROR: Flavor not found: ", flavor)
         raise SystemExit(1)
     if archlist == None:
       archlist = [default_arch]
