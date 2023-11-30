@@ -433,16 +433,33 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
 
     missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
-        if package not in local_rpms.keys():
+        name = package
+        op = version = release = None
+
+        # Is the user requesting a specific version?
+        match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+        if match:
+            name    = match.group(1)
+            op      = match.group(2)
+            epoch = version = release = None
+            if ':' in match.group(3):
+                (epoch, version) = match.group(3).split(':')
+            else:
+                version = match.group(3)
+            if '-' in version:
+                (version, release) = match.version.split('-')
+
+        if name not in local_rpms.keys():
             print("WARNING: package " + package + " not found")
             raise SystemExit(1)
             missing_package = True
             continue
 
+        # We may want to put multiple candidates on the medium
         if singleone:
-            rpms = [lookup_rpm(arch, package)]
+            rpms = [lookup_rpm(arch, name, op, epoch, version, release)]
         else:
-            rpms = lookup_all_rpms(arch, package)
+            rpms = lookup_all_rpms(arch, name, op, epoch, version, release)
 
         if not rpms:
             print("WARNING: package " + package + " not found for " + arch)
@@ -457,12 +474,13 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
             # so we need to add also the src rpm
             match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
             source_package_name    = match.group(1)
+            # no chance to get a epoch from file name
             source_package_version = match.group(2)
             source_package_release = match.group(3)
             source_package_arch    = match.group(4)
 
             if sourcedir:
-              srpm = lookup_rpm(source_package_arch, source_package_name, source_package_version, source_package_release)
+              srpm = lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
               if not srpm:
                   print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
                   print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
@@ -471,11 +489,11 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
               link_file_into_dir(srpm['filename'], sourcedir + '/' + source_package_arch)
 
             if debugdir:
-              drpm = lookup_rpm(arch, source_package_name + "-debugsource", source_package_version, source_package_release)
+              drpm = lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
               if drpm:
                   link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
 
-              drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", rpm['tags']['version'], rpm['tags']['release'])
+              drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', None, rpm['tags']['version'], rpm['tags']['release'])
               if drpm:
                   link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
 
@@ -491,41 +509,55 @@ def link_file_into_dir(filename, directory):
         os.link(filename, outname)
 
 
-def lookup_all_rpms(arch, name, version=None, release=None):
-    rpms = []
+def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
+    tags = entry['tags']
+
+    if tags['arch'] != arch:
+        if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
+            return False
+
+    if op:
+        # We must not hand over the release when the release is not required by the user
+        # or the equal case will never be true.
+        trelease = None
+        if release:
+            trelease = tags['release']
+        cmp = rpm.labelCompare((tags['epoch'], tags['version'], trelease), (epoch, version, release))
+        if cmp > 0:
+            return op[0] == '>'
+        if cmp < 0:
+            return op[0] == '<'
+        return '=' in op
+
+    return True
+
+def lookup_all_rpms(arch, name, op=None, epoch=None, version=None, release=None):
     if not name in local_rpms.keys():
         return None
+
+    rpms = []
     for lrpm in local_rpms[name]:
-        tags = lrpm['tags']
-        if version and version != tags['version']:
+        if not _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
             continue
-        if release and release != tags['release']:
-            continue
-        if tags['arch'] != arch:
-            if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
-                continue
 
         rpms.append(lrpm)
     return rpms
 
-def lookup_rpm(arch, name, version=None, release=None):
-    candidate = None
+def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
     if not name in local_rpms.keys():
         return None
+
+    candidate = None
     for lrpm in local_rpms[name]:
-        tags = lrpm['tags']
-        if version and version != tags['version']:
+        if not _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
             continue
-        if release and release != tags['release']:
-            continue
-        if tags['arch'] != arch:
-            if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
-                continue
+
         # first hit?
         if candidate == None:
             candidate = lrpm
             continue
         # version compare
+        tags = lrpm['tags']
         if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (candidate['tags']['epoch'], candidate['tags']['version'], candidate['tags']['release'])):
             candidate = lrpm
     return candidate
@@ -565,10 +597,7 @@ def scan_rpms(directory, yml):
           os.close(fd)
           rpm_object = {}
           for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
-              if tag == 'epoch' or tag == 'version' or tag == 'release':
-                  rpm_object[tag] = str(h[tag])
-              else:
-                  rpm_object[tag] = h[tag]
+              rpm_object[tag] = h[tag]
 
           if not rpm_object['sourcerpm']:
               rpm_object['arch'] = 'src'
