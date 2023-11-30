@@ -457,7 +457,8 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
 
         # We may want to put multiple candidates on the medium
         if singlemode:
-            rpms = [lookup_rpm(arch, name, op, epoch, version, release)]
+            rpm = lookup_rpm(arch, name, op, epoch, version, release)
+            rpms = [rpm] if rpm else []
         else:
             rpms = lookup_all_rpms(arch, name, op, epoch, version, release)
 
@@ -533,7 +534,7 @@ def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
 
 def lookup_all_rpms(arch, name, op=None, epoch=None, version=None, release=None):
     if not name in local_rpms.keys():
-        return None
+        return []
 
     rpms = []
     for lrpm in local_rpms[name]:
