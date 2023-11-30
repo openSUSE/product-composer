@@ -429,6 +429,10 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
     if sourcedir:
        os.mkdir(sourcedir)
 
+    singleone = True
+    if 'take_all_available_versions' in yml['build_options'].keys():
+        singleone = False
+
     missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
         if package not in local_rpms.keys():
@@ -437,40 +441,45 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
             missing_package = True
             continue
 
-        rpm = lookup_rpm(arch, package)
-        if not rpm:
+        if singleone:
+            rpms = [lookup_rpm(arch, package)]
+        else:
+            rpms = [lookup_all_rpms(arch, package)]
+
+        if not rpms:
             print("WARNING: package " + package + " not found for " + arch)
             missing_package = True
             continue
-        
-        _rpmdir = rpmdir + '/' + rpm['tags']['arch']
 
-        link_file_into_dir(rpm['filename'], _rpmdir)
+        for rpm in rpms:
+            rpmarchdir = rpmdir + '/' + rpm['tags']['arch']
 
-        # so we need to add also the src rpm
-        match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
-        source_package_name    = match.group(1)
-        source_package_version = match.group(2)
-        source_package_release = match.group(3)
-        source_package_arch    = match.group(4)
+            link_file_into_dir(rpm['filename'], rpmarchdir)
 
-        if sourcedir:
-          srpm = lookup_rpm(source_package_arch, source_package_name, source_package_version, source_package_release)
-          if not srpm:
-              print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
-              print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
-              missing_package = True
-              continue
-          link_file_into_dir(srpm['filename'], sourcedir + '/' + source_package_arch)
+            # so we need to add also the src rpm
+            match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
+            source_package_name    = match.group(1)
+            source_package_version = match.group(2)
+            source_package_release = match.group(3)
+            source_package_arch    = match.group(4)
 
-        if debugdir:
-          drpm = lookup_rpm(arch, source_package_name + "-debugsource", source_package_version, source_package_release)
-          if drpm:
-              link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
+            if sourcedir:
+              srpm = lookup_rpm(source_package_arch, source_package_name, source_package_version, source_package_release)
+              if not srpm:
+                  print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
+                  print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
+                  missing_package = True
+                  continue
+              link_file_into_dir(srpm['filename'], sourcedir + '/' + source_package_arch)
 
-          drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", rpm['tags']['version'], rpm['tags']['release'])
-          if drpm:
-              link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
+            if debugdir:
+              drpm = lookup_rpm(arch, source_package_name + "-debugsource", source_package_version, source_package_release)
+              if drpm:
+                  link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
+
+              drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", rpm['tags']['version'], rpm['tags']['release'])
+              if drpm:
+                  link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options'].keys():
        print('ERROR: Abort due to missing packages')
@@ -483,6 +492,23 @@ def link_file_into_dir(filename, directory):
     if not os.path.exists(outname):
         os.link(filename, outname)
 
+
+def lookup_all_rpms(arch, name, version=None, release=None):
+    rpms = []
+    if not name in local_rpms.keys():
+        return None
+    for lrpm in local_rpms[name]:
+        tags = lrpm['tags']
+        if version and version != tags['version']:
+            continue
+        if release and release != tags['release']:
+            continue
+        if tags['arch'] != arch:
+            if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
+                continue
+
+        rpms.append(lrpm)
+    return rpms
 
 def lookup_rpm(arch, name, version=None, release=None):
     candidate = None
