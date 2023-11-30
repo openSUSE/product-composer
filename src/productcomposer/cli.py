@@ -158,19 +158,19 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
       os.mkdir(outdir)
 
-    maindir = outdir + '/' + product_base_dir + '-Media1'
+    maindir = outdir + '/' + product_base_dir
     rpmdir = maindir # we may offer to set it up in sub directories
 
     sourcedir = debugdir = None
 
     if "source" in yml['build_options'].keys():
       if yml['build_options']['source'] == 'split':
-        sourcedir = outdir + '/' + product_base_dir + '-Media2'
+        sourcedir = outdir + '/' + product_base_dir + '-Source'
       else:
         sourcedir = maindir
     if "debug" in yml['build_options'].keys():
       if yml['build_options']['debug'] == 'split':
-        debugdir = outdir + '/' + product_base_dir + '-Media3'
+        debugdir = outdir + '/' + product_base_dir + '-Debug'
       else:
         debugdir = maindir
 
