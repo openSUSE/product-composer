@@ -1,5 +1,21 @@
-obs-product-builder
-===================
+product-composer
+================
+
+This is the successor of product-builder. A tool to create rpm product
+repositories inside of Open Build Service based on a larger pool
+of packages.
+
+It is starting as small as possible, just enough for ALP products atm.
+
+Currently it supports:
+ - processing based on a list of rpm package names
+ - optional filters for architectures, versions and flavors can be defined
+ - it can either just take a single rpm of a given name or all of them
+ - it can post process updateinfo data
+ - post processing like rpm meta data generation
+
+Not yet implemented:
+ - create bootable iso files
 
 Development
 ===========
@@ -23,7 +39,7 @@ Build documentation:
 
 .. code-block::
 
-    $ .venv/bin/python -m sphinx -M html docs docs/_build
+    $ make docs
 
 
 

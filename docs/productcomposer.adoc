@@ -1,0 +1,61 @@
+= productcomposer
+:toc:
+:icons:
+:numbered:
+:website: https://www.geckito.org/
+
+== Goals
+
+A lightweight success or product builder.
+
+It is used to generate product rpm repositories out of a pool of rpms.
+Unlike product builder, these can also be used to ship maintenance updates.
+
+Currently it supports:
+ - processing based on a list of rpm package names.
+   product compose is not take care of dependencies atm.
+ - providing matching source and/or debug packages for picked rpm packages.
+   These can be either included into main repository or prepared via
+   extra repositories
+ - optional filters for architectures, versions and flavors can be defined
+ - it can provide either just a single rpm of a given name or all of them
+ - it can post process updateinfo data
+ - post processing to provide various rpm meta data generation
+
+Not yet implemented:
+ - create bootable iso files
+
+== Design
+
+product composer issupposed to be used only inside of OBS builds atm.
+OBS or osc is preparing all binary rpm candidates in local directory 
+before starting the build.
+
+== Setup in OBS
+
+You will require OBS 2.11 or later.
+
+Create a new repository with any name. Either in a new or existing project.
+ - The product-composer package must be available in any repository
+   listed in the path elements.
+ - All scheduler architectures where packages are taken from must be listed.
+
+Your build description file may have any name, but must have a .productcompose
+suffix.
+
+The build type for the repository must be set to
+
+  Type: productcompose
+
+in the build configuration (aka prjconf).
+
+== Special setup for maintenance
+
+Ensure to build your patchinfo builds in a repository where "local" is the first
+architecture.
+
+Your productcompose file may provide all versions of each rpm if you enable
+"take_all_available_versions" in the build options.
+
+include::build_description.adoc[]
+

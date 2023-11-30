@@ -1,6 +1,9 @@
-obsproduct_schema: 0
-vendor: SUSE
-name: openSUSE_Factory
+# Our initial schema version. Be prepared that it breaks until we are
+# in full production mode
+product_compose_schema: 0
+
+vendor: openSUSE
+name: Tumbleweed
 version: 1.0
 
 summary: openSUSE Tumbleweed
@@ -8,37 +11,52 @@ description: >
   openSUSE Tumbleweed is the rolling distribution by the
   openSUSE.org project.
 
-iso:
 
 build_options:
- source_media: 2
- debug_media: 3
-# product_directory_name: "openSUSE-Tumbleweed"
- flavors:
- - default:
-   combined_archs:
+### For maintenance, otherwise only "the best" version of each package is picked:
+ - take_all_available_versions
+### do not abort on missing packages
+ - ignore_missing_packages
+
+# Enable collection of source and debug packages. Either "include" it
+# on main medium or "split" it away on extra medium.
+source: include
+debug: split
+
+# The default architecture list. Each of these will be put on the medium.
+# It is optional to have a default list, when each flavor defines an
+# architecture list. The main package won't be build in that case.
+architectures: [ x86_64 ]
+
+# A flavor list, each flavor may change the architecture list
+flavors:
+- small
+- large_arm:
+    architectures: [ armv7l, aarch64 ]
+
+# packages to be extracted
+unpack_packages:
+ - flavors:
+    - DVD medium
+   architectures:
+    - ppc64le
+   packages:
+    - Super-Special-Slideshow-for-DVD_medium-on-ppc64le
+ - skelcd-openSUSE
+ - skelcd-openSUSE-installer
+
+# packages to be put on the medium
+packages:
+ - flavors:
+    - DVD medium
+   packages:
+    - DVD-player
+
+ - architectures:
    - i586
    - i686
-   - x86_64
- - s390x
- - ppc:
-   combined_archs:
-   - ppc64
-   - ppc64le
+   packages:
+   - kernel-default-pae
 
-take_all_packages: true
-
-unpack_packages:
-# - instlux
- - skelcd-installer-openSUSE
- - skelcd-openSUSE
-
-packages:
-  - glibc
-  - glibc-devel
-# - kernel-default
-# - kernel-pae:
-#   only:
-#   - i586
-# - skelcd-openSUSE
+ - kernel-default
 

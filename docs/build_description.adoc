@@ -1,0 +1,148 @@
+
+== productcompose build description options
+
+=== minimal version
+
+ product_compose_schema: 0
+ vendor: I_and_myself
+ name: my_product
+ version: 1.0
+
+ architectures: [ x86_64 ]
+
+ packages:
+  - my-single-rpm-package
+
+=== build options
+==== take_all_available_versions
+
+By default only "the best" version of each rpm is taken.
+Use this switch to put all candidates on the medium.
+For example for maintenance repositories.
+
+==== ignore_missing_packages
+
+Missing packages lead by default to a build failure.
+Use this switch to continue. The missing packages are
+still listed in the build log.
+
+==== flavors
+
+Flavors can be defined with any name. These can be
+used to build multiple media from one build description.
+
+Each flavor may define an own architecture list.
+
+It can also be used to add different package sets.
+
+You need to add a _multibuild file to your sources
+to enable the build.
+
+==== packages
+
+The packages list lists rpm names to be put on the medium.
+
+There is usually one master list and in addition there
+can be addional optional lists.
+
+The additional list can be filter by flavors and/or 
+architectures.
+
+==== unpack_packages
+
+The unpack_packages section can be used in the same way 
+as the packages section.
+
+The difference is that not the rpm itself is put
+on the medium, but the extracted content only.
+
+=== Details
+
+==== name
+
+The product name.
+
+==== version
+
+The product version
+
+==== architectures
+
+An array of the master architectures to be put into the repository.
+This can be used to build a single repository usable for many
+hardware architectures.
+
+product composer will automatically fall back to "noarch" packages
+if the package is not found natively.
+
+Setting a global architecture list is optional, when architectures
+are listed for each flavor.
+
+==== build_options
+
+The build options may be used to change the behaviour of the build
+process. The options are described above.
+
+Just add them to enable them, no further arguments are allowed.
+
+==== debug
+
+Use this to provide also matching debuginfo and debugsource rpms 
+for the picked binaries. Use either
+
+  debug: include
+
+to include them in the product medium or use
+
+  debug: split
+
+to create a seperate repository with -Debug suffix.
+
+Missing packages will always be ignored.
+
+==== packages
+
+The package list. It can contain either simple name or it can
+be extended by a >, >=, =, <, <= operator to specify 
+specific versions.
+
+The package list can be valid global or for specific flavors
+or architectures only.
+
+==== product_compose_schema
+
+Defines the level of the yaml syntax. We are currently at level 0.
+Please expect incompatible changes at any time atm.
+
+We will later on become stable and use this to handle backward
+compability.
+
+==== product_directory_name
+
+Can be used to specify a directory or medium name manually.
+The default is "name-version".
+
+The directory name will always be suffixed by the architecture
+and build number.
+
+==== source
+
+Use this to provide also matching src or nosrc rpms for the
+picked binaries. Use either
+
+  source: include
+
+to include them in the product medium or use
+
+  source: split
+
+to create a seperate repository with -Source suffix.
+
+A missing package leads by default to a build failure, except
+the ignore_missing_packages built option is used.
+
+==== vendor
+
+Defines the company responsible for the content. Can be for example
+openSUSE or SUSE. It is used by the install stack.
+

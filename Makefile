@@ -18,7 +18,7 @@ dev: $(VENV)/.make-update
 
 .PHONY: docs
 docs: dev
-	$(PYTHON) -m sphinx -M html docs docs/_build
+	asciidoc docs/productcomposer.adoc
 
 
 .PHONY: test-unit
