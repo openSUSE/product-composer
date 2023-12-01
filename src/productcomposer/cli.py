@@ -390,14 +390,14 @@ def post_createrepo(rpmdir, product_name, content=None):
 def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     if not yml['unpack_packages']:
         return
+
+    missing_package = False
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
         if package not in local_rpms:
             if 'ignore_missing_packages' in yml['build_options']:
                print("WARNING: package " + package + " not found")
+               missing_package = True
                continue
-            else:
-               print("ERROR: package " + package + " not found")
-               raise SystemExit(1)
 
         rpm = lookup_rpm(arch, package)
 
@@ -415,6 +415,10 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
             shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
 
         shutil.rmtree(tempdir)
+
+    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+        print('ERROR: Abort due to missing packages')
+        raise SystemExit(1)
 
 def create_package_list(yml, arch, flavor):
     packages = []
@@ -463,7 +467,6 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
 
         if name not in local_rpms:
             print("WARNING: package " + package + " not found")
-            raise SystemExit(1)
             missing_package = True
             continue
 
