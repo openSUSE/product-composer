@@ -613,7 +613,7 @@ def scan_rpms(directory, yml):
 
               item = {'filename': fname, 'tags': rpm_object}
 
-              if not rpm_object['name'] in local_rpms.keys():
+              if not rpm_object['name'] in local_rpms:
                   local_rpms[rpm_object['name']] = []
               local_rpms[rpm_object['name']].append(item)
 
