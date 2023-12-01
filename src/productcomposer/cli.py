@@ -184,11 +184,30 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(rpmdir + '/repodata'):
       return
 
+    # CHANGELOG file
+    if os.path.exists("/usr/bin/mk_changelog"):
+      args = [ "/usr/bin/mk_changelog", rpmdir ]
+      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+      if popen.wait():
+          print("ERROR: Failed to run /usr/bin/mk_changelog")
+          print(popen.stdout.read())
+          raise SystemExit(1)
+      output = popen.stdout.read()
+
+    # ARCHIVES.gz
+    if os.path.exists("/usr/bin/mk_listings"):
+      args = [ "/usr/bin/mk_listings", rpmdir ]
+      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+      if popen.wait():
+          print("ERROR: Failed to run /usr/bin/mk_listings")
+          print(popen.stdout.read())
+          raise SystemExit(1)
+      output = popen.stdout.read()
+
+    # repodata/appdata
     if os.path.exists("/usr/bin/openSUSE-appstream-process"):
       args = [ "/usr/bin/openSUSE-appstream-process",
-               rpmdir,
-               rpmdir + "/repodata"
-             ]
+               rpmdir, rpmdir + "/repodata" ]
       popen = subprocess.Popen(args, stdout=subprocess.PIPE)
       if popen.wait():
           print("ERROR: Failed to run openSUSE-appstream-process")
