@@ -151,7 +151,6 @@ def get_product_dir(yml, flavor, archlist, release):
 def run_helper(args, cwd=None, stdout=None, failmsg=None):
     if stdout is None:
         stdout=subprocess.PIPE
-     
     popen = subprocess.Popen(args, stdout=stdout, cwd=cwd)
     if popen.wait():
         if failmsg:
@@ -160,10 +159,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             print("ERROR: Failed to run" + args[0])
         print(popen.stdout.read())
         raise SystemExit(1)
-    output = ''
-    if stdout == subprocess.PIPE:
-        output = popen.stdout.read()
-    return output
+    return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
 def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
