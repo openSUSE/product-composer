@@ -148,6 +148,23 @@ def get_product_dir(yml, flavor, archlist, release):
     return name
 
 
+def run_helper(args, cwd=None, stdout=None, failmsg=None):
+    if stdout is None:
+        stdout=subprocess.PIPE
+     
+    popen = subprocess.Popen(args, stdout=stdout, cwd=cwd)
+    if popen.wait():
+        if failmsg:
+            print("ERROR: Failed to " + failmsg)
+        else:
+            print("ERROR: Failed to run" + args[0])
+        print(popen.stdout.read())
+        raise SystemExit(1)
+    output = ''
+    if stdout == subprocess.PIPE:
+        output = popen.stdout.read()
+    return output
+
 def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -185,45 +202,25 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # CHANGELOG file
     if os.path.exists("/usr/bin/mk_changelog"):
-      args = [ "/usr/bin/mk_changelog", rpmdir ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-      if popen.wait():
-          print("ERROR: Failed to run /usr/bin/mk_changelog")
-          print(popen.stdout.read())
-          raise SystemExit(1)
-      output = popen.stdout.read()
+        args = [ "/usr/bin/mk_changelog", rpmdir ]
+        run_helper(args)
 
     # ARCHIVES.gz
     if os.path.exists("/usr/bin/mk_listings"):
-      args = [ "/usr/bin/mk_listings", rpmdir ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-      if popen.wait():
-          print("ERROR: Failed to run /usr/bin/mk_listings")
-          print(popen.stdout.read())
-          raise SystemExit(1)
-      output = popen.stdout.read()
+        args = [ "/usr/bin/mk_listings", rpmdir ]
+        run_helper(args)
 
     # repodata/appdata
     if os.path.exists("/usr/bin/openSUSE-appstream-process"):
         args = [ "/usr/bin/openSUSE-appstream-process",
                  rpmdir, rpmdir + "/repodata" ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        if popen.wait():
-            print("ERROR: Failed to run openSUSE-appstream-process")
-            print(popen.stdout.read())
-            raise SystemExit(1)
-        output = popen.stdout.read()
+        run_helper(args)
 
     if os.path.exists("/usr/bin/add_product_susedata"):
         args = [ "/usr/bin/add_product_susedata",
                  '-u', '-k', kwdfile, '-p', '-e', '/usr/share/doc/packages/eulas',
                  '-d', rpmdir ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        if popen.wait():
-            print("ERROR: Failed to run add_product_susedata")
-            print(popen.stdout.read())
-            raise SystemExit(1)
-        output = popen.stdout.read()
+        run_helper(args)
 
     # Adding updateinfo.xml
     uitemp = None
@@ -253,11 +250,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
                  rpmdir + '/updateinfo.xml',
                  rpmdir + '/repodata' ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        if popen.wait():
-            print("ERROR: Unable to add updateinfo.xml to repo meta data")
-            print(popen.stdout.read())
-            raise SystemExit(1)
+        run_helper(args, failmsg="add updateinfo.xml to repo meta data")
         os.unlink(rpmdir + '/updateinfo.xml')
 
     # Add License File and create extra .license directory
@@ -266,44 +259,25 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
         args = [ 'tar', 'xf', rpmdir + "/license.tar", '-C', licensedir ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        if popen.wait():
-            print("ERROR: Failed to extract license tar ball")
-            print(popen.stdout.read())
-            raise SystemExit(1)
-        output = popen.stdout.read()
+        output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             print("ERROR: No license.txt extracted")
-            print(popen.stdout.read())
+            print(output)
             raise SystemExit(1)
         args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
                  rpmdir + 'license.tar',
                  rpmdir + '/repodata' ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-        if popen.wait():
-            print("ERROR: Unable to add license.tar to repo meta data")
-            print(popen.stdout.read())
-            raise SystemExit(1)
-        output = popen.stdout.read()
+        run_helper(args, failmsg="add license.tar to repo meta data")
         os.unlink(rpmdir + 'license.tar')
 
     # detached signature
     args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
-    popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-    if popen.wait():
-        print("ERROR: Failed to created detached signature")
-        print(popen.stdout.read())
-        raise SystemExit(1)
-    output = popen.stdout.read()
+    run_helper(args, failmsg="create detached signature")
 
     # detached pubkey
     args = [ '/usr/lib/build/signdummy', '-p', rpmdir + "/repodata/repomd.xml" ]
     pubkey_file = open(rpmdir + "/repodata/repomd.xml.key", 'w')
-    popen = subprocess.Popen(args, stdout=pubkey_file)
-    if popen.wait():
-        print("ERROR: Failed to write signature public key")
-        print(popen.stderr.read())
-        raise SystemExit(1)
+    run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
     pubkey_file.close()
 
     # do we need an ISO file?
@@ -325,28 +299,21 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             args += [ '-V', yml['iso']['volume_id'] ]
         args += [ '-A', application_id ]
         args += [ '-o', maindir + '.iso', maindir ]
-        popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=maindir)
-        if popen.wait():
-            print("ERROR: Failed to create iso file")
-            print(popen.stderr.read())
-            raise SystemExit(1)
+        run_helper(args, cwd=maindir, failmsg="create iso file")
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
         spdx_distro = "ALP"
         spdx_distro += "-" + str(yml['version'])
         args = [ "/usr/lib/build/generate_sbom",
+                 "--format", 'spdx',
                  "--distro", spdx_distro,
                  "--product", rpmdir 
                ]
 
         # SPDX
         sbom_file = open(rpmdir + ".spdx.json", 'w')
-        popen = subprocess.Popen(args, stdout=sbom_file)
-        if popen.wait():
-            print("ERROR: Failed to run generate_sbom for SPDX")
-            print(popen.stderr.read())
-            raise SystemExit(1)
+        run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
         sbom_file.close()
 
         # CycloneDX
@@ -355,13 +322,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
                  "--distro", spdx_distro,
                  "--product", rpmdir 
                ]
-        print(args)
         sbom_file = open(rpmdir + ".cdx.json", 'w')
-        popen = subprocess.Popen(args, stdout=sbom_file)
-        if popen.wait():
-            print("ERROR: Failed to run generate_sbom for CycloneDX")
-            print(popen.stderr.read())
-            raise SystemExit(1)
+        run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
         sbom_file.close()
 
 def post_createrepo(rpmdir, product_name, content=None):
@@ -379,12 +341,7 @@ def post_createrepo(rpmdir, product_name, content=None):
     if False:
         args.append("--content=pool")
     args.append('.')
-    popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=rpmdir)
-    if popen.wait():
-        print("ERROR: Failed to run createrepo")
-        print(popen.stdout.read())
-        raise SystemExit(1)
-    output = popen.stdout.read()
+    run_helper(args, cwd=rpmdir)
 
 
 def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
@@ -393,22 +350,16 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
 
     missing_package = False
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
-        if package not in local_rpms:
+        rpm = lookup_rpm(arch, package)
+        if not rpm:
             if 'ignore_missing_packages' in yml['build_options']:
                print("WARNING: package " + package + " not found")
                missing_package = True
                continue
 
-        rpm = lookup_rpm(arch, package)
-
         tempdir = rpmdir + "/temp"
         os.mkdir(tempdir)
-        popen = subprocess.Popen(['unrpm', '-q', rpm['filename']], stdout=subprocess.PIPE, cwd=tempdir)
-        if popen.wait():
-            print("ERROR: Failed to extract")
-            print(popen.stdout.read())
-            raise SystemExit(1)
-        output = popen.stdout.read()
+        run_helper(['unrpm', '-q', rpm['filename']], cwd=tempdir, failmsg=("extract " + rpm['filename']))
 
         skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
         if os.path.exists(skel_dir):
@@ -538,8 +489,8 @@ def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
     if op:
         # We must not hand over the release when the release is not required by the user
         # or the equal case will never be true.
-        tepoch = tags['epoch'] if epoch else None
-        trelease = tags['release'] if release else None
+        tepoch = tags['epoch'] if epoch is not None else None
+        trelease = tags['release'] if release is not None else None
         cmp = rpm.labelCompare((tepoch, tags['version'], trelease), (epoch, version, release))
         if cmp > 0:
             return op[0] == '>'
