@@ -118,17 +118,14 @@ def parse_yaml(filename, flavor, default_arch):
         raise SystemExit(1)
 
     archlist = None
-    found = False
-    if flavor and 'flavors' in yml.keys():
-      for f in yml['flavors']:
-        if next(iter(f)) != flavor:
-            continue
-        found = True
-        if 'architectures' in f[flavor]:
-            archlist = f[flavor]['architectures']
-    if flavor and not found:
-        print("ERROR: Flavor not found: ", flavor)
-        raise SystemExit(1)
+    if flavor:
+        if not yml['flavors'] or flavor not in yml['flavors']:
+            print("ERROR: Flavor not found: ", flavor)
+            raise SystemExit(1)
+        f = yml['flavors'][flavor]
+        if 'architectures' in f:
+            archlist = f['architectures']
+
     if archlist == None:
       archlist = [default_arch]
 
