@@ -23,7 +23,6 @@ import tempfile
 
 __all__ = "main",
 
-local_files = {} # sorted by project/repo/arch
 local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
 
@@ -83,11 +82,11 @@ def build(args):
     f = args.flavor.split('.')
     flavor = None
     if f[0] != '':
-      flavor = f[0]
+        flavor = f[0]
     if len(f) == 2:
-      default_arch = f[1]
+        default_arch = f[1]
     else:
-      default_arch = 'x86_64'
+        default_arch = 'x86_64'
 
     yml, archlist = parse_yaml(args.filename, flavor, default_arch)
     directory = os.getcwd()
@@ -110,7 +109,7 @@ def verify(args):
 def parse_yaml(filename, flavor, default_arch):
 
     with open(filename, 'r') as file:
-       yml = yaml.safe_load(file)
+        yml = yaml.safe_load(file)
 
     if yml['product_compose_schema'] != 0:
         print(yml['product_compose_schema'])
@@ -133,7 +132,7 @@ def parse_yaml(filename, flavor, default_arch):
 
 def get_product_dir(yml, flavor, archlist, release):
     name = yml['name'] + "-" + str(yml['version'])
-    if 'product_directory_name' in yml.keys():
+    if 'product_directory_name' in yml:
         # manual override
         name = yml['product_directory_name']
     if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
@@ -151,38 +150,38 @@ def get_product_dir(yml, flavor, archlist, release):
 
 def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
-      os.mkdir(outdir)
+        os.mkdir(outdir)
 
     maindir = outdir + '/' + product_base_dir
     rpmdir = maindir # we may offer to set it up in sub directories
 
     sourcedir = debugdir = None
 
-    if "source" in yml.keys():
-      if yml['source'] == 'split':
-        sourcedir = outdir + '/' + product_base_dir + '-Source'
-      else:
-        sourcedir = maindir
-    if "debug" in yml.keys():
-      if yml['debug'] == 'split':
-        debugdir = outdir + '/' + product_base_dir + '-Debug'
-      else:
-        debugdir = maindir
+    if "source" in yml:
+        if yml['source'] == 'split':
+            sourcedir = outdir + '/' + product_base_dir + '-Source'
+        else:
+            sourcedir = maindir
+    if "debug" in yml:
+        if yml['debug'] == 'split':
+            debugdir = outdir + '/' + product_base_dir + '-Debug'
+        else:
+            debugdir = maindir
 
     for arch in archlist:
-      setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir, sourcedir)
+        setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir, sourcedir)
 
     for arch in archlist:
-      unpack_meta_rpms(rpmdir, yml, arch, flavor, medium=1) # only for first medium am
+        unpack_meta_rpms(rpmdir, yml, arch, flavor, medium=1) # only for first medium am
 
     post_createrepo(rpmdir, yml['name'])
     if debugdir:
-      post_createrepo(debugdir, yml['name'], content="debug")
+        post_createrepo(debugdir, yml['name'], content="debug")
     if sourcedir:
-      post_createrepo(sourcedir, yml['name'], content="source")
+        post_createrepo(sourcedir, yml['name'], content="source")
 
     if not os.path.exists(rpmdir + '/repodata'):
-      return
+        return
 
     # CHANGELOG file
     if os.path.exists("/usr/bin/mk_changelog"):
@@ -206,25 +205,25 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # repodata/appdata
     if os.path.exists("/usr/bin/openSUSE-appstream-process"):
-      args = [ "/usr/bin/openSUSE-appstream-process",
-               rpmdir, rpmdir + "/repodata" ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-      if popen.wait():
-          print("ERROR: Failed to run openSUSE-appstream-process")
-          print(popen.stdout.read())
-          raise SystemExit(1)
-      output = popen.stdout.read()
+        args = [ "/usr/bin/openSUSE-appstream-process",
+                 rpmdir, rpmdir + "/repodata" ]
+        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+        if popen.wait():
+            print("ERROR: Failed to run openSUSE-appstream-process")
+            print(popen.stdout.read())
+            raise SystemExit(1)
+        output = popen.stdout.read()
 
     if os.path.exists("/usr/bin/add_product_susedata"):
-      args = [ "/usr/bin/add_product_susedata",
-               '-u', '-k', kwdfile, '-p', '-e', '/usr/share/doc/packages/eulas',
-               '-d', rpmdir ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-      if popen.wait():
-          print("ERROR: Failed to run add_product_susedata")
-          print(popen.stdout.read())
-          raise SystemExit(1)
-      output = popen.stdout.read()
+        args = [ "/usr/bin/add_product_susedata",
+                 '-u', '-k', kwdfile, '-p', '-e', '/usr/share/doc/packages/eulas',
+                 '-d', rpmdir ]
+        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+        if popen.wait():
+            print("ERROR: Failed to run add_product_susedata")
+            print(popen.stdout.read())
+            raise SystemExit(1)
+        output = popen.stdout.read()
 
     # Adding updateinfo.xml
     uitemp = None
@@ -232,34 +231,34 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         print("Add updateinfo", ui)
         u = ET.parse(ui).getroot()
         for update in u.findall('update'):
-          needed=False
-          parent = update.findall('pkglist')[0].findall('collection')[0]
-          for pkgentry in parent.findall('package'):
-              src = pkgentry.get('src')
-              if os.path.exists(rpmdir + '/' + src):
-                  needed=True
-              else:
-                  # FIXME: special handling for debug and src rpms are needed
-                  parent.remove(pkgentry)
+            needed=False
+            parent = update.findall('pkglist')[0].findall('collection')[0]
+            for pkgentry in parent.findall('package'):
+                src = pkgentry.get('src')
+                if os.path.exists(rpmdir + '/' + src):
+                    needed=True
+                else:
+                    # FIXME: special handling for debug and src rpms are needed
+                    parent.remove(pkgentry)
 
-          if needed:
-              if not uitemp:
-                  uitemp = open(rpmdir + '/updateinfo.xml', 'x')
-                  uitemp.write("<updates>\n  ")
+            if needed:
+                if not uitemp:
+                    uitemp = open(rpmdir + '/updateinfo.xml', 'x')
+                    uitemp.write("<updates>\n  ")
 
-              uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
+                uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
     if uitemp:
-      uitemp.write('</updates>')
-      uitemp.close()
-      args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
-               rpmdir + '/updateinfo.xml',
-               rpmdir + '/repodata' ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE)
-      if popen.wait():
-          print("ERROR: Unable to add updateinfo.xml to repo meta data")
-          print(popen.stdout.read())
-          raise SystemExit(1)
-      os.unlink(rpmdir + '/updateinfo.xml')
+        uitemp.write('</updates>')
+        uitemp.close()
+        args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
+                 rpmdir + '/updateinfo.xml',
+                 rpmdir + '/repodata' ]
+        popen = subprocess.Popen(args, stdout=subprocess.PIPE)
+        if popen.wait():
+            print("ERROR: Unable to add updateinfo.xml to repo meta data")
+            print(popen.stdout.read())
+            raise SystemExit(1)
+        os.unlink(rpmdir + '/updateinfo.xml')
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar"):
@@ -286,7 +285,6 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             print(popen.stdout.read())
             raise SystemExit(1)
         output = popen.stdout.read()
-
         os.unlink(rpmdir + 'license.tar')
 
     # detached signature
@@ -309,63 +307,62 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     pubkey_file.close()
 
     # do we need an ISO file?
-    if 'iso' in yml.keys():
-      application_id = re.sub(r'^.*/', '', maindir)
-      args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
-      if True: # x86_64 efi only atm
-        args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
-        args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
-        args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
-#        args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
-        args += [ '-no-emul-boot' ]
-        #args += [ '-sort', $sort_file ]
-        #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
-        args += [ '-b', "boot/"+arch+"/loader/isolinux.bin"]
-      if 'publisher' in yml['iso'].keys():
-        args += [ '-publisher', yml['iso']['publisher'] ]
-      if 'volume_id' in yml['iso'].keys():
-        args += [ '-V', yml['iso']['volume_id'] ]
-      args += [ '-A', application_id ]
-      args += [ '-o', maindir + '.iso', maindir ]
-      popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=maindir)
-      if popen.wait():
-          print("ERROR: Failed to create iso file")
-          print(popen.stderr.read())
-          raise SystemExit(1)
+    if 'iso' in yml:
+        application_id = re.sub(r'^.*/', '', maindir)
+        args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
+        if True: # x86_64 efi only atm
+            args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
+            args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
+            args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
+            #args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
+            args += [ '-no-emul-boot' ]
+            #args += [ '-sort', $sort_file ]
+            #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
+            args += [ '-b', "boot/"+arch+"/loader/isolinux.bin"]
+        if 'publisher' in yml['iso']:
+            args += [ '-publisher', yml['iso']['publisher'] ]
+        if 'volume_id' in yml['iso']:
+            args += [ '-V', yml['iso']['volume_id'] ]
+        args += [ '-A', application_id ]
+        args += [ '-o', maindir + '.iso', maindir ]
+        popen = subprocess.Popen(args, stdout=subprocess.PIPE, cwd=maindir)
+        if popen.wait():
+            print("ERROR: Failed to create iso file")
+            print(popen.stderr.read())
+            raise SystemExit(1)
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
-      spdx_distro = "ALP"
-      spdx_distro += "-" + str(yml['version'])
-      args = [ "/usr/lib/build/generate_sbom",
-               "--distro", spdx_distro,
-               "--product", rpmdir 
-             ]
+        spdx_distro = "ALP"
+        spdx_distro += "-" + str(yml['version'])
+        args = [ "/usr/lib/build/generate_sbom",
+                 "--distro", spdx_distro,
+                 "--product", rpmdir 
+               ]
 
-      # SPDX
-      sbom_file = open(rpmdir + ".spdx.json", 'w')
-      popen = subprocess.Popen(args, stdout=sbom_file)
-      if popen.wait():
-          print("ERROR: Failed to run generate_sbom for SPDX")
-          print(popen.stderr.read())
-          raise SystemExit(1)
-      sbom_file.close()
+        # SPDX
+        sbom_file = open(rpmdir + ".spdx.json", 'w')
+        popen = subprocess.Popen(args, stdout=sbom_file)
+        if popen.wait():
+            print("ERROR: Failed to run generate_sbom for SPDX")
+            print(popen.stderr.read())
+            raise SystemExit(1)
+        sbom_file.close()
 
-      # CycloneDX
-      args = [ "/usr/lib/build/generate_sbom",
-               "--format", 'cyclonedx',
-               "--distro", spdx_distro,
-               "--product", rpmdir 
-             ]
-      print(args)
-      sbom_file = open(rpmdir + ".cdx.json", 'w')
-      popen = subprocess.Popen(args, stdout=sbom_file)
-      if popen.wait():
-          print("ERROR: Failed to run generate_sbom for CycloneDX")
-          print(popen.stderr.read())
-          raise SystemExit(1)
-      sbom_file.close()
-
+        # CycloneDX
+        args = [ "/usr/lib/build/generate_sbom",
+                 "--format", 'cyclonedx',
+                 "--distro", spdx_distro,
+                 "--product", rpmdir 
+               ]
+        print(args)
+        sbom_file = open(rpmdir + ".cdx.json", 'w')
+        popen = subprocess.Popen(args, stdout=sbom_file)
+        if popen.wait():
+            print("ERROR: Failed to run generate_sbom for CycloneDX")
+            print(popen.stderr.read())
+            raise SystemExit(1)
+        sbom_file.close()
 
 def post_createrepo(rpmdir, product_name, content=None):
     distroname="testgin"
@@ -394,7 +391,7 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     if not yml['unpack_packages']:
         return
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
-        if package not in local_rpms.keys():
+        if package not in local_rpms:
             if 'ignore_missing_packages' in yml['build_options']:
                print("WARNING: package " + package + " not found")
                continue
@@ -420,14 +417,13 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
         shutil.rmtree(tempdir)
 
 def create_package_list(yml, arch, flavor):
-
     packages = []
     for entry in list(yml):
-        if type(entry)==dict:
-            if 'flavors' in entry.keys():
+        if type(entry) == dict:
+            if 'flavors' in entry:
                 if not flavor in entry['flavors']:
                     continue
-            if 'architectures' in entry.keys():
+            if 'architectures' in entry:
                 if not arch in entry['architectures']:
                     continue
             packages += entry['packages']
@@ -439,9 +435,9 @@ def create_package_list(yml, arch, flavor):
 def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
     os.mkdir(rpmdir)
     if debugdir:
-       os.mkdir(debugdir)
+        os.mkdir(debugdir)
     if sourcedir:
-       os.mkdir(sourcedir)
+        os.mkdir(sourcedir)
 
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
@@ -457,15 +453,15 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
         if match:
             name    = match.group(1)
             op      = match.group(2)
-            epoch = version = release = None
-            if ':' in match.group(3):
-                (epoch, version) = match.group(3).split(':')
-            else:
-                version = match.group(3)
+            epoch = '0'
+            version = match.group(3)
+            release = None
+            if ':' in version:
+                (epoch, version) = version.split(':', 2)
             if '-' in version:
-                (version, release) = match.version.split('-')
+                (version, release) = version.rsplit('-', 2)
 
-        if name not in local_rpms.keys():
+        if name not in local_rpms:
             print("WARNING: package " + package + " not found")
             raise SystemExit(1)
             missing_package = True
@@ -484,39 +480,40 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
             continue
 
         for rpm in rpms:
-            rpmarchdir = rpmdir + '/' + rpm['tags']['arch']
+            link_entry_into_dir(rpm, rpmdir)
 
-            link_file_into_dir(rpm['filename'], rpmarchdir)
-
-            # so we need to add also the src rpm
             match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
+            if not match:
+                print("WARNING: rpm package " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'] + " does not have a source rpm")
+                continue
+
             source_package_name    = match.group(1)
             # no chance to get a epoch from file name
             source_package_version = match.group(2)
             source_package_release = match.group(3)
             source_package_arch    = match.group(4)
-
             if sourcedir:
-              srpm = lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
-              if not srpm:
-                  print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
-                  print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
-                  missing_package = True
-                  continue
-              link_file_into_dir(srpm['filename'], sourcedir + '/' + source_package_arch)
+                # so we need to add also the src rpm
+                srpm = lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
+                if srpm:
+                    link_entry_into_dir(srpm, sourcedir)
+                else:
+                    print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
+                    print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
+                    missing_package = True
 
             if debugdir:
-              drpm = lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
-              if drpm:
-                  link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
+                drpm = lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
+                if drpm:
+                    link_entry_into_dir(drpm, debugdir)
 
-              drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', None, rpm['tags']['version'], rpm['tags']['release'])
-              if drpm:
-                  link_file_into_dir(drpm['filename'], debugdir + '/' + drpm['tags']['arch'])
+                drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', None, rpm['tags']['version'], rpm['tags']['release'])
+                if drpm:
+                    link_entry_into_dir(drpm, debugdir)
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-       print('ERROR: Abort due to missing packages')
-       raise SystemExit(1)
+        print('ERROR: Abort due to missing packages')
+        raise SystemExit(1)
 
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
@@ -525,6 +522,8 @@ def link_file_into_dir(filename, directory):
     if not os.path.exists(outname):
         os.link(filename, outname)
 
+def link_entry_into_dir(entry, directory):
+    link_file_into_dir(entry['filename'], directory + '/' + entry['tags']['arch'])
 
 def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
     tags = entry['tags']
@@ -536,10 +535,9 @@ def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
     if op:
         # We must not hand over the release when the release is not required by the user
         # or the equal case will never be true.
-        trelease = None
-        if release:
-            trelease = tags['release']
-        cmp = rpm.labelCompare((tags['epoch'], tags['version'], trelease), (epoch, version, release))
+        tepoch = tags['epoch'] if epoch else None
+        trelease = tags['release'] if release else None
+        cmp = rpm.labelCompare((tepoch, tags['version'], trelease), (epoch, version, release))
         if cmp > 0:
             return op[0] == '>'
         if cmp < 0:
@@ -549,19 +547,17 @@ def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
     return True
 
 def lookup_all_rpms(arch, name, op=None, epoch=None, version=None, release=None):
-    if not name in local_rpms.keys():
+    if not name in local_rpms:
         return []
 
     rpms = []
     for lrpm in local_rpms[name]:
-        if not _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
-            continue
-
-        rpms.append(lrpm)
+        if _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
+            rpms.append(lrpm)
     return rpms
 
 def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
-    if not name in local_rpms.keys():
+    if not name in local_rpms:
         return None
 
     candidate = None
@@ -575,8 +571,10 @@ def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
             continue
         # version compare
         tags = lrpm['tags']
-        if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (candidate['tags']['epoch'], candidate['tags']['version'], candidate['tags']['release'])):
+        ctags = candidate['tags']
+        if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (ctags['epoch'], ctags['version'], ctags['release'])) > 0:
             candidate = lrpm
+
     return candidate
 
 def scan_rpms(directory, yml):
@@ -586,49 +584,38 @@ def scan_rpms(directory, yml):
     ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
 
     for dirpath, dirs, files in os.walk(directory):
-      subdirs = dirpath.replace(directory,'').split('/')
-      if len(subdirs) < 4:
-          continue
-      project = subdirs[-3]
-      repository = subdirs[-2]
-      arch = subdirs[-1]
-# we try to avoid second path config for now
-#      if not project+"/"+repository in yml['repositories']:
-#          print("Warning: local repo not listed in yml file: " + project + "/" + repository)
-#          continue
-      print("scanning: " + project + "/" + repository)
-      if not project in local_files.keys():
-        local_files[project] = {}
-      if not repository in local_files[project].keys():
-        local_files[project][repository] = {}
-      if not arch in local_files[project][repository].keys():
-        local_files[project][repository][arch] = {}
-      for filename in files:
-        fname = os.path.join(dirpath,filename)
-        if arch == 'updateinfo':
-            local_updateinfos[fname] = ET.parse(fname).getroot()
+        subdirs = dirpath.replace(directory,'').split('/')
+        if len(subdirs) < 4:
             continue
-        if filename.endswith('.rpm'):
-          fd = os.open(fname, os.O_RDONLY)
-          h = ts.hdrFromFdno(fd)
-          os.close(fd)
-          rpm_object = {}
-          for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
-              rpm_object[tag] = h[tag]
+        project = subdirs[-3]
+        repository = subdirs[-2]
+        arch = subdirs[-1]
+  # we try to avoid second path config for now
+  #      if not project+"/"+repository in yml['repositories']:
+  #          print("Warning: local repo not listed in yml file: " + project + "/" + repository)
+  #          continue
+        print("scanning: " + project + "/" + repository)
+        for filename in files:
+            fname = os.path.join(dirpath,filename)
+            if arch == 'updateinfo':
+                local_updateinfos[fname] = ET.parse(fname).getroot()
+                continue
+            if filename.endswith('.rpm'):
+              fd = os.open(fname, os.O_RDONLY)
+              h = ts.hdrFromFdno(fd)
+              os.close(fd)
+              rpm_object = {}
+              for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
+                  rpm_object[tag] = h[tag]
 
-          if not rpm_object['sourcerpm']:
-              rpm_object['arch'] = 'src'
-              if rpm_object['nosource'] or rpm_object['nopatch']:
-                  rpm_object['arch'] = 'nosrc'
+              if not rpm_object['sourcerpm']:
+                  rpm_object['arch'] = 'nosrc' if rpm_object['nosource'] or rpm_object['nopatch'] else 'src'
 
-          item = {}
-          item['filename'] = fname
-          item['tags'] = rpm_object
-          local_files[project][repository][arch] = item
+              item = {'filename': fname, 'tags': rpm_object}
 
-          if not rpm_object['name'] in local_rpms.keys():
-              local_rpms[rpm_object['name']] = []
-          local_rpms[rpm_object['name']].append(item)
+              if not rpm_object['name'] in local_rpms.keys():
+                  local_rpms[rpm_object['name']] = []
+              local_rpms[rpm_object['name']].append(item)
 
 if __name__ == "__main__":
     try:
