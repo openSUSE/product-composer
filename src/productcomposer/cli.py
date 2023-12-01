@@ -276,9 +276,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # detached pubkey
     args = [ '/usr/lib/build/signdummy', '-p', rpmdir + "/repodata/repomd.xml" ]
-    pubkey_file = open(rpmdir + "/repodata/repomd.xml.key", 'w')
-    run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
-    pubkey_file.close()
+    with open(rpmdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
+        run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
     # do we need an ISO file?
     if 'iso' in yml:
@@ -305,16 +304,14 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if os.path.exists("/usr/lib/build/generate_sbom"):
         spdx_distro = "ALP"
         spdx_distro += "-" + str(yml['version'])
+        # SPDX
         args = [ "/usr/lib/build/generate_sbom",
                  "--format", 'spdx',
                  "--distro", spdx_distro,
                  "--product", rpmdir 
                ]
-
-        # SPDX
-        sbom_file = open(rpmdir + ".spdx.json", 'w')
-        run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
-        sbom_file.close()
+        with open(rpmdir + ".spdx.json", 'w') as sbom_file:
+            run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
         # CycloneDX
         args = [ "/usr/lib/build/generate_sbom",
@@ -322,9 +319,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
                  "--distro", spdx_distro,
                  "--product", rpmdir 
                ]
-        sbom_file = open(rpmdir + ".cdx.json", 'w')
-        run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
-        sbom_file.close()
+        with open(rpmdir + ".cdx.json", 'w') as sbom_file:
+            run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
 def post_createrepo(rpmdir, product_name, content=None):
     distroname="testgin"
