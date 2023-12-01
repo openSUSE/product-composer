@@ -139,7 +139,7 @@ def get_product_dir(yml, flavor, archlist, release):
     if 'product_directory_name' in yml.keys():
         # manual override
         name = yml['product_directory_name']
-    if flavor:
+    if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
         name += "-" + flavor
     if archlist:
         name += "-"

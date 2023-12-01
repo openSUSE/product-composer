@@ -17,6 +17,7 @@ build_options:
  - take_all_available_versions
 ### do not abort on missing packages
  - ignore_missing_packages
+# - hide_flavor_in_product_directory_name
 
 # Enable collection of source and debug packages. Either "include" it
 # on main medium or "split" it away on extra medium.

@@ -26,6 +26,13 @@ Missing packages lead by default to a build failure.
 Use this switch to continue. The missing packages are
 still listed in the build log.
 
+==== hide_flavor_in_product_directory_name
+
+The flavor name is by default part of the directory
+name of the build result. This can be disabled, 
+when each flavor has a different arch list. Otherwise
+conflicts can happen.
+
 ==== flavors
 
 Flavors can be defined with any name. These can be
