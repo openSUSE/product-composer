@@ -139,7 +139,7 @@ def parse_yaml(filename, flavor, default_arch):
             archlist = f['architectures']
 
     if archlist is None:
-      archlist = [ default_arch ]
+        archlist = [ default_arch ]
 
     return yml, archlist
 
@@ -235,12 +235,12 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # Create CHECKSUMS file
     with open('CHECKSUMS', 'a') as chksums_file:
-       for subdir in ('boot', 'EFI', 'docu', 'media.1'):
-           if not os.path.exists(subdir):
-               continue
-           for root, dirnames, filenames in os.walk(subdir):
-               for name in filenames:
-                   run_helper([chksums_tool, root + '/' + name], stdout=chksums_file)
+        for subdir in ('boot', 'EFI', 'docu', 'media.1'):
+            if not os.path.exists(subdir):
+                continue
+            for root, dirnames, filenames in os.walk(subdir):
+                for name in filenames:
+                    run_helper([chksums_tool, root + '/' + name], stdout=chksums_file)
     os.chdir(cwd)
 
     # repodata/appdata
