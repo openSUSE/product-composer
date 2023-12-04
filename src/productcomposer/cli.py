@@ -23,7 +23,8 @@ local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
 
 # hardcoded defaults for now
-chksums_tool = 'sha256sum'
+chksums_tool = 'sha512sum'
+repomd_checksum_parameter = '--checksum=sha512'
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -276,7 +277,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if uitemp:
         uitemp.write('</updates>')
         uitemp.close()
-        args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
+        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
                  rpmdir + '/updateinfo.xml',
                  rpmdir + '/repodata' ]
         run_helper(args, failmsg="add updateinfo.xml to repo meta data")
@@ -291,7 +292,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
-        args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
+        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
                  rpmdir + 'license.tar',
                  rpmdir + '/repodata' ]
         run_helper(args, failmsg="add license.tar to repo meta data")
@@ -354,7 +355,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 def post_createrepo(rpmdir, product_name, content=None):
     distroname="testgin"        # FIXME
 
-    args = [ 'createrepo', '--unique-md-filenames', '--excludes=boot', '--checksum=sha256',
+    args = [ 'createrepo', '--unique-md-filenames', '--excludes=boot', repomd_checksum_parameter,
              '--no-database' ]
     if distroname:
         args.append("--distro=\""+distroname+"\"")
