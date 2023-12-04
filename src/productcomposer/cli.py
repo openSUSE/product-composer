@@ -1,23 +1,26 @@
 """ Implementation of the command line interface.
 
 """
+
+import os
+import re
+import shutil
+import subprocess
 from argparse import ArgumentParser
+from xml.etree import ElementTree as ET
+
+import rpm
+import yaml
 
 from . import __version__
 from .core.logger import logger
 
-from xml.etree import ElementTree as ET
-ET_ENCODING = "unicode"
-
-import os
-import re
-import rpm
-import yaml
-import shutil
-import subprocess
-import tempfile
 
 __all__ = "main",
+
+
+ET_ENCODING = "unicode"
+
 
 local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
