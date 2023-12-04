@@ -22,6 +22,8 @@ __all__ = "main",
 local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
 
+# hardcoded defaults for now
+chksums_tool = 'sha256sum'
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -213,17 +215,29 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         args = [ "/usr/bin/mk_listings", rpmdir ]
         run_helper(args)
 
-    # Create CHECKSUMS file
+    # switch to medium tree directory
     cwd = os.getcwd()
     os.chdir(maindir)
-    tool = 'sha256sum'
+
+    # media.X structures
+    os.mkdir('media.1') # we do only support seperate media atm
+    with open('media.1/media', 'w') as media_file:
+        media_file.write(yml['vendor'] + ' - ' + product_base_dir + "\n")
+        media_file.write(product_base_dir + "\n") # BUILD_ID is equal to our product_base_dir atm
+        media_file.write("1\n") # we only have first media as we only support seperate media atm
+    # FIXME: read product name, version and release from the included product file(s)
+    with open('media.1/products', 'w') as products_file:
+        products_file.write("/ - " + yml['name'] + ' ' + str(yml['version']))
+        products_file.write("-1")
+
+    # Create CHECKSUMS file
     with open('CHECKSUMS', 'a') as chksums_file:
        for subdir in ('boot', 'EFI', 'docu', 'media.1'):
            if not os.path.exists(subdir):
                continue
            for root, dirnames, filenames in os.walk(subdir):
                for name in filenames:
-                   run_helper([tool, name], stdout=chksums_file)
+                   run_helper([chksums_tool, root + '/' + name], stdout=chksums_file)
     os.chdir(cwd)
 
     # repodata/appdata
