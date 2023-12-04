@@ -347,7 +347,7 @@ def create_updateinfo_packagefilter(yml, arch, flavor):
     package_filter = {}
     for package in create_package_list(yml['packages'], arch, flavor):
         name = package
-        match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+        match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
         if match:
             name = match.group(1)
         if name not in package_filter:
@@ -489,7 +489,7 @@ def create_package_list(yml, arch, flavor):
 
 def split_package_spec(pkgspec):
     name = pkgspec
-    match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+    match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
     if match:
         name    = match.group(1)
         op      = match.group(2)
@@ -538,7 +538,7 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
         for rpm in rpms:
             link_entry_into_dir(rpm, rpmdir)
 
-            match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
+            match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
             if not match:
                 warn("rpm package " + entry_nvra(rpm) + " does not have a source rpm")
                 continue
@@ -573,7 +573,7 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
         os.mkdir(directory)
-    outname = directory + '/' + re.sub('.*/', '', filename)
+    outname = directory + '/' + re.sub(r'.*/', '', filename)
     if not os.path.exists(outname):
         os.link(filename, outname)
 
