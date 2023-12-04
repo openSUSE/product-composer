@@ -221,30 +221,15 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         args = [ "/usr/bin/mk_listings", rpmdir ]
         run_helper(args)
 
-    # switch to medium tree directory
-    cwd = os.getcwd()
-    os.chdir(maindir)
+    # media.X structures FIXME
+    mediavendor = yml['vendor'] + ' - ' + product_base_dir
+    mediaident = product_base_dir
+    # FIXME: calculate from product provides
+    mediaproducts = [ yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1' ]
+    create_media_dir(maindir + '/' + 'media.1', mediavendor, mediaident, mediaproducts)
 
-    # media.X structures
-    os.mkdir('media.1') # we do only support seperate media atm
-    with open('media.1/media', 'w') as media_file:
-        media_file.write(yml['vendor'] + ' - ' + product_base_dir + "\n")
-        media_file.write(product_base_dir + "\n") # BUILD_ID is equal to our product_base_dir atm
-        media_file.write("1\n") # we only have first media as we only support seperate media atm
-    # FIXME: read product name, version and release from the included product file(s)
-    with open('media.1/products', 'w') as products_file:
-        products_file.write('/ ' + yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']))
-        products_file.write("-1\n")
-
-    # Create CHECKSUMS file
-    with open('CHECKSUMS', 'a') as chksums_file:
-        for subdir in ('boot', 'EFI', 'docu', 'media.1'):
-            if not os.path.exists(subdir):
-                continue
-            for root, dirnames, filenames in os.walk(subdir):
-                for name in filenames:
-                    run_helper([chksums_tool, root + '/' + name], stdout=chksums_file)
-    os.chdir(cwd)
+    # CHECKSUMS file
+    create_checksums_file(maindir)
 
     # repodata/appdata
     # currently not supported in ALP?
@@ -335,6 +320,29 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
                ]
         with open(rpmdir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
+
+# create media info files
+def create_media_dir(maindir, vendorstr, identstr, products):
+    media1dir = maindir + '/' + 'media.1';
+    os.mkdir(media1dir) # we do only support seperate media atm
+    with open(media1dir + '/media', 'w') as media_file:
+        media_file.write(vendorstr + "\n")
+        media_file.write(identstr + "\n")
+        media_file.write("1\n")
+    if products:
+        with open(media1dir + '/products', 'w') as products_file:
+            for productname in products: 
+                products_file.write('/ ' + productname + "\n")
+
+def create_checksums_file(maindir):
+    with open(maindir + 'CHECKSUMS', 'a') as chksums_file:
+       for subdir in ('boot', 'EFI', 'docu', 'media.1'):
+           if not os.path.exists(maindir + '/' + subdir):
+               continue
+           for root, dirnames, filenames in os.walk(maindir + '/' + subdir):
+               for name in filenames:
+                   relname = os.path.relpath(root + '/' + name, maindir)
+                   run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
 
 # create a fake entry from an updateinfo package spec
 def create_updateinfo_entry(pkgentry):
