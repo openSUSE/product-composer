@@ -748,17 +748,17 @@ asciidoc.install(2);
 <div class="paragraph"><p>It is used to generate product rpm repositories out of a pool of rpms.
 Unlike product builder, these can also be used to ship maintenance updates.</p></div>
 <div class="paragraph"><p>Currently it supports:
- - processing based on a list of rpm package names.
-   product compose is not take care of dependencies atm.
- - providing matching source and/or debug packages for picked rpm packages.
-   These can be either included into main repository or prepared via
-   extra repositories
- - optional filters for architectures, versions and flavors can be defined
- - it can provide either just a single rpm of a given name or all of them
- - it can post process updateinfo data
- - post processing to provide various rpm meta data generation</p></div>
+- processing based on a list of rpm package names.
+  product compose is not take care of dependencies atm.
+- providing matching source and/or debug packages for picked rpm packages.
+  These can be either included into main repository or prepared via
+  extra repositories
+- optional filters for architectures, versions and flavors can be defined
+- it can provide either just a single rpm of a given name or all of them
+- it can post process updateinfo data
+- post processing to provide various rpm meta data generation</p></div>
 <div class="paragraph"><p>Not yet implemented:
- - create bootable iso files</p></div>
+- create bootable iso files</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -774,9 +774,9 @@ before starting the build.</p></div>
 <div class="sectionbody">
 <div class="paragraph"><p>You will require OBS 2.11 or later.</p></div>
 <div class="paragraph"><p>Create a new repository with any name. Either in a new or existing project.
- - The product-composer package must be available in any repository
-   listed in the path elements.
- - All scheduler architectures where packages are taken from must be listed.</p></div>
+- The product-composer package must be available in any repository
+  listed in the path elements.
+- All scheduler architectures where packages are taken from must be listed.</p></div>
 <div class="paragraph"><p>Your build description file may have any name, but must have a .productcompose
 suffix.</p></div>
 <div class="paragraph"><p>The build type for the repository must be set to</p></div>
@@ -833,7 +833,14 @@ Use this switch to continue. The missing packages are
 still listed in the build log.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_flavors">5.2.3. flavors</h4>
+<h4 id="_hide_flavor_in_product_directory_name">5.2.3. hide_flavor_in_product_directory_name</h4>
+<div class="paragraph"><p>The flavor name is by default part of the directory
+name of the build result. This can be disabled,
+when each flavor has a different arch list. Otherwise
+conflicts can happen.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_flavors">5.2.4. flavors</h4>
 <div class="paragraph"><p>Flavors can be defined with any name. These can be
 used to build multiple media from one build description.</p></div>
 <div class="paragraph"><p>Each flavor may define an own architecture list.</p></div>
@@ -842,15 +849,15 @@ used to build multiple media from one build description.</p></div>
 to enable the build.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_packages">5.2.4. packages</h4>
+<h4 id="_packages">5.2.5. packages</h4>
 <div class="paragraph"><p>The packages list lists rpm names to be put on the medium.</p></div>
 <div class="paragraph"><p>There is usually one master list and in addition there
 can be addional optional lists.</p></div>
-<div class="paragraph"><p>The additional list can be filter by flavors and/or
+<div class="paragraph"><p>The additional lists can be filtered by flavors and/or
 architectures.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_unpack_packages">5.2.5. unpack_packages</h4>
+<h4 id="_unpack_packages">5.2.6. unpack_packages</h4>
 <div class="paragraph"><p>The unpack_packages section can be used in the same way
 as the packages section.</p></div>
 <div class="paragraph"><p>The difference is that not the rpm itself is put
@@ -906,6 +913,13 @@ be extended by a &gt;, &gt;=, =, &lt;, &#8656; operator to specify
 specific versions.</p></div>
 <div class="paragraph"><p>The package list can be valid global or for specific flavors
 or architectures only.</p></div>
+<div class="paragraph"><p>The syntax is rpm like</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><code>[EPOCH:]VERSION[-RELEASE]</code></pre>
+</div></div>
+<div class="paragraph"><p>So an epoch or a release can be specified optional. Otherwise
+any epoch or release is qualified.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_product_compose_schema">5.3.7. product_compose_schema</h4>
@@ -951,7 +965,7 @@ openSUSE or SUSE. It is used by the install stack.</p></div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2023-11-30 15:49:31 CET
+ 2023-12-04 16:19:48 CET
 </div>
 </div>
 </body>

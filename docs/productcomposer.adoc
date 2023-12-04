@@ -12,18 +12,18 @@ It is used to generate product rpm repositories out of a pool of rpms.
 Unlike product builder, these can also be used to ship maintenance updates.
 
 Currently it supports:
- - processing based on a list of rpm package names.
-   product compose is not take care of dependencies atm.
- - providing matching source and/or debug packages for picked rpm packages.
-   These can be either included into main repository or prepared via
-   extra repositories
- - optional filters for architectures, versions and flavors can be defined
- - it can provide either just a single rpm of a given name or all of them
- - it can post process updateinfo data
- - post processing to provide various rpm meta data generation
+- processing based on a list of rpm package names.
+  product compose is not take care of dependencies atm.
+- providing matching source and/or debug packages for picked rpm packages.
+  These can be either included into main repository or prepared via
+  extra repositories
+- optional filters for architectures, versions and flavors can be defined
+- it can provide either just a single rpm of a given name or all of them
+- it can post process updateinfo data
+- post processing to provide various rpm meta data generation
 
 Not yet implemented:
- - create bootable iso files
+- create bootable iso files
 
 == Design
 
@@ -36,9 +36,9 @@ before starting the build.
 You will require OBS 2.11 or later.
 
 Create a new repository with any name. Either in a new or existing project.
- - The product-composer package must be available in any repository
-   listed in the path elements.
- - All scheduler architectures where packages are taken from must be listed.
+- The product-composer package must be available in any repository
+  listed in the path elements.
+- All scheduler architectures where packages are taken from must be listed.
 
 Your build description file may have any name, but must have a .productcompose
 suffix.
