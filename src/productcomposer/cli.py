@@ -231,7 +231,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     mediaident = product_base_dir
     # FIXME: calculate from product provides
     mediaproducts = [ yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1' ]
-    create_media_dir(maindir + '/' + 'media.1', mediavendor, mediaident, mediaproducts)
+    create_media_dir(maindir, mediavendor, mediaident, mediaproducts)
 
     # CHECKSUMS file
     create_checksums_file(maindir)
@@ -328,7 +328,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
 # create media info files
 def create_media_dir(maindir, vendorstr, identstr, products):
-    media1dir = maindir + '/' + 'media.1';
+    media1dir = maindir + '/' + 'media.1'
     os.mkdir(media1dir) # we do only support seperate media atm
     with open(media1dir + '/media', 'w') as media_file:
         media_file.write(vendorstr + "\n")
@@ -340,7 +340,7 @@ def create_media_dir(maindir, vendorstr, identstr, products):
                 products_file.write('/ ' + productname + "\n")
 
 def create_checksums_file(maindir):
-    with open(maindir + 'CHECKSUMS', 'a') as chksums_file:
+    with open(maindir + '/CHECKSUMS', 'a') as chksums_file:
        for subdir in ('boot', 'EFI', 'docu', 'media.1'):
            if not os.path.exists(maindir + '/' + subdir):
                continue
@@ -594,7 +594,7 @@ def entry_qualifies(entry, arch, name, op, epoch, version, release):
     if name and tags['name'] != name:
         return False
 
-    if args and tags['arch'] != arch:
+    if arch and tags['arch'] != arch:
         if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
             return False
 
