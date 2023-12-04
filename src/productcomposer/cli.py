@@ -242,11 +242,13 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     os.chdir(cwd)
 
     # repodata/appdata
-    if os.path.exists("/usr/bin/openSUSE-appstream-process"):
-        args = [ "/usr/bin/openSUSE-appstream-process",
-                 rpmdir, rpmdir + "/repodata" ]
-        run_helper(args)
+    # currently not supported in ALP?
+#   if os.path.exists("/usr/bin/openSUSE-appstream-process"):
+#       args = [ "/usr/bin/openSUSE-appstream-process",
+#                rpmdir, rpmdir + "/repodata" ]
+#       run_helper(args)
 
+    # repodata/*susedata*
     if os.path.exists("/usr/bin/add_product_susedata"):
         args = [ "/usr/bin/add_product_susedata",
                  '-u', '-k', kwdfile, '-p', '-e', '/usr/share/doc/packages/eulas',
