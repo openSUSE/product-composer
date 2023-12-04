@@ -286,6 +286,9 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         os.unlink(rpmdir + '/updateinfo.xml')
 
     # Add License File and create extra .license directory
+    if os.path.exists(rpmdir + "/license.tar.gz"):
+        run_helper(['gzip', '-d', rpmdir + "/license.tar.gz"],
+                   failmsg="Uncompress of license.tar.gz failed")
     if os.path.exists(rpmdir + "/license.tar"):
         licensedir = rpmdir + ".license"
         if not os.path.exists(licensedir):
@@ -295,10 +298,10 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
         args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
-                 rpmdir + 'license.tar',
+                 rpmdir + '/license.tar',
                  rpmdir + '/repodata' ]
         run_helper(args, failmsg="add license.tar to repo meta data")
-        os.unlink(rpmdir + 'license.tar')
+        os.unlink(rpmdir + '/license.tar')
 
     # detached signature
     args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
