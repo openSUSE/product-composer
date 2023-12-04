@@ -2,12 +2,8 @@
 
 """
 from argparse import ArgumentParser
-from inspect import getfullargspec
-from os import environ
 
 from . import __version__
-#from .api import parse
-from .core.config import config
 from .core.logger import logger
 
 from xml.etree import ElementTree as ET
