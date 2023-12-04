@@ -369,12 +369,12 @@ def create_updateinfo_packagefilter(yml, arch, flavor):
             package_filter[name].append(package)
     return package_filter
 
-def entry_matches_updateinfo_packagefilter(entry, package_filter):
+def entry_matches_updateinfo_packagefilter(entry, arch, package_filter):
     name = entry['tags']['name']
     if entry['tags']['name'] in package_filter:
         for pfspec in package_filter[name]:
             pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
-            if entry_qualifies(entry, None, pfname, pfop, pfepoch, pfversion, pfrelease):
+            if entry_qualifies(entry, arch, pfname, pfop, pfepoch, pfversion, pfrelease):
                 return True
     return False
 
@@ -415,7 +415,7 @@ def process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir):
                 # check if we should have this package
                 if name in package_filter:
                     entry = create_updateinfo_entry(pkgentry)
-                    if entry_matches_updateinfo_packagefilter(entry, package_filter):
+                    if entry_matches_updateinfo_packagefilter(entry, arch, package_filter):
                         warn("package " + entry_nvra(entry) + " not found")
                         missing_package = True
 
