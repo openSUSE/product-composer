@@ -91,6 +91,7 @@ def warn(msg, details=None):
 def note(msg):
     print(msg)
 
+
 def build(args):
     f = args.flavor.split('.')
     flavor = None
@@ -137,7 +138,7 @@ def parse_yaml(filename, flavor, default_arch):
         if 'architectures' in f:
             archlist = f['architectures']
 
-    if archlist == None:
+    if archlist is None:
       archlist = [ default_arch ]
 
     return yml, archlist
@@ -150,8 +151,7 @@ def get_product_dir(yml, flavor, archlist, release):
     if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
         name += "-" + flavor
     if archlist:
-        name += "-"
-        name += "-".join(archlist)
+        name += "-" + "-".join(archlist)
     if release:
         name += "-Build" + str(release)
     if '/' in name:
@@ -252,40 +252,14 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # repodata/*susedata*
     if os.path.exists("/usr/bin/add_product_susedata"):
-        args = [ "/usr/bin/add_product_susedata",
-                 '-u', '-k', kwdfile, '-p', '-e', '/usr/share/doc/packages/eulas',
+        args = [ "/usr/bin/add_product_susedata", '-u',
+                 '-k', kwdfile, '-p',
+                 '-e', '/usr/share/doc/packages/eulas',
                  '-d', rpmdir ]
         run_helper(args)
 
-    # Adding updateinfo.xml
-    uitemp = None
-    for ufn, u in sorted(local_updateinfos.items()):
-        note("Add updateinfo " + ufn)
-        for update in u.findall('update'):
-            needed=False
-            parent = update.findall('pkglist')[0].findall('collection')[0]
-            for pkgentry in parent.findall('package'):
-                src = pkgentry.get('src')
-                if os.path.exists(rpmdir + '/' + src):
-                    needed=True
-                else:
-                    # FIXME: special handling for debug and src rpms are needed
-                    parent.remove(pkgentry)
-
-            if needed:
-                if not uitemp:
-                    uitemp = open(rpmdir + '/updateinfo.xml', 'x')
-                    uitemp.write("<updates>\n  ")
-
-                uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
-    if uitemp:
-        uitemp.write('</updates>')
-        uitemp.close()
-        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
-                 rpmdir + '/updateinfo.xml',
-                 rpmdir + '/repodata' ]
-        run_helper(args, failmsg="add updateinfo.xml to repo meta data")
-        os.unlink(rpmdir + '/updateinfo.xml')
+    if local_updateinfos:
+        process_updateinfos(rpmdir, debugdir, sourcedir, yml, arch, flavor)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
@@ -359,6 +333,98 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         with open(rpmdir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
+# create a fake entry from an updateinfo package spec
+def create_updateinfo_entry(pkgentry):
+    tags = {}
+    for tag in 'name', 'epoch', 'version', 'release', 'arch':
+        tags[tag] = pkgentry.get(tag)
+    return { "tags": tags }
+
+def create_updateinfo_packagefilter(yml, arch, flavor):
+    package_filter = {}
+    for package in create_package_list(yml['packages'], arch, flavor):
+        name = package
+        match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+        if match:
+            name = match.group(1)
+        if name not in package_filter:
+            package_filter[name] = [ package ]
+        else:
+            package_filter[name].append(package)
+    return package_filter
+
+def entry_matches_updateinfo_packagefilter(entry, package_filter):
+    name = entry['tags']['name']
+    if entry['tags']['name'] in package_filter:
+        for pfspec in package_filter[name]:
+            pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
+            if entry_qualifies(entry, None, pfname, pfop, pfepoch, pfversion, pfrelease):
+                return True
+    return False
+
+# Add updateinfo.xml to metadata
+def process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir):
+    missing_package = False
+    package_filter = create_updateinfo_packagefilter(yml, arch, flavor)
+    uitemp = None
+
+    for ufn, u in sorted(local_updateinfos.items()):
+        note("Add updateinfo " + ufn)
+        for update in u.findall('update'):
+            needed = False
+            parent = update.findall('pkglist')[0].findall('collection')[0]
+
+            for pkgentry in parent.findall('package'):
+                src = pkgentry.get('src')
+                if os.path.exists(rpmdir + '/' + src):
+                    needed = True
+                    continue
+                if debugdir and os.path.exists(debugdir + '/' + src):
+                    needed = True
+                    continue
+                if sourcedir and os.path.exists(sourcedir + '/' + src):
+                    needed = True
+                    continue
+                name = pkgentry.get('name')
+                pkgarch = pkgentry.get('arch')
+
+                # do not insist on debuginfo or source packages
+                if pkgarch == 'src' or pkgarch == 'nosrc':
+                    parent.remove(pkgentry)
+                    continue
+                if name.endswith('-debuginfo') or name.endswith('-debugsource'):
+                    parent.remove(pkgentry)
+                    continue
+
+                # check if we should have this package
+                if name in package_filter:
+                    entry = create_updateinfo_entry(pkgentry)
+                    if entry_matches_updateinfo_packagefilter(entry, package_filter):
+                        warn("package " + entry_nvra(entry) + " not found")
+                        missing_package = True
+
+                parent.remove(pkgentry)
+
+            if not needed:
+                continue
+
+            if not uitemp:
+                uitemp = open(rpmdir + '/updateinfo.xml', 'x')
+                uitemp.write("<updates>\n  ")
+            uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
+
+    if uitemp:
+        uitemp.write("</updates>\n")
+        uitemp.close()
+        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
+                 rpmdir + '/updateinfo.xml',
+                 rpmdir + '/repodata' ]
+        run_helper(args, failmsg="add updateinfo.xml to repo meta data")
+        os.unlink(rpmdir + '/updateinfo.xml')
+
+    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+        die('Abort due to missing packages')
+
 def post_createrepo(rpmdir, product_name, content=None):
     distroname="testgin"        # FIXME
 
@@ -385,9 +451,9 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
         rpm = lookup_rpm(arch, package)
         if not rpm:
-           warn("package " + package + " not found")
-           missing_package = True
-           continue
+            warn("package " + package + " not found")
+            missing_package = True
+            continue
 
         tempdir = rpmdir + "/temp"
         os.mkdir(tempdir)
@@ -407,16 +473,33 @@ def create_package_list(yml, arch, flavor):
     for entry in list(yml):
         if type(entry) == dict:
             if 'flavors' in entry:
-                if not flavor in entry['flavors']:
+                if flavor not in entry['flavors']:
                     continue
             if 'architectures' in entry:
-                if not arch in entry['architectures']:
+                if arch not in entry['architectures']:
                     continue
             packages += entry['packages']
         else:
             packages.append(entry)
 
     return packages
+
+def split_package_spec(pkgspec):
+    name = pkgspec
+    match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+    if match:
+        name    = match.group(1)
+        op      = match.group(2)
+        epoch = '0'
+        version = match.group(3)
+        release = None
+        if ':' in version:
+            (epoch, version) = version.split(':', 2)
+        if '-' in version:
+            (version, release) = version.rsplit('-', 2)
+        return (name, op, epoch, version, release)
+    return (name, None, None, None, None)
+
 
 def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
     os.mkdir(rpmdir)
@@ -431,22 +514,7 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
 
     missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
-        name = package
-        op = epoch = version = release = None
-
-        # Is the user requesting a specific version?
-        match = re.match('([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-        if match:
-            name    = match.group(1)
-            op      = match.group(2)
-            epoch = '0'
-            version = match.group(3)
-            release = None
-            if ':' in version:
-                (epoch, version) = version.split(':', 2)
-            if '-' in version:
-                (version, release) = version.rsplit('-', 2)
-
+        name, op, epoch, version, release = split_package_spec(package)
         if name not in local_rpms:
             warn("package " + package + " not found")
             missing_package = True
@@ -513,7 +581,10 @@ def link_entry_into_dir(entry, directory):
 def entry_qualifies(entry, arch, name, op, epoch, version, release):
     tags = entry['tags']
 
-    if tags['arch'] != arch:
+    if name and tags['name'] != name:
+        return False
+
+    if args and tags['arch'] != arch:
         if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
             return False
 
@@ -597,8 +668,9 @@ def scan_rpms(directory, yml):
                 if not tags['sourcerpm']:
                     tags['arch'] = 'nosrc' if tags['nosource'] or tags['nopatch'] else 'src'
 
-                item = { 'filename': fname, 'tags': tags}
+                item = { 'filename': fname, 'tags': tags }
 
+                # add entry to local_rpms hash
                 name = tags['name']
                 if not name in local_rpms:
                     local_rpms[name] = []
