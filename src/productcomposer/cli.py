@@ -14,6 +14,8 @@ import yaml
 
 from . import __version__
 from .core.logger import logger
+from .wrappers import CreaterepoWrapper
+from .wrappers import ModifyrepoWrapper
 
 
 __all__ = "main",
@@ -29,7 +31,7 @@ tree_report = {}        # hashed via file name
 
 # hardcoded defaults for now
 chksums_tool = 'sha512sum'
-repomd_checksum_parameter = '--checksum=sha512'
+
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -281,10 +283,12 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
-        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
-                 rpmdir + '/license.tar',
-                 rpmdir + '/repodata' ]
-        run_helper(args, failmsg="add license.tar to repo meta data")
+
+        mr = ModifyrepoWrapper(
+            file=os.path.join(rpmdir, "license.tar"),
+            directory=os.path.join(rpmdir, "repodata"),
+        )
+        mr.run_cmd()
         os.unlink(rpmdir + '/license.tar')
 
     # detached signature
@@ -447,31 +451,34 @@ def process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir):
     if uitemp:
         uitemp.write("</updates>\n")
         uitemp.close()
-        args = [ 'modifyrepo', '--unique-md-filenames', repomd_checksum_parameter,
-                 rpmdir + '/updateinfo.xml',
-                 rpmdir + '/repodata' ]
-        run_helper(args, failmsg="add updateinfo.xml to repo meta data")
+
+        mr = ModifyrepoWrapper(
+            file=os.path.join(rpmdir, "updateinfo.xml"),
+            directory=os.path.join(rpmdir, "repodata"),
+        )
+        mr.run_cmd()
+
         os.unlink(rpmdir + '/updateinfo.xml')
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
 
-def post_createrepo(rpmdir, product_name, content=None):
-    distroname="testgin"        # FIXME
 
-    args = [ 'createrepo', '--unique-md-filenames', '--excludes=boot', repomd_checksum_parameter,
-             '--no-database' ]
-    if distroname:
-        args.append("--distro=" + distroname)
-    if False:
-        args.append("--split")
-        args.append("--baseurl=media://")
-    if content:
-        args.append("--content=" + content)
-    if False:
-        args.append("--content=pool")
-    args.append('.')
-    run_helper(args, cwd=rpmdir)
+def post_createrepo(rpmdir, product_name, content=None):
+    # FIXME
+    distroname = "testgin"
+
+    # FIXME
+    content = list(content) if content else []
+    # content.append("pool"]
+
+    cr = CreaterepoWrapper(directory=".")
+    cr.distro = distroname
+    # cr.split = True
+    # cr.baseurl = "media://"
+    cr.content = content
+    cr.excludes = ["boot"]
+    cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
 
 def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
