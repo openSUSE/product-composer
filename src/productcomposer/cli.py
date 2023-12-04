@@ -87,7 +87,7 @@ def die(msg, details=None):
     raise SystemExit(1)
 
 def warn(msg, details=None):
-    print("WARNING " + msg)
+    print("WARNING: " + msg)
     if details:
         print(details)
 
@@ -465,7 +465,8 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
 
     missing_package = False
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
-        rpm = lookup_rpm(arch, package)
+        name, op, epoch, version, release = split_package_spec(package)
+        rpm = lookup_rpm(arch, name, op, epoch, version, release)
         if not rpm:
             warn("package " + package + " not found")
             missing_package = True
@@ -525,12 +526,6 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
     missing_package = None
     for package in create_package_list(yml['packages'], arch, flavor):
         name, op, epoch, version, release = split_package_spec(package)
-        if name not in local_rpms:
-            warn("package " + package + " not found")
-            missing_package = True
-            continue
-
-        # We may want to put multiple candidates on the medium
         if singlemode:
             rpm = lookup_rpm(arch, name, op, epoch, version, release)
             rpms = [rpm] if rpm else []
@@ -547,7 +542,7 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
 
             match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
             if not match:
-                warn("rpm package " + entry_nvra(rpm) + " does not have a source rpm")
+                warn("package " + entry_nvra(rpm) + " does not have a source rpm")
                 continue
 
             source_package_name    = match.group(1)
