@@ -100,12 +100,8 @@ def build(args):
     flavor = None
     if f[0] != '':
         flavor = f[0]
-    if len(f) == 2:
-        default_arch = f[1]
-    else:
-        default_arch = 'x86_64'
 
-    yml, archlist = parse_yaml(args.filename, flavor, default_arch)
+    yml, archlist = parse_yaml(args.filename, flavor)
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -123,7 +119,7 @@ def build(args):
 def verify(args):
     parse_yaml(args.filename, args.flavor)
 
-def parse_yaml(filename, flavor, default_arch):
+def parse_yaml(filename, flavor):
 
     with open(filename, 'r') as file:
         yml = yaml.safe_load(file)
@@ -134,6 +130,8 @@ def parse_yaml(filename, flavor, default_arch):
         die("Unsupported product composer schema: " + yml['product_compose_schema'])
 
     archlist = None
+    if 'architectures' in yml:
+        archlist = yml['architectures']
     if flavor:
         if 'flavors' not in yml or flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
@@ -142,7 +140,7 @@ def parse_yaml(filename, flavor, default_arch):
             archlist = f['architectures']
 
     if archlist is None:
-        archlist = [ default_arch ]
+        die("No architecture defined")
 
     return yml, archlist
 
@@ -154,7 +152,10 @@ def get_product_dir(yml, flavor, archlist, release):
     if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
         name += "-" + flavor
     if archlist:
-        name += "-" + "-".join(archlist)
+        visible_archs = archlist
+        if 'local' in visible_archs:
+            visible_archs.remove('local')
+        name += "-" + "-".join(visible_archs)
     if release:
         name += "-Build" + str(release)
     if '/' in name:
@@ -180,17 +181,21 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     maindir = outdir + '/' + product_base_dir
     rpmdir = maindir # we may offer to set it up in sub directories
+    if not os.path.exists(rpmdir):
+        os.mkdir(rpmdir)
 
     sourcedir = debugdir = None
 
     if "source" in yml:
         if yml['source'] == 'split':
             sourcedir = outdir + '/' + product_base_dir + '-Source'
+            os.mkdir(sourcedir)
         else:
             sourcedir = maindir
     if "debug" in yml:
         if yml['debug'] == 'split':
             debugdir = outdir + '/' + product_base_dir + '-Debug'
+            os.mkdir(debugdir)
         else:
             debugdir = maindir
 
@@ -513,12 +518,6 @@ def split_package_spec(pkgspec):
 
 
 def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
-    os.mkdir(rpmdir)
-    if debugdir:
-        os.mkdir(debugdir)
-    if sourcedir:
-        os.mkdir(sourcedir)
-
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
