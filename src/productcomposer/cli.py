@@ -64,12 +64,12 @@ def main(argv=None) -> int:
         # No subcommand was specified.
         print("No filename")
         parser.print_help()
-        raise SystemExit(1)
+        die(None)
     if not args.out:
         # No subcommand was specified.
         print("No output directory given")
         parser.print_help()
-        raise SystemExit(1)
+        die(None)
 
     #
     # Invoke the function
@@ -77,6 +77,17 @@ def main(argv=None) -> int:
     args.func(args)
     return 0
  
+def die(msg, details=None):
+    if msg:
+        print("ERROR: " + msg)
+    if details:
+        print(details)
+    raise SystemExit(1)
+
+def warn(msg, details=None):
+    print("WARNING " + msg)
+    if details:
+        print(details)
 
 def build(args):
     f = args.flavor.split('.')
@@ -111,22 +122,21 @@ def parse_yaml(filename, flavor, default_arch):
     with open(filename, 'r') as file:
         yml = yaml.safe_load(file)
 
+    if 'product_compose_schema' not in yml:
+        die('missing product composer schema')
     if yml['product_compose_schema'] != 0:
-        print(yml['product_compose_schema'])
-        print("Unsupported product composer schema")
-        raise SystemExit(1)
+        die("Unsupported product composer schema: " + yml['product_compose_schema'])
 
     archlist = None
     if flavor:
-        if not yml['flavors'] or flavor not in yml['flavors']:
-            print("ERROR: Flavor not found: ", flavor)
-            raise SystemExit(1)
+        if not 'flavors' not in yml or flavor not in yml['flavors']:
+            die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
         if 'architectures' in f:
             archlist = f['architectures']
 
     if archlist == None:
-      archlist = [default_arch]
+      archlist = [ default_arch ]
 
     return yml, archlist
 
@@ -143,8 +153,7 @@ def get_product_dir(yml, flavor, archlist, release):
     if release:
         name += "-Build" + str(release)
     if '/' in name:
-        print("Illegal product name")
-        raise SystemExit(1)
+        die("Illegal product name")
     return name
 
 
@@ -153,12 +162,11 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
         stdout=subprocess.PIPE
     popen = subprocess.Popen(args, stdout=stdout, cwd=cwd)
     if popen.wait():
+        output = popen.stdout.read()
         if failmsg:
-            print("ERROR: Failed to " + failmsg)
+            die("Failed to " + failmsg, details=output)
         else:
-            print("ERROR: Failed to run" + args[0])
-        print(popen.stdout.read())
-        raise SystemExit(1)
+            die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
 def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
@@ -182,7 +190,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             debugdir = maindir
 
     for arch in archlist:
-        setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir, sourcedir)
+        link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir, sourcedir)
 
     for arch in archlist:
         unpack_meta_rpms(rpmdir, yml, arch, flavor, medium=1) # only for first medium am
@@ -257,9 +265,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         args = [ 'tar', 'xf', rpmdir + "/license.tar", '-C', licensedir ]
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
-            print("ERROR: No license.txt extracted")
-            print(output)
-            raise SystemExit(1)
+            die("No license.txt extracted", details=output)
         args = [ 'modifyrepo', '--unique-md-filenames', '--checksum=sha256',
                  rpmdir + 'license.tar',
                  rpmdir + '/repodata' ]
@@ -319,7 +325,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
 def post_createrepo(rpmdir, product_name, content=None):
-    distroname="testgin"
+    distroname="testgin"        # FIXME
 
     args = [ 'createrepo', '--unique-md-filenames', '--excludes=boot', '--checksum=sha256',
              '--no-database' ]
@@ -344,10 +350,9 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     for package in create_package_list(yml['unpack_packages'], arch, flavor):
         rpm = lookup_rpm(arch, package)
         if not rpm:
-            if 'ignore_missing_packages' in yml['build_options']:
-               print("WARNING: package " + package + " not found")
-               missing_package = True
-               continue
+           warn("package " + package + " not found")
+           missing_package = True
+           continue
 
         tempdir = rpmdir + "/temp"
         os.mkdir(tempdir)
@@ -360,8 +365,7 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
         shutil.rmtree(tempdir)
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        print('ERROR: Abort due to missing packages')
-        raise SystemExit(1)
+        die('Abort due to missing packages')
 
 def create_package_list(yml, arch, flavor):
     packages = []
@@ -379,7 +383,7 @@ def create_package_list(yml, arch, flavor):
 
     return packages
 
-def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
+def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
     os.mkdir(rpmdir)
     if debugdir:
         os.mkdir(debugdir)
@@ -409,7 +413,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
                 (version, release) = version.rsplit('-', 2)
 
         if name not in local_rpms:
-            print("WARNING: package " + package + " not found")
+            warn("package " + package + " not found")
             missing_package = True
             continue
 
@@ -421,7 +425,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
             rpms = lookup_all_rpms(arch, name, op, epoch, version, release)
 
         if not rpms:
-            print("WARNING: package " + package + " not found for " + arch)
+            warn("package " + package + " not found for " + arch)
             missing_package = True
             continue
 
@@ -430,7 +434,7 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
 
             match = re.match('^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
             if not match:
-                print("WARNING: rpm package " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'] + " does not have a source rpm")
+                warn("rpm package " + entry_nvra(rpm) + " does not have a source rpm")
                 continue
 
             source_package_name    = match.group(1)
@@ -444,8 +448,8 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
                 if srpm:
                     link_entry_into_dir(srpm, sourcedir)
                 else:
-                    print("WARNING: source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found")
-                    print("         required by  " + rpm['tags']['name'] + "-" + rpm['tags']['version'] + "-" + rpm['tags']['release'])
+                    details="         required by  " + entry_nvra(rpm)
+                    warn("source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found", details=details)
                     missing_package = True
 
             if debugdir:
@@ -453,13 +457,12 @@ def setup_rpms_to_install(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=No
                 if drpm:
                     link_entry_into_dir(drpm, debugdir)
 
-                drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', None, rpm['tags']['version'], rpm['tags']['release'])
+                drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', rpm['tags']['epoch'], rpm['tags']['version'], rpm['tags']['release'])
                 if drpm:
                     link_entry_into_dir(drpm, debugdir)
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        print('ERROR: Abort due to missing packages')
-        raise SystemExit(1)
+        die('Abort due to missing packages')
 
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
@@ -471,7 +474,7 @@ def link_file_into_dir(filename, directory):
 def link_entry_into_dir(entry, directory):
     link_file_into_dir(entry['filename'], directory + '/' + entry['tags']['arch'])
 
-def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
+def entry_qualifies(entry, arch, name, op, epoch, version, release):
     tags = entry['tags']
 
     if tags['arch'] != arch:
@@ -492,13 +495,17 @@ def _lookup_rpm_is_qualifing(entry, arch, name, op, epoch, version, release):
 
     return True
 
+def entry_nvra(entry):
+    tags = entry['tags']
+    return tags['name'] + "-" + tags['version'] + "-" + tags['release'] + "." + tags['arch']
+
 def lookup_all_rpms(arch, name, op=None, epoch=None, version=None, release=None):
     if not name in local_rpms:
         return []
 
     rpms = []
     for lrpm in local_rpms[name]:
-        if _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
+        if entry_qualifies(lrpm, arch, name, op, epoch, version, release):
             rpms.append(lrpm)
     return rpms
 
@@ -508,7 +515,7 @@ def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
 
     candidate = None
     for lrpm in local_rpms[name]:
-        if not _lookup_rpm_is_qualifing(lrpm, arch, name, op, epoch, version, release):
+        if not entry_qualifies(lrpm, arch, name, op, epoch, version, release):
             continue
 
         # first hit?
@@ -542,7 +549,7 @@ def scan_rpms(directory, yml):
   #          continue
         print("scanning: " + project + "/" + repository)
         for filename in files:
-            fname = os.path.join(dirpath,filename)
+            fname = os.path.join(dirpath, filename)
             if arch == 'updateinfo':
                 local_updateinfos[fname] = ET.parse(fname).getroot()
                 continue
@@ -573,3 +580,5 @@ if __name__ == "__main__":
         raise  # print stack trace
     else:
         raise SystemExit(status)
+
+# vim: sw=4 et
