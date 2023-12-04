@@ -131,7 +131,7 @@ def parse_yaml(filename, flavor, default_arch):
 
     archlist = None
     if flavor:
-        if not 'flavors' not in yml or flavor not in yml['flavors']:
+        if 'flavors' not in yml or flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
         if 'architectures' in f:
