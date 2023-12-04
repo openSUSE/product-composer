@@ -52,7 +52,7 @@ The packages list lists rpm names to be put on the medium.
 There is usually one master list and in addition there
 can be addional optional lists.
 
-The additional list can be filter by flavors and/or 
+The additional lists can be filtered by flavors and/or 
 architectures.
 
 ==== unpack_packages
@@ -115,6 +115,13 @@ specific versions.
 
 The package list can be valid global or for specific flavors
 or architectures only.
+
+The syntax is rpm like
+
+ [EPOCH:]VERSION[-RELEASE]
+
+So an epoch or a release can be specified optional. Otherwise
+any epoch or release is qualified.
 
 ==== product_compose_schema
 
