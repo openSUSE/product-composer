@@ -207,6 +207,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         return
 
     # CHANGELOG file
+    # the tools read the subdirectory of the rpmdir from environment variable
+    os.environ['ROOT_ON_CD'] = '.'
     if os.path.exists("/usr/bin/mk_changelog"):
         args = [ "/usr/bin/mk_changelog", rpmdir ]
         run_helper(args)
