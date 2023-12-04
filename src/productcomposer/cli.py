@@ -78,7 +78,7 @@ def main(argv=None) -> int:
     #
     args.func(args)
     return 0
- 
+
 def die(msg, details=None):
     if msg:
         print("ERROR: " + msg)
