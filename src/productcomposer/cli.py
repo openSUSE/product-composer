@@ -85,6 +85,9 @@ def warn(msg, details=None):
     if details:
         print(details)
 
+def note(msg):
+    print(msg)
+
 def build(args):
     f = args.flavor.split('.')
     flavor = None
@@ -237,9 +240,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     # Adding updateinfo.xml
     uitemp = None
-    for ui in local_updateinfos:
-        print("Add updateinfo", ui)
-        u = ET.parse(ui).getroot()
+    for ufn, u in sorted(local_updateinfos.items()):
+        note("Add updateinfo " + ufn)
         for update in u.findall('update'):
             needed=False
             parent = update.findall('pkglist')[0].findall('collection')[0]
@@ -529,16 +531,13 @@ def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
     for lrpm in local_rpms[name]:
         if not entry_qualifies(lrpm, arch, name, op, epoch, version, release):
             continue
-
-        # first hit?
-        if candidate == None:
-            candidate = lrpm
-            continue
-        # version compare
-        tags = lrpm['tags']
-        ctags = candidate['tags']
-        if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (ctags['epoch'], ctags['version'], ctags['release'])) > 0:
-            candidate = lrpm
+        if candidate:
+            # version compare
+            tags = lrpm['tags']
+            ctags = candidate['tags']
+            if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (ctags['epoch'], ctags['version'], ctags['release'])) <= 0:
+                continue
+        candidate = lrpm
 
     return candidate
 
@@ -559,7 +558,7 @@ def scan_rpms(directory, yml):
   #      if not project+"/"+repository in yml['repositories']:
   #          print("Warning: local repo not listed in yml file: " + project + "/" + repository)
   #          continue
-        print("scanning: " + project + "/" + repository)
+        note("scanning: " + project + "/" + repository)
         for filename in files:
             fname = os.path.join(dirpath, filename)
             if arch == 'updateinfo':
@@ -569,18 +568,19 @@ def scan_rpms(directory, yml):
                 fd = os.open(fname, os.O_RDONLY)
                 h = ts.hdrFromFdno(fd)
                 os.close(fd)
-                rpm_object = {}
-                for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
-                    rpm_object[tag] = h[tag]
+                tags = {}
+                for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', 'nosource', 'nopatch':
+                    tags[tag] = h[tag]
 
-                if not rpm_object['sourcerpm']:
-                    rpm_object['arch'] = 'nosrc' if rpm_object['nosource'] or rpm_object['nopatch'] else 'src'
+                if not tags['sourcerpm']:
+                    tags['arch'] = 'nosrc' if tags['nosource'] or tags['nopatch'] else 'src'
 
-                item = { 'filename': fname, 'tags': rpm_object }
+                item = { 'filename': fname, 'tags': tags}
 
-                if not rpm_object['name'] in local_rpms:
-                    local_rpms[rpm_object['name']] = []
-                local_rpms[rpm_object['name']].append(item)
+                name = tags['name']
+                if not name in local_rpms:
+                    local_rpms[name] = []
+                local_rpms[name].append(item)
 
 if __name__ == "__main__":
     try:
