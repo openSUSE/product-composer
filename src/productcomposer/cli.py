@@ -214,6 +214,19 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         args = [ "/usr/bin/mk_listings", rpmdir ]
         run_helper(args)
 
+    # Create CHECKSUMS file
+    cwd = os.getcwd()
+    os.chdir(maindir)
+    tool = 'sha256sum'
+    with open('CHECKSUMS', 'a') as chksums_file:
+       for subdir in ('boot', 'EFI', 'docu', 'media.1'):
+           if not os.path.exists(subdir):
+               continue
+           for root, dirnames, filenames in os.walk(subdir):
+               for name in filenames:
+                   run_helper([tool, name], stdout=chksums_file)
+    os.chdir(cwd)
+
     # repodata/appdata
     if os.path.exists("/usr/bin/openSUSE-appstream-process"):
         args = [ "/usr/bin/openSUSE-appstream-process",
@@ -275,6 +288,8 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     # detached signature
     args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
     run_helper(args, failmsg="create detached signature")
+    args = [ '/usr/lib/build/signdummy', '-d', maindir + '/CHECKSUMS' ]
+    run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
     # detached pubkey
     args = [ '/usr/lib/build/signdummy', '-p', rpmdir + "/repodata/repomd.xml" ]
