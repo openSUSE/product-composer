@@ -482,6 +482,7 @@ def link_file_into_dir(filename, directory):
     if not os.path.exists(outname):
         os.link(filename, outname)
 
+
 def link_entry_into_dir(entry, directory):
     link_file_into_dir(entry['filename'], directory + '/' + entry['tags']['arch'])
 
@@ -565,21 +566,21 @@ def scan_rpms(directory, yml):
                 local_updateinfos[fname] = ET.parse(fname).getroot()
                 continue
             if filename.endswith('.rpm'):
-              fd = os.open(fname, os.O_RDONLY)
-              h = ts.hdrFromFdno(fd)
-              os.close(fd)
-              rpm_object = {}
-              for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
-                  rpm_object[tag] = h[tag]
+                fd = os.open(fname, os.O_RDONLY)
+                h = ts.hdrFromFdno(fd)
+                os.close(fd)
+                rpm_object = {}
+                for tag in 'name', 'version', 'release', 'epoch', 'arch', 'sourcerpm', 'nosource', 'nopatch':
+                    rpm_object[tag] = h[tag]
 
-              if not rpm_object['sourcerpm']:
-                  rpm_object['arch'] = 'nosrc' if rpm_object['nosource'] or rpm_object['nopatch'] else 'src'
+                if not rpm_object['sourcerpm']:
+                    rpm_object['arch'] = 'nosrc' if rpm_object['nosource'] or rpm_object['nopatch'] else 'src'
 
-              item = {'filename': fname, 'tags': rpm_object}
+                item = { 'filename': fname, 'tags': rpm_object }
 
-              if not rpm_object['name'] in local_rpms:
-                  local_rpms[rpm_object['name']] = []
-              local_rpms[rpm_object['name']].append(item)
+                if not rpm_object['name'] in local_rpms:
+                    local_rpms[rpm_object['name']] = []
+                local_rpms[rpm_object['name']].append(item)
 
 if __name__ == "__main__":
     try:
