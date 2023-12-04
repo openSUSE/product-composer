@@ -60,4 +60,7 @@ packages:
    - kernel-default-pae
 
  - kernel-default
+ # take only glibc packages newer than 2.38-9
+ # note: The release part is optionl. Epoch's could be specified with EPOCH: prefix
+ - glibc > 2.38-9
 
