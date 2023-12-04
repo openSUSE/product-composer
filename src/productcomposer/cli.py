@@ -371,7 +371,7 @@ def create_updateinfo_packagefilter(yml, arch, flavor):
 
 def entry_matches_updateinfo_packagefilter(entry, arch, package_filter):
     name = entry['tags']['name']
-    if entry['tags']['name'] in package_filter:
+    if name in package_filter:
         for pfspec in package_filter[name]:
             pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
             if entry_qualifies(entry, arch, pfname, pfop, pfepoch, pfversion, pfrelease):
