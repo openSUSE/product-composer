@@ -252,7 +252,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         run_helper(args)
 
     if local_updateinfos:
-        process_updateinfos(rpmdir, debugdir, sourcedir, yml, arch, flavor)
+        process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
