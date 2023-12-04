@@ -9,6 +9,7 @@ license = {file = "LICENSE"}
 requires-python = ">=3.11"
 dependencies = [
     "rpm",
+    "pydantic<2",
     "pyyaml",
 ]
 dynamic = ["version", "readme"]
