@@ -447,12 +447,12 @@ def post_createrepo(rpmdir, product_name, content=None):
     args = [ 'createrepo', '--unique-md-filenames', '--excludes=boot', repomd_checksum_parameter,
              '--no-database' ]
     if distroname:
-        args.append("--distro=\""+distroname+"\"")
+        args.append("--distro=" + distroname)
     if False:
         args.append("--split")
         args.append("--baseurl=media://")
     if content:
-        args.append("--content=\""+content+"\"")
+        args.append("--content=" + content)
     if False:
         args.append("--content=pool")
     args.append('.')
