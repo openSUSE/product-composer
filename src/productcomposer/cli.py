@@ -231,7 +231,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     # FIXME: read product name, version and release from the included product file(s)
     with open('media.1/products', 'w') as products_file:
         products_file.write('/ ' + yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']))
-        products_file.write('-1')
+        products_file.write("-1\n")
 
     # Create CHECKSUMS file
     with open('CHECKSUMS', 'a') as chksums_file:
