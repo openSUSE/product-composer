@@ -599,7 +599,7 @@ def add_entry_to_report(entry, directory):
     outname = directory + '/' + entry['tags']['arch'] + os.path.basename(entry['filename'])
     # first one wins, see link_file_into_dir
     if outname not in tree_report:
-        tree_report = entry
+        tree_report[outname] = entry
 
 def write_report_file(directory, outfile):
     root = ET.Element('report')
