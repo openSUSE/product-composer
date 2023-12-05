@@ -745,7 +745,7 @@ def read_cpeid(fname):
                 f = pf[idx]
                 v = pv[idx]
                 if v and f and (f & 14) == 8:
-                    return cpeidhexdecode(v)
+                    return cpeid_hexdecode(v)
             idx = idx + 1
     return None
 
