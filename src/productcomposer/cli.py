@@ -617,10 +617,10 @@ def write_report_file(directory, outfile):
             if tag == 'epoch' and tags[tag] == 0:
                 continue
             if tag == 'arch':
-                binary.set('binaryarch', tags[tag])
+                binary.set('binaryarch', str(tags[tag]))
             else:
-                binary.set(tag, tags[tag])
-        if entry['name'].endswith('-release'):
+                binary.set(tag, str(tags[tag]))
+        if tags['name'].endswith('-release'):
             cpeid = read_cpeid(entry['filename'])
             if cpeid:
                 binary.set('cpeid', cpeid)

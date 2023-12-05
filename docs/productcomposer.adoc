@@ -11,7 +11,7 @@ A lightweight success or product builder.
 It is used to generate product rpm repositories out of a pool of rpms.
 Unlike product builder, these can also be used to ship maintenance updates.
 
-Currently it supports:
+.Currently it supports:
 - processing based on a list of rpm package names.
   product compose is not take care of dependencies atm.
 - providing matching source and/or debug packages for picked rpm packages.
@@ -35,7 +35,7 @@ before starting the build.
 
 You will require OBS 2.11 or later.
 
-Create a new repository with any name. Either in a new or existing project.
+.Create a new repository with any name. Either in a new or existing project.
 - The product-composer package must be available in any repository
   listed in the path elements.
 - All scheduler architectures where packages are taken from must be listed.
