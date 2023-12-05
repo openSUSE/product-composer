@@ -596,7 +596,7 @@ def link_entry_into_dir(entry, directory):
     add_entry_to_report(entry, directory)
 
 def add_entry_to_report(entry, directory):
-    outname = directory + '/' + entry['tags']['arch'] + os.path.basename(entry['filename'])
+    outname = directory + '/' + entry['tags']['arch'] + '/' + os.path.basename(entry['filename'])
     # first one wins, see link_file_into_dir
     if outname not in tree_report:
         tree_report[outname] = entry
@@ -609,7 +609,7 @@ def write_report_file(directory, outfile):
         if not fn.startswith(directory):
             continue
         binary = ET.SubElement(root, 'binary')
-        binary.text = 'obs://' + fn[len(directory):]
+        binary.text = 'obs://' + entry['origin']
         tags = entry['tags']
         for tag in 'name', 'epoch', 'version', 'release', 'arch', 'buildtime', 'disturl', 'license':
             if tags[tag] is None or tags[tag] == '':
@@ -712,7 +712,7 @@ def scan_rpms(directory, yml):
                 if not tags['sourcerpm']:
                     tags['arch'] = 'nosrc' if tags['nosource'] or tags['nopatch'] else 'src'
 
-                item = { 'filename': fname, 'tags': tags }
+                item = { 'filename': fname, 'origin':os.path.join(reldirpath, filename), 'tags': tags }
 
                 # add entry to local_rpms hash
                 name = tags['name']
