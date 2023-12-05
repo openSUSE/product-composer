@@ -608,7 +608,7 @@ def write_report_file(directory, outfile):
         if not fn.startswith(directory):
             continue
         binary = ET.SubElement(root, 'binary')
-        binary.text = fn[len(directory):]
+        binary.text = 'obs://' + fn[len(directory):]
         tags = entry['tags']
         for tag in 'name', 'epoch', 'version', 'release', 'arch', 'buildtime', 'disturl', 'license':
             if tags[tag] is None or tags[tag] == '':
