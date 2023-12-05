@@ -25,6 +25,8 @@ ET_ENCODING = "unicode"
 local_rpms = {}  # hased via name
 local_updateinfos = {}  # sorted by updateinfo_id
 
+tree_report = {}        # hashed via file name
+
 # hardcoded defaults for now
 chksums_tool = 'sha512sum'
 repomd_checksum_parameter = '--checksum=sha512'
@@ -50,8 +52,9 @@ def main(argv=None) -> int:
 
     # Generic options
     for cmd_parser in [verify_parser, build_parser]:
-        cmd_parser.add_argument('-f', '--flavor', default='.x86_64',  help='Build a given flavor')
+        cmd_parser.add_argument('-f', '--flavor', help='Build a given flavor')
         cmd_parser.add_argument('-v', '--verbose', action='store_true',  help='Enable verbose output')
+        cmd_parser.add_argument('--reposdir', action='store',  help='Take packages from this directory')
         cmd_parser.add_argument('filename', default='default.productcompose',  help='Filename of product YAML spec')
 
     # build command options
@@ -105,7 +108,8 @@ def build(args):
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
-    scan_rpms(directory + "/repos", yml)
+    reposdir = args.reposdir if args.reposdir else directory + "/repos"
+    scan_rpms(reposdir, yml)
 
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
@@ -213,6 +217,12 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     if not os.path.exists(rpmdir + '/repodata'):
         return
+
+    write_report_file(maindir, maindir + '.report')
+    if sourcedir and maindir != sourcedir:
+        write_report_file(sourcedir, sourcedir + '.report')
+    if debugdir and maindir != debugdir:
+        write_report_file(debugdir, debugdir + '.report')
 
     # CHANGELOG file
     # the tools read the subdirectory of the rpmdir from environment variable
@@ -341,13 +351,13 @@ def create_media_dir(maindir, vendorstr, identstr, products):
 
 def create_checksums_file(maindir):
     with open(maindir + '/CHECKSUMS', 'a') as chksums_file:
-       for subdir in ('boot', 'EFI', 'docu', 'media.1'):
-           if not os.path.exists(maindir + '/' + subdir):
-               continue
-           for root, dirnames, filenames in os.walk(maindir + '/' + subdir):
-               for name in filenames:
-                   relname = os.path.relpath(root + '/' + name, maindir)
-                   run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
+        for subdir in ('boot', 'EFI', 'docu', 'media.1'):
+            if not os.path.exists(maindir + '/' + subdir):
+                continue
+            for root, dirnames, filenames in os.walk(maindir + '/' + subdir):
+                for name in filenames:
+                    relname = os.path.relpath(root + '/' + name, maindir)
+                    run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
 
 # create a fake entry from an updateinfo package spec
 def create_updateinfo_entry(pkgentry):
@@ -575,13 +585,46 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
         os.mkdir(directory)
-    outname = directory + '/' + re.sub(r'.*/', '', filename)
+    outname = directory + '/' + os.path.basename(filename)
     if not os.path.exists(outname):
         os.link(filename, outname)
 
 
 def link_entry_into_dir(entry, directory):
     link_file_into_dir(entry['filename'], directory + '/' + entry['tags']['arch'])
+    add_entry_to_report(entry, directory)
+
+def add_entry_to_report(entry, directory):
+    outname = directory + '/' + entry['tags']['arch'] + os.path.basename(entry['filename'])
+    # first one wins, see link_file_into_dir
+    if outname not in tree_report:
+        tree_report = entry
+
+def write_report_file(directory, outfile):
+    root = ET.Element('report')
+    if not directory.endswith('/'):
+        directory += '/'
+    for fn, entry in sorted(tree_report.items()):
+        if not fn.startswith(directory):
+            continue
+        binary = ET.SubElement(root, 'binary')
+        binary.text = fn[len(directory):]
+        tags = entry['tags']
+        for tag in 'name', 'epoch', 'version', 'release', 'arch', 'buildtime', 'disturl', 'license':
+            if tags[tag] is None or tags[tag] == '':
+                continue
+            if tag == 'epoch' and tags[tag] == 0:
+                continue
+            if tag == 'arch':
+                binary.set('binaryarch', tags[tag])
+            else:
+                binary.set(tag, tags[tag])
+        if entry['name'].endswith('-release'):
+            cpeid = read_cpeid(entry['filename'])
+            if cpeid:
+                binary.set('cpeid', cpeid)
+    tree = ET.ElementTree(root)
+    tree.write(outfile)
 
 def entry_qualifies(entry, arch, name, op, epoch, version, release):
     tags = entry['tags']
@@ -646,17 +689,12 @@ def scan_rpms(directory, yml):
     ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
 
     for dirpath, dirs, files in os.walk(directory):
-        subdirs = dirpath.replace(directory,'').split('/')
-        if len(subdirs) < 4:
+        reldirpath = os.path.relpath(dirpath, directory)
+        subdirs = reldirpath.split('/')
+        if len(subdirs) < 1:
             continue
-        project = subdirs[-3]
-        repository = subdirs[-2]
         arch = subdirs[-1]
-  # we try to avoid second path config for now
-  #      if not project+"/"+repository in yml['repositories']:
-  #          print("Warning: local repo not listed in yml file: " + project + "/" + repository)
-  #          continue
-        note("scanning: " + project + "/" + repository)
+        note("scanning: " + reldirpath)
         for filename in files:
             fname = os.path.join(dirpath, filename)
             if arch == 'updateinfo':
@@ -667,7 +705,7 @@ def scan_rpms(directory, yml):
                 h = ts.hdrFromFdno(fd)
                 os.close(fd)
                 tags = {}
-                for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', 'nosource', 'nopatch':
+                for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', 'nosource', 'nopatch', 'buildtime', 'disturl', 'license':
                     tags[tag] = h[tag]
 
                 if not tags['sourcerpm']:
@@ -680,6 +718,35 @@ def scan_rpms(directory, yml):
                 if not name in local_rpms:
                     local_rpms[name] = []
                 local_rpms[name].append(item)
+
+def cpeid_hexdecode(p):
+    pout = ''
+    while True:
+        match = re.match(r'^(.*?)%([0-9a-fA-F][0-9a-fA-F])(.*)', p)
+        if not match:
+            return pout + p
+        pout = pout + match.group(1) + chr(int(match.group(2), 16))
+        p = match.group(3)
+
+def read_cpeid(fname):
+    ts = rpm.TransactionSet()
+    ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
+    fd = os.open(fname, os.O_RDONLY)
+    h = ts.hdrFromFdno(fd)
+    os.close(fd)
+    pn = h['providename']
+    pf = h['provideflags']
+    pv = h['provideversion']
+    if pn and pf and pv:
+        idx = 0
+        for p in h['providename']:
+            if p == 'product-cpeid()':
+                f = pf[idx]
+                v = pv[idx]
+                if v and f and (f & 14) == 8:
+                    return cpeidhexdecode(v)
+            idx = idx + 1
+    return None
 
 if __name__ == "__main__":
     try:
