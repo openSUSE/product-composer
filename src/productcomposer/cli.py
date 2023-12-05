@@ -99,10 +99,11 @@ def note(msg):
 
 
 def build(args):
-    f = args.flavor.split('.')
     flavor = None
-    if f[0] != '':
-        flavor = f[0]
+    if args.flavor:
+        f = args.flavor.split('.')
+        if f[0] != '':
+            flavor = f[0]
 
     yml, archlist = parse_yaml(args.filename, flavor)
     directory = os.getcwd()
