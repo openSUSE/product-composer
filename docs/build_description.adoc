@@ -94,42 +94,41 @@ Just add them to enable them, no further arguments are allowed.
 
 ==== debug
 
-Use this to provide also matching debuginfo and debugsource rpms 
-for the picked binaries. Use either
+Configure the handling of debuginfo and debugsource rpms.
+Use either
 
-  debug: include
+  debug: drop
 
-to include them in the product medium or use
+to exclude them or
 
   debug: split
 
-to create a seperate repository with -Debug suffix.
+to create a seperate medium mwith -Debug suffix.
 
-Missing packages will always be ignored.
+Missing debug packages will always be ignored.
 
 ==== packages
 
 The package list. It can contain either simple name or it can
-be extended by a >, >=, =, <, <= operator to specify 
-specific versions.
+be extended by a >, >=, =, <, <= operator to specify a
+specific version constraint.
 
-The package list can be valid global or for specific flavors
-or architectures only.
-
-The syntax is rpm like
+The syntax for the version is rpm like
 
  [EPOCH:]VERSION[-RELEASE]
 
-So an epoch or a release can be specified optional. Otherwise
-any epoch or release is qualified.
+A missing epoch means epoch zero. If the release is missing, it
+matches any release.
+
+The package list can be valid globally or limited to specific flavors
+or architectures.
 
 ==== product_compose_schema
 
 Defines the level of the yaml syntax. We are currently at level 0.
 Please expect incompatible changes at any time atm.
 
-We will later on become stable and use this to handle backward
-compability.
+This to used to provide backward compability.
 
 ==== product_directory_name
 
@@ -141,18 +140,18 @@ and build number.
 
 ==== source
 
-Use this to provide also matching src or nosrc rpms for the
-picked binaries. Use either
+Configure the handling of src or nosrc rpms for the picked binaries.
+Use either
 
-  source: include
+  source: drop
 
-to include them in the product medium or use
+to exclude all source packages or
 
   source: split
 
-to create a seperate repository with -Source suffix.
+to create a seperate medium with -Source suffix.
 
-A missing package leads by default to a build failure, except
+A missing source package leads to a build failure unless
 the ignore_missing_packages built option is used.
 
 ==== vendor

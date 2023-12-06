@@ -189,20 +189,24 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
     if not os.path.exists(rpmdir):
         os.mkdir(rpmdir)
 
-    sourcedir = debugdir = None
+    sourcedir = debugdir = maindir
 
     if "source" in yml:
         if yml['source'] == 'split':
             sourcedir = outdir + '/' + product_base_dir + '-Source'
             os.mkdir(sourcedir)
+        elif yml['source'] == 'drop':
+            sourcedir = None
         else:
-            sourcedir = maindir
+            die("Bad source option, must be either 'split' or 'drop'")
     if "debug" in yml:
         if yml['debug'] == 'split':
             debugdir = outdir + '/' + product_base_dir + '-Debug'
             os.mkdir(debugdir)
+        elif yml['debug'] == 'drop':
+            debugdir = None 
         else:
-            debugdir = maindir
+            die("Bad debug option, must be either 'split' or 'drop'")
 
     for arch in archlist:
         link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir, sourcedir)

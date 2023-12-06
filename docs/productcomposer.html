@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 10.2.0" />
+<meta name="generator" content="AsciiDoc" />
 <title>productcomposer</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -747,16 +747,41 @@ asciidoc.install(2);
 <div class="paragraph"><p>A lightweight success or product builder.</p></div>
 <div class="paragraph"><p>It is used to generate product rpm repositories out of a pool of rpms.
 Unlike product builder, these can also be used to ship maintenance updates.</p></div>
-<div class="paragraph"><p>Currently it supports:
-- processing based on a list of rpm package names.
+<div class="ulist"><div class="title">Currently it supports:</div><ul>
+<li>
+<p>
+processing based on a list of rpm package names.
   product compose is not take care of dependencies atm.
-- providing matching source and/or debug packages for picked rpm packages.
+</p>
+</li>
+<li>
+<p>
+providing matching source and/or debug packages for picked rpm packages.
   These can be either included into main repository or prepared via
   extra repositories
-- optional filters for architectures, versions and flavors can be defined
-- it can provide either just a single rpm of a given name or all of them
-- it can post process updateinfo data
-- post processing to provide various rpm meta data generation</p></div>
+</p>
+</li>
+<li>
+<p>
+optional filters for architectures, versions and flavors can be defined
+</p>
+</li>
+<li>
+<p>
+it can provide either just a single rpm of a given name or all of them
+</p>
+</li>
+<li>
+<p>
+it can post process updateinfo data
+</p>
+</li>
+<li>
+<p>
+post processing to provide various rpm meta data generation
+</p>
+</li>
+</ul></div>
 <div class="paragraph"><p>Not yet implemented:
 - create bootable iso files</p></div>
 </div>
@@ -773,10 +798,19 @@ before starting the build.</p></div>
 <h2 id="_setup_in_obs">3. Setup in OBS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>You will require OBS 2.11 or later.</p></div>
-<div class="paragraph"><p>Create a new repository with any name. Either in a new or existing project.
-- The product-composer package must be available in any repository
+<div class="ulist"><div class="title">Create a new repository with any name. Either in a new or existing project.</div><ul>
+<li>
+<p>
+The product-composer package must be available in any repository
   listed in the path elements.
-- All scheduler architectures where packages are taken from must be listed.</p></div>
+</p>
+</li>
+<li>
+<p>
+All scheduler architectures where packages are taken from must be listed.
+</p>
+</li>
+</ul></div>
 <div class="paragraph"><p>Your build description file may have any name, but must have a .productcompose
 suffix.</p></div>
 <div class="paragraph"><p>The build type for the repository must be set to</p></div>
@@ -892,41 +926,40 @@ process. The options are described above.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_debug">5.3.5. debug</h4>
-<div class="paragraph"><p>Use this to provide also matching debuginfo and debugsource rpms
-for the picked binaries. Use either</p></div>
+<div class="paragraph"><p>Configure the handling of debuginfo and debugsource rpms.
+Use either</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><code>debug: include</code></pre>
+<pre><code>debug: drop</code></pre>
 </div></div>
-<div class="paragraph"><p>to include them in the product medium or use</p></div>
+<div class="paragraph"><p>to exclude them or</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><code>debug: split</code></pre>
 </div></div>
-<div class="paragraph"><p>to create a seperate repository with -Debug suffix.</p></div>
-<div class="paragraph"><p>Missing packages will always be ignored.</p></div>
+<div class="paragraph"><p>to create a seperate medium mwith -Debug suffix.</p></div>
+<div class="paragraph"><p>Missing debug packages will always be ignored.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_packages_2">5.3.6. packages</h4>
 <div class="paragraph"><p>The package list. It can contain either simple name or it can
-be extended by a &gt;, &gt;=, =, &lt;, &#8656; operator to specify
-specific versions.</p></div>
-<div class="paragraph"><p>The package list can be valid global or for specific flavors
-or architectures only.</p></div>
-<div class="paragraph"><p>The syntax is rpm like</p></div>
+be extended by a &gt;, &gt;=, =, &lt;, &#8656; operator to specify a
+specific version constraint.</p></div>
+<div class="paragraph"><p>The syntax for the version is rpm like</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><code>[EPOCH:]VERSION[-RELEASE]</code></pre>
 </div></div>
-<div class="paragraph"><p>So an epoch or a release can be specified optional. Otherwise
-any epoch or release is qualified.</p></div>
+<div class="paragraph"><p>A missing epoch means epoch zero. If the release is missing, it
+matches any release.</p></div>
+<div class="paragraph"><p>The package list can be valid globally or limited to specific flavors
+or architectures.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_product_compose_schema">5.3.7. product_compose_schema</h4>
 <div class="paragraph"><p>Defines the level of the yaml syntax. We are currently at level 0.
 Please expect incompatible changes at any time atm.</p></div>
-<div class="paragraph"><p>We will later on become stable and use this to handle backward
-compability.</p></div>
+<div class="paragraph"><p>This to used to provide backward compability.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_product_directory_name">5.3.8. product_directory_name</h4>
@@ -937,19 +970,19 @@ and build number.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_source">5.3.9. source</h4>
-<div class="paragraph"><p>Use this to provide also matching src or nosrc rpms for the
-picked binaries. Use either</p></div>
+<div class="paragraph"><p>Configure the handling of src or nosrc rpms for the picked binaries.
+Use either</p></div>
 <div class="literalblock">
 <div class="content">
-<pre><code>source: include</code></pre>
+<pre><code>source: drop</code></pre>
 </div></div>
-<div class="paragraph"><p>to include them in the product medium or use</p></div>
+<div class="paragraph"><p>to exclude all source packages or</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><code>source: split</code></pre>
 </div></div>
-<div class="paragraph"><p>to create a seperate repository with -Source suffix.</p></div>
-<div class="paragraph"><p>A missing package leads by default to a build failure, except
+<div class="paragraph"><p>to create a seperate medium with -Source suffix.</p></div>
+<div class="paragraph"><p>A missing source package leads to a build failure unless
 the ignore_missing_packages built option is used.</p></div>
 </div>
 <div class="sect3">
@@ -965,7 +998,7 @@ openSUSE or SUSE. It is used by the install stack.</p></div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2023-12-04 16:19:48 CET
+ 2023-12-05 15:26:40 CET
 </div>
 </div>
 </body>
