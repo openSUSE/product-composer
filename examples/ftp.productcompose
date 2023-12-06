@@ -30,7 +30,7 @@ architectures: [x86_64]
 
 # A flavor list, each flavor may change the architecture list
 flavors:
-- small
+- small: {}
 - large_arm:
     architectures: [armv7l, aarch64]
 
@@ -42,8 +42,9 @@ unpack_packages:
   - ppc64le
   packages:
   - Super-Special-Slideshow-for-DVD_medium-on-ppc64le
-- skelcd-openSUSE
-- skelcd-openSUSE-installer
+- packages:
+  - skelcd-openSUSE
+  - skelcd-openSUSE-installer
 
 # packages to be put on the medium
 packages:
@@ -58,8 +59,9 @@ packages:
   packages:
   - kernel-default-pae
 
-- kernel-default
-# take only glibc packages newer than 2.38-9
-# note: this works like a rpm dependency, i.e. the release part is optional
-# and epochs can be specified with EPOCH: prefix
-- glibc > 2.38-9
+- packages:
+  - kernel-default
+  # take only glibc packages newer than 2.38-9
+  # note: this works like a rpm dependency, i.e. the release part is optional
+  # and epochs can be specified with EPOCH: prefix
+  - glibc > 2.38-9
