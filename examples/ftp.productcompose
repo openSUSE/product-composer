@@ -11,12 +11,11 @@ description: >
   openSUSE Tumbleweed is the rolling distribution by the
   openSUSE.org project.
 
-
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
- - take_all_available_versions
+- take_all_available_versions
 ### do not abort on missing packages
- - ignore_missing_packages
+- ignore_missing_packages
 # - hide_flavor_in_product_directory_name
 
 # Enable collection of source and debug packages. Either "include" it
@@ -27,41 +26,40 @@ debug: split
 # The default architecture list. Each of these will be put on the medium.
 # It is optional to have a default list, when each flavor defines an
 # architecture list. The main package won't be build in that case.
-architectures: [ x86_64 ]
+architectures: [x86_64]
 
 # A flavor list, each flavor may change the architecture list
 flavors:
 - small
 - large_arm:
-    architectures: [ armv7l, aarch64 ]
+    architectures: [armv7l, aarch64]
 
 # packages to be extracted
 unpack_packages:
- - flavors:
-    - DVD medium
-   architectures:
-    - ppc64le
-   packages:
-    - Super-Special-Slideshow-for-DVD_medium-on-ppc64le
- - skelcd-openSUSE
- - skelcd-openSUSE-installer
+- flavors:
+  - DVD medium
+  architectures:
+  - ppc64le
+  packages:
+  - Super-Special-Slideshow-for-DVD_medium-on-ppc64le
+- skelcd-openSUSE
+- skelcd-openSUSE-installer
 
 # packages to be put on the medium
 packages:
- - flavors:
-    - DVD medium
-   packages:
-    - DVD-player
+- flavors:
+  - DVD medium
+  packages:
+  - DVD-player
 
- - architectures:
-   - i586
-   - i686
-   packages:
-   - kernel-default-pae
+- architectures:
+  - i586
+  - i686
+  packages:
+  - kernel-default-pae
 
- - kernel-default
+- kernel-default
 # take only glibc packages newer than 2.38-9
 # note: this works like a rpm dependency, i.e. the release part is optional
 # and epochs can be specified with EPOCH: prefix
- - glibc > 2.38-9
-
+- glibc > 2.38-9
