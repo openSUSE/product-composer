@@ -43,7 +43,7 @@ def main(argv=None) -> int:
     # Setup CLI parser
     #
     parser = ArgumentParser('productcomposer', description='An example sub-command implementation')
-    subparsers = parser.add_subparsers(help='sub-command help')
+    subparsers = parser.add_subparsers(required=True, help='sub-command help')
 
     # One sub parser for each command
     verify_parser = subparsers.add_parser('verify', help='The first sub-command')
