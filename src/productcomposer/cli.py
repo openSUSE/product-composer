@@ -218,9 +218,9 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
     post_createrepo(rpmdir, yml['name'])
     if debugdir:
-        post_createrepo(debugdir, yml['name'], content="debug")
+        post_createrepo(debugdir, yml['name'], content=["debug"])
     if sourcedir:
-        post_createrepo(sourcedir, yml['name'], content="source")
+        post_createrepo(sourcedir, yml['name'], content=["source"])
 
     if not os.path.exists(rpmdir + '/repodata'):
         return
@@ -469,7 +469,7 @@ def post_createrepo(rpmdir, product_name, content=None):
     distroname = "testgin"
 
     # FIXME
-    content = list(content) if content else []
+    content = content or []
     # content.append("pool"]
 
     cr = CreaterepoWrapper(directory=".")
