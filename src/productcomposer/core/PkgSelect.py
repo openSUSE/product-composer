@@ -72,10 +72,10 @@ class PkgSelect:
         release2 = other.release if other.release is not None else self.release
         return rpm.labelCompare((self.epoch, self.version, release1), (other.epoch, other.version, release2))
 
-    def _throw_unsupported_sub(self, other)
+    def _throw_unsupported_sub(self, other):
         raise RuntimeError(f"unsupported sub operation: {self}, {other}")
 
-    def _throw_unsupported_intersect(self, other)
+    def _throw_unsupported_intersect(self, other):
         raise RuntimeError(f"unsupported intersect operation: {self}, {other}")
 
     def sub(self, other):
@@ -157,4 +157,15 @@ class PkgSelect:
             evr = self.epoch + ':' + evr
         return self.name + ' ' + self.op + ' ' + evr
     
+    def __hash__(self):
+        if self.op:
+            return hash((self.name, self.op, self.epoch, self.version, self.release))
+        else:
+            return hash(self.name)
+
+    def __eq__(self, other):
+        if self.name != other.name:
+            return False
+        return str(self) == str(other)
+        
 # vim: sw=4 et
