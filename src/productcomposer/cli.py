@@ -269,7 +269,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
         run_helper(args)
 
     if local_updateinfos:
-        process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir)
+        process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
@@ -314,6 +314,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             args += [ '-no-emul-boot' ]
             #args += [ '-sort', $sort_file ]
             #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
+            # FIXME: cannot use arch, we have an archlist!
             args += [ '-b', "boot/"+arch+"/loader/isolinux.bin"]
         if 'publisher' in yml['iso']:
             args += [ '-publisher', yml['iso']['publisher'] ]
@@ -375,32 +376,33 @@ def create_updateinfo_entry(pkgentry):
         tags[tag] = pkgentry.get(tag)
     return { "tags": tags }
 
-def create_updateinfo_packagefilter(yml, arch, flavor):
+def create_updateinfo_packagefilter(yml, archlist, flavor):
     package_filter = {}
-    for package in create_package_list(yml['packages'], arch, flavor):
-        name = package
-        match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-        if match:
-            name = match.group(1)
-        if name not in package_filter:
-            package_filter[name] = [ package ]
-        else:
-            package_filter[name].append(package)
+    for arch in archlist:
+        for package in create_package_list(yml['packages'], arch, flavor):
+            name = package
+            match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
+            if match:
+                name = match.group(1)
+            if name not in package_filter:
+                package_filter[name] = [ package ]
+            else:
+                package_filter[name].append(package)
     return package_filter
 
-def entry_matches_updateinfo_packagefilter(entry, arch, package_filter):
+def entry_matches_updateinfo_packagefilter(entry, package_filter):
     name = entry['tags']['name']
     if name in package_filter:
         for pfspec in package_filter[name]:
             pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
-            if entry_qualifies(entry, arch, pfname, pfop, pfepoch, pfversion, pfrelease):
+            if entry_qualifies(entry, None, pfname, pfop, pfepoch, pfversion, pfrelease):
                 return True
     return False
 
 # Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir):
+def process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir):
     missing_package = False
-    package_filter = create_updateinfo_packagefilter(yml, arch, flavor)
+    package_filter = create_updateinfo_packagefilter(yml, archlist, flavor)
     uitemp = None
 
     for ufn, u in sorted(local_updateinfos.items()):
@@ -430,11 +432,15 @@ def process_updateinfos(rpmdir, yml, arch, flavor, debugdir, sourcedir):
                 if name.endswith('-debuginfo') or name.endswith('-debugsource'):
                     parent.remove(pkgentry)
                     continue
+                # ignore unwanted architectures
+                if pkgarch != 'noarch' and pkgarch not in archlist:
+                    parent.remove(pkgentry)
+                    continue
 
                 # check if we should have this package
                 if name in package_filter:
                     entry = create_updateinfo_entry(pkgentry)
-                    if entry_matches_updateinfo_packagefilter(entry, arch, package_filter):
+                    if entry_matches_updateinfo_packagefilter(entry, package_filter):
                         warn("package " + entry_nvra(entry) + " not found")
                         missing_package = True
 
