@@ -2,7 +2,7 @@
 
 """
 
-from core.PkgSelect import PkgSelect
+from .PkgSelect import PkgSelect
 
 class PkgSet:
     def __init__(self, name):
@@ -10,13 +10,13 @@ class PkgSet:
         self.pkgs = []
 
     def namedict(self):
-        ret = {}
+        namedict = {}
         for sel in self.pkgs:
             name = sel.name
-            if name not in ret:
-                ret[name] = []
-            ret[name].append(sel)
-        return ret
+            if name not in namedict:
+                namedict[name] = []
+            namedict[name].append(sel)
+        return namedict
 
     def add_specs(self, specs):
         for spec in specs:
@@ -60,6 +60,16 @@ class PkgSet:
                     pkgs.append(isel)
                     s1.add(isel)
         self.pkgs = pkgs
+
+    def matchespkg(self, arch, tags):
+        name = tags['name']
+        namedict = self.namedict()
+        if name not in namedict:
+            return False
+        for sel in namedict[name]:
+            if sel.matchespkg(arch, tags):
+                return True
+        return False
 
     def __str__(self):
         return self.name + "(" + ", ".join(str(p) for p in self.pkgs) + ")"
