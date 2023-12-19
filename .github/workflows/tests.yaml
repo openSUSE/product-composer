@@ -38,5 +38,5 @@ jobs:
       - name: 'Run unit tests'
         run: |
           pip3 config set global.break-system-packages 1
-          pip3 install -e .
+          pip3 install --no-dependencies -e .
           pytest tests
