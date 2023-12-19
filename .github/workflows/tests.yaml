@@ -15,12 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Testing per python-version using actions/setup-python is not possible,
-        # because rpm doesn't exist on pypi and cannot be installed via pip on ubuntu.
-        # That's why we're going to test on the target distros directly.
         container:
-
-          - 'registry.opensuse.org/opensuse/leap:15.5'
           - 'registry.opensuse.org/opensuse/tumbleweed'
 
     container:
