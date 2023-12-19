@@ -1,0 +1,42 @@
+name: 'tests'
+
+on:
+  pull_request:
+    branches: ['main']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: "unit"
+    runs-on: 'ubuntu-latest'
+    strategy:
+      fail-fast: false
+      matrix:
+        # Testing per python-version using actions/setup-python is not possible,
+        # because rpm doesn't exist on pypi and cannot be installed via pip on ubuntu.
+        # That's why we're going to test on the target distros directly.
+        container:
+
+          - 'registry.opensuse.org/opensuse/leap:15.5'
+          - 'registry.opensuse.org/opensuse/tumbleweed'
+
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - name: 'Install packages'
+        run: |
+            zypper -n modifyrepo --disable repo-openh264 || :
+            zypper -n --gpg-auto-import-keys refresh
+            zypper -n install python3 python3-pip python3-pydantic python3-pytest python3-rpm python3-solv
+
+      - uses: actions/checkout@v4
+
+      - name: 'Run unit tests'
+        run: |
+          pip3 config set global.break-system-packages 1
+          pip3 install -e .
+          pytest tests
