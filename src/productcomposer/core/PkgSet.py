@@ -8,20 +8,22 @@ class PkgSet:
     def __init__(self, name):
         self.name = name
         self.pkgs = []
+        self.byname = None
 
-    def namedict(self):
-        namedict = {}
+    def _create_byname(self):
+        byname = {}
         for sel in self.pkgs:
             name = sel.name
-            if name not in namedict:
-                namedict[name] = []
-            namedict[name].append(sel)
-        return namedict
+            if name not in byname:
+                byname[name] = []
+            byname[name].append(sel)
+        self.byname = byname
 
     def add_specs(self, specs):
         for spec in specs:
             sel = PkgSelect(spec)
             self.pkgs.append(sel)
+        self.byname = None
     
     def add(self, other):
         s1 = set(self)
@@ -29,6 +31,7 @@ class PkgSet:
             if sel not in s1:
                 self.pkgs.append(sel)
                 s1.add(sel)
+        self.byname = None
 
     def sub(self, other):
         otherbyname = other.namedict()
@@ -44,6 +47,7 @@ class PkgSet:
             if sel is not None:
                 pkgs.append(p)
         self.pkgs = pkgs
+        self.byname = None
 
     def intersect(self, other):
         otherbyname = other.namedict()
@@ -60,16 +64,22 @@ class PkgSet:
                     pkgs.append(isel)
                     s1.add(isel)
         self.pkgs = pkgs
+        self.byname = None
 
     def matchespkg(self, arch, pkg):
-        name = tags['name']
-        namedict = self.namedict()
-        if name not in namedict:
+        if self.byname is None:
+            self._create_byname()
+        if name not in self.byname:
             return False
-        for sel in namedict[name]:
+        for sel in self.byname:
             if sel.matchespkg(arch, pkg):
                 return True
         return False
+
+    def names(self):
+        if self.byname is None:
+            self._create_byname()
+        return set(self.byname.keys())
 
     def __str__(self):
         return self.name + "(" + ", ".join(str(p) for p in self.pkgs) + ")"
