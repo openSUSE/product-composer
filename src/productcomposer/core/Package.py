@@ -84,16 +84,17 @@ class Package:
         if arch is not None and self.arch != arch:
             if arch == 'src' or arch == 'nosrc' or self.arch != 'noarch':
                 return False
-        if op:
-            # special case a missing release or epoch in the match as labelCompare
-            # does not handle it
-            tepoch = self.epoch if epoch is not None else None
-            trelease = self.release if release is not None else None
-            cmp = rpm.labelCompare((tepoch, self.version, trelease), (epoch, version, release))
-            if cmp > 0:
-                return '>' in op
-            if cmp < 0:
-                return '<' in op
-            return '=' in op
+        if op is None:
+            return True
+        # special case a missing release or epoch in the match as labelCompare
+        # does not handle it
+        tepoch = self.epoch if epoch is not None else None
+        trelease = self.release if release is not None else None
+        cmp = rpm.labelCompare((tepoch, self.version, trelease), (epoch, version, release))
+        if cmp > 0:
+            return '>' in op
+        if cmp < 0:
+            return '<' in op
+        return '=' in op
 
 # vim: sw=4 et
