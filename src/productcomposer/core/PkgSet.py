@@ -61,13 +61,13 @@ class PkgSet:
                     s1.add(isel)
         self.pkgs = pkgs
 
-    def matchespkg(self, arch, tags):
+    def matchespkg(self, arch, pkg):
         name = tags['name']
         namedict = self.namedict()
         if name not in namedict:
             return False
         for sel in namedict[name]:
-            if sel.matchespkg(arch, tags):
+            if sel.matchespkg(arch, pkg):
                 return True
         return False
 

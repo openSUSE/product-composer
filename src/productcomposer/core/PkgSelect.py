@@ -28,23 +28,8 @@ class PkgSelect:
             self.version = None
             self.release = None
 
-    def matchespkg(self, arch, tags):
-        if tags['name'] != self.name:
-            return False
-        if arch and tags['arch'] != arch:
-            if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
-                return False
-        if self.op:
-            # special case a missing release or epoch in the match as labelCompare
-            # does not handle it
-            epoch = tags['epoch'] if self.epoch is not None else None
-            release = tags['release'] if self.release is not None else None
-            cmp = rpm.labelCompare((epoch, tags['version'], release), (self.epoch, self.version, self.release))
-            if cmp > 0:
-                return '>' in self.op
-            if cmp < 0:
-                return '<' in self.op
-            return '=' in self.op
+    def matchespkg(self, arch, pkg):
+        return pkg.matches(arch, self.name, self.op, self.epoch, self.version, self.release)
     
     @staticmethod
     def _sub_ops(op1, op2):
