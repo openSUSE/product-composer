@@ -43,7 +43,6 @@ class Pool:
         return [ rpm for rpm in self.rpms[name] if rpm.matches(arch, name, op, epoch, version, release) ]
 
     def lookup_rpm(self, arch, name, op=None, epoch=None, version=None, release=None):
-        l = self.lookup_all_rpms(arch, name, op, epoch, version, release)
         return max(self.lookup_all_rpms(arch, name, op, epoch, version, release), default=None)
 
 # vim: sw=4 et
