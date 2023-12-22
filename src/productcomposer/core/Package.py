@@ -34,7 +34,7 @@ class Package:
 
     @property
     def evr(self):
-        if self.epoch:
+        if self.epoch and self.epoch != "0":
             return f"{self.epoch}:{self.version}-{self.release}"
         return f"{self.version}-{self.release}"
 

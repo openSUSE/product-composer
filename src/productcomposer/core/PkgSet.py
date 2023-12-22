@@ -69,9 +69,9 @@ class PkgSet:
     def matchespkg(self, arch, pkg):
         if self.byname is None:
             self._create_byname()
-        if name not in self.byname:
+        if pkg.name not in self.byname:
             return False
-        for sel in self.byname:
+        for sel in self.byname[pkg.name]:
             if sel.matchespkg(arch, pkg):
                 return True
         return False

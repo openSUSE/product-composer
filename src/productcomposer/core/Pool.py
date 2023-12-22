@@ -5,6 +5,7 @@
 import os
 import rpm
 
+from xml.etree import ElementTree as ET
 from .Package import Package
 
 class Pool:
@@ -18,7 +19,7 @@ class Pool:
         name = pkg.name
         if not name in self.rpms:
             self.rpms[name] = []
-            self.rpms[name].append(pkg)
+        self.rpms[name].append(pkg)
 
     def add_updateinfo(self, xmlroot, location):
         self.updateinfos[location] = xmlroot
