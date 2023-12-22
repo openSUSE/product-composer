@@ -299,9 +299,9 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
     args = [ '/usr/lib/build/signdummy', '-d', maindir + '/CHECKSUMS' ]
     run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
-    # detached pubkey
-    args = [ '/usr/lib/build/signdummy', '-p', rpmdir + "/repodata/repomd.xml" ]
+    # pubkey
     with open(rpmdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
+        args = [ '/usr/lib/build/signdummy', '-p' ]
         run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
     # do we need an ISO file?
