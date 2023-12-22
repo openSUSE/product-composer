@@ -393,9 +393,9 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
 
     uitemp = None
 
-    for ufn, u in sorted(pool.updateinfos.items()):
-        note("Add updateinfo " + ufn)
-        for update in u.findall('update'):
+    for u in sorted(pool.lookup_all_updateinfos()):
+        note("Add updateinfo " + u.location)
+        for update in u.root.findall('update'):
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
 

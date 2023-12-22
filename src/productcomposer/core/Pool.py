@@ -5,13 +5,19 @@
 import os
 import rpm
 
-from xml.etree import ElementTree as ET
 from .Package import Package
+from .Updateinfo import Updateinfo
 
 class Pool:
     def __init__(self):
         self.rpms = {}
         self.updateinfos = {}
+
+    def make_rpm(self, location, rpm_ts=None):
+        return Package(location, rpm_ts=rpm_ts)
+
+    def make_updateinfo(self, location):
+        return Updateinfo(location)
 
     def add_rpm(self, pkg, origin=None):
         if origin is not None:
@@ -21,8 +27,8 @@ class Pool:
             self.rpms[name] = []
         self.rpms[name].append(pkg)
 
-    def add_updateinfo(self, xmlroot, location):
-        self.updateinfos[location] = xmlroot
+    def add_updateinfo(self, uinfo):
+        self.updateinfos[uinfo.location] = uinfo
 
     def scan(self, directory):
         ts = rpm.TransactionSet()
@@ -33,9 +39,10 @@ class Pool:
             for filename in files:
                 fname = os.path.join(dirpath, filename)
                 if filename.endswith('updateinfo.xml'):
-                    self.add_updateinfo(ET.parse(fname).getroot(), fname)
+                    uinfo = self.make_updateinfo(fname)
+                    self.add_updateinfo(uinfo)
                 elif filename.endswith('.rpm'):
-                    pkg = Package(fname, rpm_ts=ts)
+                    pkg = self.make_rpm(fname, rpm_ts=ts)
                     self.add_rpm(pkg, os.path.join(reldirpath, filename))
         
     def lookup_all_rpms(self, arch, name, op=None, epoch=None, version=None, release=None):
@@ -45,5 +52,8 @@ class Pool:
 
     def lookup_rpm(self, arch, name, op=None, epoch=None, version=None, release=None):
         return max(self.lookup_all_rpms(arch, name, op, epoch, version, release), default=None)
+
+    def lookup_all_updateinfos(self):
+        return self.updateinfos.values()
 
 # vim: sw=4 et
