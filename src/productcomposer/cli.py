@@ -14,6 +14,9 @@ import yaml
 
 from . import __version__
 from .core.logger import logger
+from .core.PkgSet import PkgSet
+from .core.Package import Package
+from .core.Pool import Pool
 from .wrappers import CreaterepoWrapper
 from .wrappers import ModifyrepoWrapper
 
@@ -23,9 +26,6 @@ __all__ = "main",
 
 ET_ENCODING = "unicode"
 
-
-local_rpms = {}  # hased via name
-local_updateinfos = {}  # sorted by updateinfo_id
 
 tree_report = {}        # hashed via file name
 
@@ -112,7 +112,10 @@ def build(args):
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
     reposdir = args.reposdir if args.reposdir else directory + "/repos"
-    scan_rpms(reposdir, yml)
+
+    pool = Pool()
+    note(f"scanning: {reposdir}")
+    pool.scan(reposdir)
 
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
@@ -120,7 +123,7 @@ def build(args):
     product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
 
     kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, kwdfile, flavor, archlist)
+    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, archlist)
 
 
 def verify(args):
@@ -182,7 +185,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
+def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -211,10 +214,10 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
             die("Bad debug option, must be either 'split' or 'drop'")
 
     for arch in archlist:
-        link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir, sourcedir)
+        link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
 
     for arch in archlist:
-        unpack_meta_rpms(rpmdir, yml, arch, flavor, medium=1) # only for first medium am
+        unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
 
     post_createrepo(rpmdir, yml['name'])
     if debugdir:
@@ -268,8 +271,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
                  '-d', rpmdir ]
         run_helper(args)
 
-    if local_updateinfos:
-        process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir)
+    process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
@@ -369,43 +371,29 @@ def create_checksums_file(maindir):
                     relname = os.path.relpath(root + '/' + name, maindir)
                     run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
 
-# create a fake entry from an updateinfo package spec
-def create_updateinfo_entry(pkgentry):
-    tags = {}
+# create a fake package entry from an updateinfo package spec
+def create_updateinfo_package(pkgentry):
+    entry = Package()
     for tag in 'name', 'epoch', 'version', 'release', 'arch':
-        tags[tag] = pkgentry.get(tag)
-    return { "tags": tags }
-
-def create_updateinfo_packagefilter(yml, archlist, flavor):
-    package_filter = {}
-    for arch in archlist:
-        for package in create_package_list(yml['packages'], arch, flavor):
-            name = package
-            match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-            if match:
-                name = match.group(1)
-            if name not in package_filter:
-                package_filter[name] = [ package ]
-            else:
-                package_filter[name].append(package)
-    return package_filter
-
-def entry_matches_updateinfo_packagefilter(entry, package_filter):
-    name = entry['tags']['name']
-    if name in package_filter:
-        for pfspec in package_filter[name]:
-            pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
-            if entry_qualifies(entry, None, pfname, pfop, pfepoch, pfversion, pfrelease):
-                return True
-    return False
+        setattr(entry, tag, pkgentry.get(tag))
+    return entry
 
 # Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir):
+def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir):
+    if not pool.updateinfos:
+        return
+
     missing_package = False
-    package_filter = create_updateinfo_packagefilter(yml, archlist, flavor)
+
+    # build the union of the package sets for all requested architectures
+    main_pkgset = PkgSet('main')
+    for arch in archlist:
+        pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main'))
+    main_pkgset_names = main_pkgset.names()
+
     uitemp = None
 
-    for ufn, u in sorted(local_updateinfos.items()):
+    for ufn, u in sorted(pool.updateinfos.items()):
         note("Add updateinfo " + ufn)
         for update in u.findall('update'):
             needed = False
@@ -438,10 +426,10 @@ def process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir):
                     continue
 
                 # check if we should have this package
-                if name in package_filter:
-                    entry = create_updateinfo_entry(pkgentry)
-                    if entry_matches_updateinfo_packagefilter(entry, package_filter):
-                        warn("package " + entry_nvra(entry) + " not found")
+                if name in main_pkgset_names:
+                    updatepkg = create_updateinfo_package(pkgentry)
+                    if main_pkgset.matchespkg(None, updatepkg):
+                        warn(f"package {updatepkg} not found")
                         missing_package = True
 
                 parent.remove(pkgentry)
@@ -487,22 +475,22 @@ def post_createrepo(rpmdir, product_name, content=None):
     cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
 
-def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
-    if not yml['unpack_packages']:
+def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
+    unpack_pkgset = create_package_set(yml, arch, flavor, 'unpack', missingok=True)
+    if unpack_pkgset is None:
         return
 
     missing_package = False
-    for package in create_package_list(yml['unpack_packages'], arch, flavor):
-        name, op, epoch, version, release = split_package_spec(package)
-        rpm = lookup_rpm(arch, name, op, epoch, version, release)
+    for sel in unpack_pkgset:
+        rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
         if not rpm:
-            warn("package " + package + " not found")
+            warn(f"package {sel} not found")
             missing_package = True
             continue
 
         tempdir = rpmdir + "/temp"
         os.mkdir(tempdir)
-        run_helper(['unrpm', '-q', rpm['filename']], cwd=tempdir, failmsg=("extract " + rpm['filename']))
+        run_helper(['unrpm', '-q', rpm.location], cwd=tempdir, failmsg=f"extract {rpm.location}")
 
         skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
         if os.path.exists(skel_dir):
@@ -513,64 +501,100 @@ def unpack_meta_rpms(rpmdir, yml, arch, flavor, medium):
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
 
-def create_package_list(yml, arch, flavor):
-    packages = []
-    for entry in list(yml):
+def create_package_set_compat(yml, arch, flavor, setname, missingok=False):
+    if setname == 'main':
+        oldname = 'packages' 
+    elif setname == 'unpack':
+        oldname = 'unpack_packages' 
+    else:
+        return None
+    if oldname not in yml:
+        return None
+    pkgset = PkgSet(setname)
+    for entry in list(yml[oldname]):
         if type(entry) == dict:
             if 'flavors' in entry:
-                if flavor not in entry['flavors']:
+                if flavor is None or flavor not in entry['flavors']:
                     continue
             if 'architectures' in entry:
                 if arch not in entry['architectures']:
                     continue
-            packages += entry['packages']
+            pkgset.add_specs(entry['packages'])
         else:
-            packages.append(entry)
+            pkgset.add_specs([ str(entry) ])
+    return pkgset
 
-    return packages
+def create_package_set(yml, arch, flavor, setname, missingok=False):
+    if 'packagesets' not in yml:
+        pkgset = create_package_set_compat(yml, arch, flavor, setname, missingok)
+        if pkgset is None:
+            if missingok:
+                return None
+            die(f'package set {setname} is not defined')
+        return pkgset
 
-def split_package_spec(pkgspec):
-    name = pkgspec
-    match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-    if match:
-        name    = match.group(1)
-        op      = match.group(2)
-        epoch = '0'
-        version = match.group(3)
-        release = None
-        if ':' in version:
-            (epoch, version) = version.split(':', 2)
-        if '-' in version:
-            (version, release) = version.rsplit('-', 2)
-        return (name, op, epoch, version, release)
-    return (name, None, None, None, None)
+    pkgsets = {}
+    for entry in list(yml['packagesets']):
+        if 'flavors' in entry:
+            if flavor is None or flavor not in entry['flavors']:
+                continue
+        if 'architectures' in entry:
+            if arch not in entry['architectures']:
+                continue
+        name = entry['name'] if 'name' in entry else 'main'
+        if name in pkgsets:
+            die(f'package set {name} is already defined')
+        pkgset = PkgSet(name)
+        pkgsets[name] = pkgset
+        if 'packages' in entry:
+            pkgset.add_specs(entry['packages'])
+        for setop in 'add', 'sub', 'intersect':
+            if setop not in entry:
+                continue
+            for oname in entry[setop]:
+                if oname == name or onamen not in pkgsets:
+                    die(f'package set {oname} does not exist')
+                if setop == 'add':
+                    pkgset.add(pkgsets[oname])
+                elif setop == 'sub':
+                    pkgset.sub(pkgsets[oname])
+                elif setop == 'intersect':
+                    pkgset.intersect(pkgsets[oname])
+                else:
+                    die(f"unsupported package set operation '{setop}'")
 
+    if setname not in pkgsets:
+        if missingok:
+            return None
+        die(f'package set {setname} is not defined')
+    return pkgsets[setname]
 
-def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
+def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=None):
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
 
+    main_pkgset = create_package_set(yml, arch, flavor, 'main')
+
     missing_package = None
-    for package in create_package_list(yml['packages'], arch, flavor):
-        name, op, epoch, version, release = split_package_spec(package)
+    for sel in main_pkgset:
         if singlemode:
-            rpm = lookup_rpm(arch, name, op, epoch, version, release)
+            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
             rpms = [rpm] if rpm else []
         else:
-            rpms = lookup_all_rpms(arch, name, op, epoch, version, release)
+            rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
 
         if not rpms:
-            warn("package " + package + " not found for " + arch)
+            warn(f"package {sel} not found for {arch}")
             missing_package = True
             continue
 
         for rpm in rpms:
             link_entry_into_dir(rpm, rpmdir)
 
-            match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm['tags']['sourcerpm'])
+            match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm.sourcerpm)
             if not match:
-                warn("package " + entry_nvra(rpm) + " does not have a source rpm")
+                warn(f"package {rpm} does not have a source rpm")
                 continue
 
             source_package_name    = match.group(1)
@@ -580,20 +604,20 @@ def link_rpms_to_tree(rpmdir, yml, arch, flavor, debugdir=None, sourcedir=None):
             source_package_arch    = match.group(4)
             if sourcedir:
                 # so we need to add also the src rpm
-                srpm = lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
+                srpm = pool.lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
                 if srpm:
                     link_entry_into_dir(srpm, sourcedir)
                 else:
-                    details="         required by  " + entry_nvra(rpm)
+                    details=f"         required by  {rpm}"
                     warn("source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found", details=details)
                     missing_package = True
 
             if debugdir:
-                drpm = lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
+                drpm = pool.lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
                 if drpm:
                     link_entry_into_dir(drpm, debugdir)
 
-                drpm = lookup_rpm(arch, rpm['tags']['name'] + "-debuginfo", '=', rpm['tags']['epoch'], rpm['tags']['version'], rpm['tags']['release'])
+                drpm = pool.lookup_rpm(arch, rpm.name + "-debuginfo", '=', rpm.epoch, rpm.version, rpm.release)
                 if drpm:
                     link_entry_into_dir(drpm, debugdir)
 
@@ -609,11 +633,11 @@ def link_file_into_dir(filename, directory):
 
 
 def link_entry_into_dir(entry, directory):
-    link_file_into_dir(entry['filename'], directory + '/' + entry['tags']['arch'])
+    link_file_into_dir(entry.location, directory + '/' + entry.arch)
     add_entry_to_report(entry, directory)
 
 def add_entry_to_report(entry, directory):
-    outname = directory + '/' + entry['tags']['arch'] + '/' + os.path.basename(entry['filename'])
+    outname = directory + '/' + entry.arch + '/' + os.path.basename(entry.location)
     # first one wins, see link_file_into_dir
     if outname not in tree_report:
         tree_report[outname] = entry
@@ -626,145 +650,23 @@ def write_report_file(directory, outfile):
         if not fn.startswith(directory):
             continue
         binary = ET.SubElement(root, 'binary')
-        binary.text = 'obs://' + entry['origin']
-        tags = entry['tags']
+        binary.text = 'obs://' + entry.origin
         for tag in 'name', 'epoch', 'version', 'release', 'arch', 'buildtime', 'disturl', 'license':
-            if tags[tag] is None or tags[tag] == '':
+            val = getattr(entry, tag, None)
+            if val is None or val == '':
                 continue
-            if tag == 'epoch' and tags[tag] == 0:
+            if tag == 'epoch' and val == 0:
                 continue
             if tag == 'arch':
-                binary.set('binaryarch', str(tags[tag]))
+                binary.set('binaryarch', str(val))
             else:
-                binary.set(tag, str(tags[tag]))
-        if tags['name'].endswith('-release'):
-            cpeid = read_cpeid(entry['filename'])
+                binary.set(tag, str(val))
+        if entry.name.endswith('-release'):
+            cpeid = entry.product_cpeid
             if cpeid:
                 binary.set('cpeid', cpeid)
     tree = ET.ElementTree(root)
     tree.write(outfile)
-
-def entry_qualifies(entry, arch, name, op, epoch, version, release):
-    tags = entry['tags']
-
-    if name and tags['name'] != name:
-        return False
-
-    if arch and tags['arch'] != arch:
-        if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
-            return False
-
-    if op:
-        # We must not hand over the release when the release is not required by the user
-        # or the equal case will never be true.
-        tepoch = tags['epoch'] if epoch is not None else None
-        trelease = tags['release'] if release is not None else None
-        cmp = rpm.labelCompare((tepoch, tags['version'], trelease), (epoch, version, release))
-        if cmp > 0:
-            return op[0] == '>'
-        if cmp < 0:
-            return op[0] == '<'
-        return '=' in op
-
-    return True
-
-def entry_nvra(entry):
-    tags = entry['tags']
-    return tags['name'] + "-" + tags['version'] + "-" + tags['release'] + "." + tags['arch']
-
-def lookup_all_rpms(arch, name, op=None, epoch=None, version=None, release=None):
-    if not name in local_rpms:
-        return []
-
-    rpms = []
-    for lrpm in local_rpms[name]:
-        if entry_qualifies(lrpm, arch, name, op, epoch, version, release):
-            rpms.append(lrpm)
-    return rpms
-
-def lookup_rpm(arch, name, op=None, epoch=None, version=None, release=None):
-    if not name in local_rpms:
-        return None
-
-    candidate = None
-    for lrpm in local_rpms[name]:
-        if not entry_qualifies(lrpm, arch, name, op, epoch, version, release):
-            continue
-        if candidate:
-            # version compare
-            tags = lrpm['tags']
-            ctags = candidate['tags']
-            if rpm.labelCompare((tags['epoch'], tags['version'], tags['release']), (ctags['epoch'], ctags['version'], ctags['release'])) <= 0:
-                continue
-        candidate = lrpm
-
-    return candidate
-
-def scan_rpms(directory, yml):
-    # This function scans all local available rpms and builds up the
-    # query database
-    ts = rpm.TransactionSet()
-    ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
-
-    for dirpath, dirs, files in os.walk(directory):
-        reldirpath = os.path.relpath(dirpath, directory)
-        subdirs = reldirpath.split('/')
-        if len(subdirs) < 1:
-            continue
-        arch = subdirs[-1]
-        note("scanning: " + reldirpath)
-        for filename in files:
-            fname = os.path.join(dirpath, filename)
-            if arch == 'updateinfo':
-                local_updateinfos[fname] = ET.parse(fname).getroot()
-                continue
-            if filename.endswith('.rpm'):
-                fd = os.open(fname, os.O_RDONLY)
-                h = ts.hdrFromFdno(fd)
-                os.close(fd)
-                tags = {}
-                for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', 'nosource', 'nopatch', 'buildtime', 'disturl', 'license':
-                    tags[tag] = h[tag]
-
-                if not tags['sourcerpm']:
-                    tags['arch'] = 'nosrc' if tags['nosource'] or tags['nopatch'] else 'src'
-
-                item = { 'filename': fname, 'origin':os.path.join(reldirpath, filename), 'tags': tags }
-
-                # add entry to local_rpms hash
-                name = tags['name']
-                if not name in local_rpms:
-                    local_rpms[name] = []
-                local_rpms[name].append(item)
-
-def cpeid_hexdecode(p):
-    pout = ''
-    while True:
-        match = re.match(r'^(.*?)%([0-9a-fA-F][0-9a-fA-F])(.*)', p)
-        if not match:
-            return pout + p
-        pout = pout + match.group(1) + chr(int(match.group(2), 16))
-        p = match.group(3)
-
-def read_cpeid(fname):
-    ts = rpm.TransactionSet()
-    ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
-    fd = os.open(fname, os.O_RDONLY)
-    h = ts.hdrFromFdno(fd)
-    os.close(fd)
-    pn = h['providename']
-    pf = h['provideflags']
-    pv = h['provideversion']
-    if pn and pf and pv:
-        idx = 0
-        for p in h['providename']:
-            if p == 'product-cpeid()':
-                f = pf[idx]
-                v = pv[idx]
-                if v and f and (f & 14) == 8:
-                    return cpeid_hexdecode(v)
-            idx = idx + 1
-    return None
 
 if __name__ == "__main__":
     try:
