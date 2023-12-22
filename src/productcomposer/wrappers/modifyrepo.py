@@ -14,8 +14,7 @@ class ModifyrepoWrapper(BaseWrapper):
     mdtype: str | None = Field()
 
     def get_cmd(self):
-        directory = os.path.join(self.directory, "repodata")
-        cmd = ["modify", self.file, directory]
+        cmd = ["modifyrepo", self.file, self.directory]
 
         cmd.append("--unique-md-filenames")
         cmd.append(f"--checksum={self.checksum_type}")
