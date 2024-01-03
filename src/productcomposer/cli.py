@@ -286,7 +286,7 @@ def create_tree(outdir, product_base_dir, yml, kwdfile, flavor, archlist):
 
         mr = ModifyrepoWrapper(
             file=os.path.join(rpmdir, "license.tar"),
-            directory=os.path.join(rpmdir, "repodata"),
+            directory=rpmdir,
         )
         mr.run_cmd()
         os.unlink(rpmdir + '/license.tar')
@@ -460,7 +460,7 @@ def process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir):
 
         mr = ModifyrepoWrapper(
             file=os.path.join(rpmdir, "updateinfo.xml"),
-            directory=os.path.join(rpmdir, "repodata"),
+            directory=rpmdir,
         )
         mr.run_cmd()
 
