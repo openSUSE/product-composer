@@ -9,13 +9,13 @@ import subprocess
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
 
-import rpm
 import yaml
 
 from . import __version__
 from .core.logger import logger
 from .rpm import split_nevra
 from .solv import Pool
+from .updateinfo import Updateinfo
 from .wrappers import CreaterepoWrapper
 from .wrappers import ModifyrepoWrapper
 
@@ -25,8 +25,6 @@ __all__ = "main",
 
 ET_ENCODING = "unicode"
 
-
-local_updateinfos = {}  # sorted by updateinfo_id
 
 tree_report = {}        # hashed via file name
 
@@ -118,13 +116,16 @@ def build(args):
     pool.repo.add_rpms(reposdir)
     pool.internalize()
 
+    updateinfo = Updateinfo()
+    updateinfo.add_xmls(reposdir)
+
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
 
     product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
 
     kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, archlist)
+    create_tree(args.out, product_base_dir, yml, pool, updateinfo, kwdfile, flavor, archlist)
 
 def verify(args):
     parse_yaml(args.filename, args.flavor)
@@ -185,7 +186,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
+def create_tree(outdir, product_base_dir, yml, pool, updateinfo, kwdfile, flavor, archlist):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -213,8 +214,9 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
         else:
             die("Bad debug option, must be either 'split' or 'drop'")
 
+    included_rpms = set()
     for arch in archlist:
-        link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
+        included_rpms |= link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
 
     for arch in archlist:
         unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
@@ -271,8 +273,24 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
                  '-d', rpmdir ]
         run_helper(args)
 
-    if local_updateinfos:
-        process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir)
+    _, unmatched = updateinfo.filter_packages(included_rpms, archlist)
+    if unmatched and not "ignore_missing_packages" in yml["build_options"]:
+        die('Abort due to missing packages: ' + ", ".join(sorted([str(i) for i in unmatched])))
+
+    if updateinfo:
+        # TODO: use a temp dir
+        updateinfo_path = os.path.join(rpmdir, "updateinfo.xml")
+
+        with open(updateinfo_path, "w") as f:
+            f.write(updateinfo.to_string())
+
+        mr = ModifyrepoWrapper(
+            file=updateinfo_path,
+            directory=rpmdir,
+        )
+        mr.run_cmd()
+
+        os.unlink(updateinfo_path)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
@@ -372,105 +390,6 @@ def create_checksums_file(maindir):
                     relname = os.path.relpath(root + '/' + name, maindir)
                     run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
 
-# create a fake entry from an updateinfo package spec
-def create_updateinfo_entry(pkgentry):
-    tags = {}
-    for tag in 'name', 'epoch', 'version', 'release', 'arch':
-        tags[tag] = pkgentry.get(tag)
-    return { "tags": tags }
-
-def create_updateinfo_packagefilter(yml, archlist, flavor):
-    package_filter = {}
-    for arch in archlist:
-        for package in create_package_list(yml['packages'], arch, flavor):
-            name = package
-            match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-            if match:
-                name = match.group(1)
-            if name not in package_filter:
-                package_filter[name] = [ package ]
-            else:
-                package_filter[name].append(package)
-    return package_filter
-
-def entry_matches_updateinfo_packagefilter(entry, package_filter):
-    name = entry['tags']['name']
-    if name in package_filter:
-        for pfspec in package_filter[name]:
-            pfname, pfop, pfepoch, pfversion, pfrelease = split_package_spec(pfspec)
-            if entry_qualifies(entry, None, pfname, pfop, pfepoch, pfversion, pfrelease):
-                return True
-    return False
-
-# Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, archlist, flavor, debugdir, sourcedir):
-    missing_package = False
-    package_filter = create_updateinfo_packagefilter(yml, archlist, flavor)
-    uitemp = None
-
-    for ufn, u in sorted(local_updateinfos.items()):
-        note("Add updateinfo " + ufn)
-        for update in u.findall('update'):
-            needed = False
-            parent = update.findall('pkglist')[0].findall('collection')[0]
-
-            for pkgentry in parent.findall('package'):
-                src = pkgentry.get('src')
-                if os.path.exists(rpmdir + '/' + src):
-                    needed = True
-                    continue
-                if debugdir and os.path.exists(debugdir + '/' + src):
-                    needed = True
-                    continue
-                if sourcedir and os.path.exists(sourcedir + '/' + src):
-                    needed = True
-                    continue
-                name = pkgentry.get('name')
-                pkgarch = pkgentry.get('arch')
-
-                # do not insist on debuginfo or source packages
-                if pkgarch == 'src' or pkgarch == 'nosrc':
-                    parent.remove(pkgentry)
-                    continue
-                if name.endswith('-debuginfo') or name.endswith('-debugsource'):
-                    parent.remove(pkgentry)
-                    continue
-                # ignore unwanted architectures
-                if pkgarch != 'noarch' and pkgarch not in archlist:
-                    parent.remove(pkgentry)
-                    continue
-
-                # check if we should have this package
-                if name in package_filter:
-                    entry = create_updateinfo_entry(pkgentry)
-                    if entry_matches_updateinfo_packagefilter(entry, package_filter):
-                        warn(f"package {entry} not found")
-                        missing_package = True
-
-                parent.remove(pkgentry)
-
-            if not needed:
-                continue
-
-            if not uitemp:
-                uitemp = open(rpmdir + '/updateinfo.xml', 'x')
-                uitemp.write("<updates>\n  ")
-            uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
-
-    if uitemp:
-        uitemp.write("</updates>\n")
-        uitemp.close()
-
-        mr = ModifyrepoWrapper(
-            file=os.path.join(rpmdir, "updateinfo.xml"),
-            directory=rpmdir,
-        )
-        mr.run_cmd()
-
-        os.unlink(rpmdir + '/updateinfo.xml')
-
-    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        die('Abort due to missing packages')
 
 def post_createrepo(rpmdir, product_name, content=None):
     # FIXME
@@ -535,24 +454,10 @@ def create_package_list(yml, arch, flavor):
 
     return packages
 
-def split_package_spec(pkgspec):
-    name = pkgspec
-    match = re.match(r'([^><=]*)([><=]=?)(.*)', name.replace(' ', ''))
-    if match:
-        name    = match.group(1)
-        op      = match.group(2)
-        epoch = '0'
-        version = match.group(3)
-        release = None
-        if ':' in version:
-            (epoch, version) = version.split(':', 2)
-        if '-' in version:
-            (version, release) = version.rsplit('-', 2)
-        return (name, op, epoch, version, release)
-    return (name, None, None, None, None)
-
 
 def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=None):
+    result = set()
+
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
@@ -570,6 +475,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
             assert rpm.arch in [arch, "noarch"]
 
             link_entry_into_dir(rpm, rpmdir)
+            result.add(rpm)
 
             srpm_name, srpm_epoch, srpm_version, srpm_release, srpm_arch = split_nevra(rpm.sourcerpm)
 
@@ -599,6 +505,8 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
+
+    return result
 
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
@@ -660,30 +568,6 @@ def write_report_file(directory, outfile):
     tree = ET.ElementTree(root)
     ET.indent(root)
     tree.write(outfile)
-
-def entry_qualifies(entry, arch, name, op, epoch, version, release):
-    tags = entry['tags']
-
-    if name and tags['name'] != name:
-        return False
-
-    if arch and tags['arch'] != arch:
-        if arch == 'src' or arch == 'nosrc' or tags['arch'] != 'noarch':
-            return False
-
-    if op:
-        # We must not hand over the release when the release is not required by the user
-        # or the equal case will never be true.
-        tepoch = tags['epoch'] if epoch is not None else None
-        trelease = tags['release'] if release is not None else None
-        cmp = rpm.labelCompare((tepoch, tags['version'], trelease), (epoch, version, release))
-        if cmp > 0:
-            return op[0] == '>'
-        if cmp < 0:
-            return op[0] == '<'
-        return '=' in op
-
-    return True
 
 
 if __name__ == "__main__":
