@@ -592,28 +592,23 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
         for rpm in rpms:
             link_entry_into_dir(rpm, rpmdir)
 
-            match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', rpm.sourcerpm)
-            if not match:
+            srcrpm = rpm.get_src_package()
+            if not srcrpm:
                 warn(f"package {rpm} does not have a source rpm")
                 continue
 
-            source_package_name    = match.group(1)
-            # no chance to get a epoch from file name
-            source_package_version = match.group(2)
-            source_package_release = match.group(3)
-            source_package_arch    = match.group(4)
             if sourcedir:
                 # so we need to add also the src rpm
-                srpm = pool.lookup_rpm(source_package_arch, source_package_name, '=', None, source_package_version, source_package_release)
+                srpm = pool.lookup_rpm(srcrpm.arch, srcrpm.name, '=', None, srcrpm.version, srcrpm.release)
                 if srpm:
                     link_entry_into_dir(srpm, sourcedir)
                 else:
                     details=f"         required by  {rpm}"
-                    warn("source rpm package " + source_package_name + "-" + source_package_version + '-' + 'source_package_release' + '.' + source_package_arch + " not found", details=details)
+                    warn(f"source rpm package {srcrpm} not found", details=details)
                     missing_package = True
 
             if debugdir:
-                drpm = pool.lookup_rpm(arch, source_package_name + "-debugsource", '=', None, source_package_version, source_package_release)
+                drpm = pool.lookup_rpm(arch, srcrpm.name + "-debugsource", '=', None, srcrpm.version, srcrpm.release)
                 if drpm:
                     link_entry_into_dir(drpm, debugdir)
 

@@ -78,6 +78,20 @@ class Package:
                 return Package._cpeid_hexdecode(dep[len(cpeid_prefix):])
         return None
 
+    def get_src_package(self):
+        if not self.sourcerpm:
+            return None
+        match = re.match(r'^(.*)-([^-]*)-([^-]*)\.([^\.]*)\.rpm$', self.sourcerpm)
+        if not match:
+            return None
+        srcpkg = Package()
+        srcpkg.name = match.group(1)
+        srcpkg.epoch = None             # sadly unknown
+        srcpkg.version = match.group(2)
+        srcpkg.release = match.group(3)
+        srcpkg.arch = match.group(4)
+        return srcpkg
+
     def matches(self, arch, name, op, epoch, version, release):
         if name is not None and self.name != name:
             return False
