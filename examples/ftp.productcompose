@@ -1,6 +1,6 @@
 # Our initial schema version. Be prepared that it breaks until we are
 # in full production mode
-product_compose_schema: 0
+product_compose_schema: 0.1
 
 vendor: openSUSE
 name: Tumbleweed
@@ -19,9 +19,9 @@ build_options:
 # - hide_flavor_in_product_directory_name
 
 # Enable collection of source and debug packages. Either "include" it
-# on main medium or "split" it away on extra medium.
-source: include
-debug: split
+# on main medium, "drop" it or "split" it away on extra medium.
+source: split
+debug: drop
 
 # The default architecture list. Each of these will be put on the medium.
 # It is optional to have a default list, when each flavor defines an
@@ -30,30 +30,31 @@ architectures: [x86_64]
 
 # A flavor list, each flavor may change the architecture list
 flavors:
-- small: {}
-- large_arm:
+  small: {}
+  large_arm:
     architectures: [armv7l, aarch64]
 
-# packages to be extracted
-unpack_packages:
-- flavors:
+unpack:
+  - unpackset
+  - unpackset_powerpc_DVD_only
+
+# packages to be put on the medium
+packagesets:
+- name: unpackset_powerpc_DVD_only
+  flavors:
   - DVD medium
   architectures:
   - ppc64le
   packages:
   - Super-Special-Slideshow-for-DVD_medium-on-ppc64le
-- packages:
+
+- name: unpackset
+  packages:
   - skelcd-openSUSE
   - skelcd-openSUSE-installer
 
-# packages to be put on the medium
-packages:
-- flavors:
-  - DVD medium
-  packages:
-  - DVD-player
-
-- architectures:
+- name: 32bit
+  architectures:
   - i586
   - i686
   packages:
@@ -65,3 +66,5 @@ packages:
   # note: this works like a rpm dependency, i.e. the release part is optional
   # and epochs can be specified with EPOCH: prefix
   - glibc > 2.38-9
+  add:
+  - 32bit
