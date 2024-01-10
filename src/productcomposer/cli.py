@@ -72,11 +72,6 @@ def main(argv=None) -> int:
         print("No filename")
         parser.print_help()
         die(None)
-    if not args.out:
-        # No subcommand was specified.
-        print("No output directory given")
-        parser.print_help()
-        die(None)
 
     #
     # Invoke the function
@@ -107,6 +102,12 @@ def build(args):
         if f[0] != '':
             flavor = f[0]
 
+    if not args.out:
+        # No subcommand was specified.
+        print("No output directory given")
+        parser.print_help()
+        die(None)
+
     yml, archlist = parse_yaml(args.filename, flavor)
     directory = os.getcwd()
     if args.filename.startswith('/'):
@@ -136,8 +137,8 @@ def parse_yaml(filename, flavor):
 
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if yml['product_compose_schema'] != 0:
-        die("Unsupported product composer schema: " + yml['product_compose_schema'])
+    if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1:
+        die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
 
     archlist = None
     if 'architectures' in yml:
@@ -202,16 +203,16 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
             os.mkdir(sourcedir)
         elif yml['source'] == 'drop':
             sourcedir = None
-        else:
-            die("Bad source option, must be either 'split' or 'drop'")
+        elif yml['source'] != 'include':
+            die("Bad source option, must be either 'include', 'split' or 'drop'")
     if "debug" in yml:
         if yml['debug'] == 'split':
             debugdir = outdir + '/' + product_base_dir + '-Debug'
             os.mkdir(debugdir)
         elif yml['debug'] == 'drop':
             debugdir = None 
-        else:
-            die("Bad debug option, must be either 'split' or 'drop'")
+        elif yml['debug'] != 'include':
+            die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
     for arch in archlist:
         link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
@@ -476,30 +477,31 @@ def post_createrepo(rpmdir, product_name, content=None):
 
 
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
-    unpack_pkgset = create_package_set(yml, arch, flavor, 'unpack', missingok=True)
-    if unpack_pkgset is None:
-        return
-
-    missing_package = False
-    for sel in unpack_pkgset:
-        rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
-        if not rpm:
-            warn(f"package {sel} not found")
-            missing_package = True
+    for unpack_pkgset_name in yml['unpack']:
+        unpack_pkgset = create_package_set(yml, arch, flavor, unpack_pkgset_name, missingok=True)
+        if unpack_pkgset is None:
             continue
 
-        tempdir = rpmdir + "/temp"
-        os.mkdir(tempdir)
-        run_helper(['unrpm', '-q', rpm.location], cwd=tempdir, failmsg=f"extract {rpm.location}")
+        missing_package = False
+        for sel in unpack_pkgset:
+            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
+            if not rpm:
+                warn(f"package {sel} not found")
+                missing_package = True
+                continue
 
-        skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
-        if os.path.exists(skel_dir):
-            shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
+            tempdir = rpmdir + "/temp"
+            os.mkdir(tempdir)
+            run_helper(['unrpm', '-q', rpm.location], cwd=tempdir, failmsg=f"extract {rpm.location}")
 
-        shutil.rmtree(tempdir)
+            skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
+            if os.path.exists(skel_dir):
+                shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
 
-    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        die('Abort due to missing packages')
+            shutil.rmtree(tempdir)
+
+        if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+            die('Abort due to missing packages')
 
 def create_package_set_compat(yml, arch, flavor, setname, missingok=False):
     if setname == 'main':
@@ -535,15 +537,16 @@ def create_package_set(yml, arch, flavor, setname, missingok=False):
 
     pkgsets = {}
     for entry in list(yml['packagesets']):
+        name = entry['name'] if 'name' in entry else 'main'
+        if name in pkgsets:
+            die(f'package set {name} is already defined')
+        pkgsets[name] = None
         if 'flavors' in entry:
             if flavor is None or flavor not in entry['flavors']:
                 continue
         if 'architectures' in entry:
             if arch not in entry['architectures']:
                 continue
-        name = entry['name'] if 'name' in entry else 'main'
-        if name in pkgsets:
-            die(f'package set {name} is already defined')
         pkgset = PkgSet(name)
         pkgsets[name] = pkgset
         if 'packages' in entry:
@@ -552,8 +555,11 @@ def create_package_set(yml, arch, flavor, setname, missingok=False):
             if setop not in entry:
                 continue
             for oname in entry[setop]:
-                if oname == name or onamen not in pkgsets:
+                if oname == name or oname not in pkgsets:
                     die(f'package set {oname} does not exist')
+                if pkgsets[oname] == None:
+                    # it is defined but filtered out
+                    continue
                 if setop == 'add':
                     pkgset.add(pkgsets[oname])
                 elif setop == 'sub':

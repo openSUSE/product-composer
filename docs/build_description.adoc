@@ -3,7 +3,7 @@
 
 === minimal version
 
- product_compose_schema: 0
+ product_compose_schema: 0.1
  vendor: I_and_myself
  name: my_product
  version: 1.0
@@ -45,7 +45,19 @@ It can also be used to add different package sets.
 You need to add a _multibuild file to your sources
 to enable the build.
 
-==== packages
+==== unpack
+
+unpack defines the packageset to be used for extracting
+the content of the rpm packages directly on the medium.
+
+These rpm packages need to provide these files below
+
+ /usr/lib/skelcd/CD1
+
+Currently it gets only extracted to the first/main medium,
+but not on source or debug media.
+
+==== packagesets
 
 The packages list lists rpm names to be put on the medium.
 
@@ -55,13 +67,8 @@ can be addional optional lists.
 The additional lists can be filtered by flavors and/or 
 architectures.
 
-==== unpack_packages
-
-The unpack_packages section can be used in the same way 
-as the packages section.
-
-The difference is that not the rpm itself is put
-on the medium, but the extracted content only.
+The packageset requires at least a packages definition,
+but may optionaly also a name, flavors or architectures.
 
 === Details
 
@@ -97,9 +104,13 @@ Just add them to enable them, no further arguments are allowed.
 Configure the handling of debuginfo and debugsource rpms.
 Use either
 
+  debug: include
+
+to include them or
+
   debug: drop
 
-to exclude them or
+to drop all debug packages or
 
   debug: split
 
@@ -125,10 +136,11 @@ or architectures.
 
 ==== product_compose_schema
 
-Defines the level of the yaml syntax. We are currently at level 0.
+Defines the level of the yaml syntax.
 Please expect incompatible changes at any time atm.
 
-This to used to provide backward compability.
+This will be used to provide backward compability once
+we stabilized.
 
 ==== product_directory_name
 
@@ -143,9 +155,13 @@ and build number.
 Configure the handling of src or nosrc rpms for the picked binaries.
 Use either
 
+  source: include
+
+to include all source packages or
+
   source: drop
 
-to exclude all source packages or
+to drop all source packages or
 
   source: split
 
