@@ -477,7 +477,7 @@ def post_createrepo(rpmdir, product_name, content=None):
 
 
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
-    if not yml['unpack']:
+    if 'unpack' not in yml:
         return
 
     for unpack_pkgset_name in yml['unpack']:
@@ -506,7 +506,7 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
         if missing_package and not 'ignore_missing_packages' in yml['build_options']:
             die('Abort due to missing packages')
 
-def create_package_set_compat(yml, arch, flavor, setname, missingok=False):
+def create_package_set_compat(yml, arch, flavor, setname):
     if setname == 'main':
         oldname = 'packages' 
     elif setname == 'unpack':
@@ -531,7 +531,7 @@ def create_package_set_compat(yml, arch, flavor, setname, missingok=False):
 
 def create_package_set(yml, arch, flavor, setname, missingok=False):
     if 'packagesets' not in yml:
-        pkgset = create_package_set_compat(yml, arch, flavor, setname, missingok)
+        pkgset = create_package_set_compat(yml, arch, flavor, setname)
         if pkgset is None:
             if missingok:
                 return None
