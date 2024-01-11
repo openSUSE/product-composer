@@ -477,10 +477,7 @@ def post_createrepo(rpmdir, product_name, content=None):
 
 
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
-    if 'unpack' not in yml:
-        return
-
-    for unpack_pkgset_name in yml['unpack']:
+    for unpack_pkgset_name in yml.get('unpack', [ 'unpack' ]):
         unpack_pkgset = create_package_set(yml, arch, flavor, unpack_pkgset_name)
         if unpack_pkgset is None:
             continue
