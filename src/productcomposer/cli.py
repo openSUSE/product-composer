@@ -475,33 +475,30 @@ def post_createrepo(rpmdir, product_name, content=None):
     cr.excludes = ["boot"]
     cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
+def unpack_one_meta_rpm(rpmdir, rpm, medium):
+    tempdir = rpmdir + "/temp"
+    os.mkdir(tempdir)
+    run_helper(['unrpm', '-q', rpm.location], cwd=tempdir, failmsg=f"extract {rpm.location}")
+
+    skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
+    if os.path.exists(skel_dir):
+        shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
+    shutil.rmtree(tempdir)
 
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
+    missing_package = False
     for unpack_pkgset_name in yml.get('unpack', [ 'unpack' ]):
         unpack_pkgset = create_package_set(yml, arch, flavor, unpack_pkgset_name)
-        if unpack_pkgset is None:
-            continue
-
-        missing_package = False
         for sel in unpack_pkgset:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
             if not rpm:
                 warn(f"package {sel} not found")
                 missing_package = True
                 continue
+            unpack_one_meta_rpm(rpmdir, rpm, medium)
 
-            tempdir = rpmdir + "/temp"
-            os.mkdir(tempdir)
-            run_helper(['unrpm', '-q', rpm.location], cwd=tempdir, failmsg=f"extract {rpm.location}")
-
-            skel_dir = tempdir + "/usr/lib/skelcd/CD" + str(medium)
-            if os.path.exists(skel_dir):
-                shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
-
-            shutil.rmtree(tempdir)
-
-        if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-            die('Abort due to missing packages')
+    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+        die('Abort due to missing packages')
 
 def create_package_set_compat(yml, arch, flavor, setname):
     if setname == 'main':
