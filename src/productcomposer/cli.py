@@ -514,7 +514,7 @@ def create_package_set_compat(yml, arch, flavor, setname):
     else:
         return None
     if oldname not in yml:
-        return None
+        return PkgSet(setname) if setname == 'unpack' else None
     pkgset = PkgSet(setname)
     for entry in list(yml[oldname]):
         if type(entry) == dict:
@@ -529,19 +529,17 @@ def create_package_set_compat(yml, arch, flavor, setname):
             pkgset.add_specs([ str(entry) ])
     return pkgset
 
-def create_package_set(yml, arch, flavor, setname, missingok=False):
+def create_package_set(yml, arch, flavor, setname):
     if 'packagesets' not in yml:
         pkgset = create_package_set_compat(yml, arch, flavor, setname)
         if pkgset is None:
-            if missingok:
-                return None
             die(f'package set {setname} is not defined')
         return pkgset
 
     pkgsets = {}
     for entry in list(yml['packagesets']):
         name = entry['name'] if 'name' in entry else 'main'
-        if name in pkgsets:
+        if name in pkgsets and pkgsets[name] is not None:
             die(f'package set {name} is already defined')
         pkgsets[name] = None
         if 'flavors' in entry:
@@ -560,9 +558,8 @@ def create_package_set(yml, arch, flavor, setname, missingok=False):
             for oname in entry[setop]:
                 if oname == name or oname not in pkgsets:
                     die(f'package set {oname} does not exist')
-                if pkgsets[oname] == None:
-                    # it is defined but filtered out
-                    continue
+                if pkgsets[oname] is None:
+                    pkgsets[oname] = PkgSet(oname)      # instantiate
                 if setop == 'add':
                     pkgset.add(pkgsets[oname])
                 elif setop == 'sub':
@@ -573,9 +570,9 @@ def create_package_set(yml, arch, flavor, setname, missingok=False):
                     die(f"unsupported package set operation '{setop}'")
 
     if setname not in pkgsets:
-        if missingok:
-            return None
         die(f'package set {setname} is not defined')
+    if pkgsets[setname] is None:
+        pkgsets[setname] = PkgSet(setname)      # instantiate
     return pkgsets[setname]
 
 def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=None):
