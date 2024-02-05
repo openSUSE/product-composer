@@ -545,7 +545,7 @@ def create_package_set(yml, arch, flavor, setname):
                 continue
         pkgset = PkgSet(name)
         pkgsets[name] = pkgset
-        if 'packages' in entry:
+        if 'packages' in entry and entry['packages']:
             pkgset.add_specs(entry['packages'])
         for setop in 'add', 'sub', 'intersect':
             if setop not in entry:
