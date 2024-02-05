@@ -352,7 +352,8 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
 # create media info files
 def create_media_dir(maindir, vendorstr, identstr, products):
     media1dir = maindir + '/' + 'media.1'
-    os.mkdir(media1dir) # we do only support seperate media atm
+    if not os.path.isdir(media1dir):
+        os.mkdir(media1dir) # we do only support seperate media atm
     with open(media1dir + '/media', 'w') as media_file:
         media_file.write(vendorstr + "\n")
         media_file.write(identstr + "\n")
@@ -624,7 +625,12 @@ def link_file_into_dir(filename, directory):
         os.mkdir(directory)
     outname = directory + '/' + os.path.basename(filename)
     if not os.path.exists(outname):
-        os.link(filename, outname)
+        if os.path.islink(filename):
+            # osc creates a repos/ structure with symlinks to it's cache
+            # but these would point outside of our media
+            shutil.copyfile(filename, outname)
+        else:
+            os.link(filename, outname)
 
 
 def link_entry_into_dir(entry, directory):
