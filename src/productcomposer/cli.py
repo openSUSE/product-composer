@@ -108,7 +108,7 @@ def build(args):
         parser.print_help()
         die(None)
 
-    yml, archlist = parse_yaml(args.filename, flavor)
+    yml = parse_yaml(args.filename, flavor)
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -121,10 +121,10 @@ def build(args):
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
 
-    product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
+    product_base_dir = get_product_dir(yml, flavor, args.release)
 
     kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, archlist)
+    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor)
 
 
 def verify(args):
@@ -143,33 +143,35 @@ def parse_yaml(filename, flavor):
     if yml['flavors'] is None:
         yml['flavors'] = []
 
-    archlist = None
-    if 'architectures' in yml:
-        archlist = yml['architectures']
     if flavor:
         if 'flavors' not in yml or flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
+        # overwrite global values from flavor overwrites
         if 'architectures' in f:
-            archlist = f['architectures']
+            yml['architectures'] = f['architectures']
+        if 'name' in f:
+            yml['name'] = f['name']
+        if 'version' in f:
+            yml['version'] = f['version']
 
-    if archlist is None:
+    if yml['architectures'] is None:
         die("No architecture defined")
 
     if yml['build_options'] is None:
         yml['build_options'] = []
 
-    return yml, archlist
+    return yml
 
-def get_product_dir(yml, flavor, archlist, release):
+def get_product_dir(yml, flavor, release):
     name = yml['name'] + "-" + str(yml['version'])
     if 'product_directory_name' in yml:
         # manual override
         name = yml['product_directory_name']
     if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
         name += "-" + flavor
-    if archlist:
-        visible_archs = archlist
+    if yml['architectures']:
+        visible_archs = yml['architectures']
         if 'local' in visible_archs:
             visible_archs.remove('local')
         name += "-" + "-".join(visible_archs)
@@ -192,7 +194,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
+def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -220,10 +222,10 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
         elif yml['debug'] != 'include':
             die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
-    for arch in archlist:
+    for arch in yml['architectures']:
         link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
 
-    for arch in archlist:
+    for arch in yml['architectures']:
         unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
 
     post_createrepo(rpmdir, yml['name'])
@@ -278,7 +280,7 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
                  '-d', rpmdir ]
         run_helper(args)
 
-    process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir)
+    process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     if os.path.exists(rpmdir + "/license.tar.gz"):
@@ -387,7 +389,7 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 # Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir):
+def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     if not pool.updateinfos:
         return
 
@@ -395,7 +397,7 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
 
     # build the union of the package sets for all requested architectures
     main_pkgset = PkgSet('main')
-    for arch in archlist:
+    for arch in yml['architectures']:
         pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main'))
     main_pkgset_names = main_pkgset.names()
 
@@ -429,7 +431,7 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
                     parent.remove(pkgentry)
                     continue
                 # ignore unwanted architectures
-                if pkgarch != 'noarch' and pkgarch not in archlist:
+                if pkgarch != 'noarch' and pkgarch not in yml['architectures']:
                     parent.remove(pkgentry)
                     continue
 

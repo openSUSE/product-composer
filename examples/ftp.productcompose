@@ -33,6 +33,7 @@ flavors:
   small: {}
   large_arm:
     architectures: [armv7l, aarch64]
+    name: Tumbleweed_ARM
 
 unpack:
   - unpackset
