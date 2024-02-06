@@ -274,8 +274,11 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor):
 
     # repodata/*susedata*
     if os.path.exists("/usr/bin/add_product_susedata"):
-        args = [ "/usr/bin/add_product_susedata", '-u',
-                 '-k', kwdfile, '-p',
+        args = [ "/usr/bin/add_product_susedata",
+                 '-u', # unique filenames
+                 '-g', # add gpg key ids as tags
+                 '-k', kwdfile,
+                 '-p', #  diskusage data
                  '-e', '/usr/share/doc/packages/eulas',
                  '-d', rpmdir ]
         run_helper(args)
