@@ -61,6 +61,8 @@ def main(argv=None) -> int:
 
     # build command options
     build_parser.add_argument('-r', '--release', default=None,  help='Define a build release counter')
+    build_parser.add_argument('--disturl', default=None,  help='Define a disturl')
+    build_parser.add_argument('--vcs', default=None,  help='Define a source repository identifier')
     build_parser.add_argument('--clean', action='store_true',  help='Remove existing output directory first')
     build_parser.add_argument('out',  help='Directory to write the result')
 
@@ -124,7 +126,7 @@ def build(args):
     product_base_dir = get_product_dir(yml, flavor, args.release)
 
     kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor)
+    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, args.vcs, args.disturl)
 
 
 def verify(args):
@@ -152,6 +154,8 @@ def parse_yaml(filename, flavor):
             yml['architectures'] = f['architectures']
         if 'name' in f:
             yml['name'] = f['name']
+        if 'summary' in f:
+            yml['summary'] = f['summary']
         if 'version' in f:
             yml['version'] = f['version']
 
@@ -194,7 +198,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor):
+def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -228,11 +232,22 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor):
     for arch in yml['architectures']:
         unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
 
-    post_createrepo(rpmdir, yml['name'])
+    repos=[]
+    if disturl:
+        match = re.match("^obs://([^/]*)/([^/]*)/.*", disturl)
+        if match:
+            obsname = match.group(1)
+            project = match.group(2)
+            repo = f"obsproduct://{obsname}/{project}/{yml['name']}/{yml['version']}"
+            repos = [repo]
+    if vcs:
+        repos.append(vcs)
+
+    post_createrepo(rpmdir, yml, content=["pool"], repos=repos)
     if debugdir:
-        post_createrepo(debugdir, yml['name'], content=["debug"])
+        post_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
-        post_createrepo(sourcedir, yml['name'], content=["source"])
+        post_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     if not os.path.exists(rpmdir + '/repodata'):
         return
@@ -479,17 +494,17 @@ def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
         die('Abort due to missing packages')
 
 
-def post_createrepo(rpmdir, product_name, content=None):
-    # FIXME
-    distroname = "testgin"
-
-    # FIXME
-    content = content or []
-    # content.append("pool"]
+def post_createrepo(rpmdir, yml, content=[], repos=[]):
+    product_name = yml['name']
+    product_summary = yml['summary'] or yml['name']
+    product_summary += " " + str(yml['version'])
 
     cr = CreaterepoWrapper(directory=".")
-    cr.distro = distroname
-    # cr.split = True
+    cr.distro = product_summary
+    # FIXME: /o is only for operating systems, we have nothing else atm
+    cr.cpeid = f"cpe:/o:{yml['vendor']}:{yml['name']}:{yml['version']}"
+    cr.repos = repos
+# cr.split = True
     # cr.baseurl = "media://"
     cr.content = content
     cr.excludes = ["boot"]
