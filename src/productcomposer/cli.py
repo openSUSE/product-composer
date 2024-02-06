@@ -61,6 +61,8 @@ def main(argv=None) -> int:
 
     # build command options
     build_parser.add_argument('-r', '--release', default=None,  help='Define a build release counter')
+    build_parser.add_argument('--disturl', default=None,  help='Define a disturl')
+    build_parser.add_argument('--vcs', default=None,  help='Define a source repository identifier')
     build_parser.add_argument('--clean', action='store_true',  help='Remove existing output directory first')
     build_parser.add_argument('out',  help='Directory to write the result')
 
@@ -108,7 +110,7 @@ def build(args):
         parser.print_help()
         die(None)
 
-    yml, archlist = parse_yaml(args.filename, flavor)
+    yml = parse_yaml(args.filename, flavor)
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -121,10 +123,10 @@ def build(args):
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
 
-    product_base_dir = get_product_dir(yml, flavor, archlist, args.release)
+    product_base_dir = get_product_dir(yml, flavor, args.release)
 
     kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, archlist)
+    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, args.vcs, args.disturl)
 
 
 def verify(args):
@@ -143,33 +145,37 @@ def parse_yaml(filename, flavor):
     if yml['flavors'] is None:
         yml['flavors'] = []
 
-    archlist = None
-    if 'architectures' in yml:
-        archlist = yml['architectures']
     if flavor:
         if 'flavors' not in yml or flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
+        # overwrite global values from flavor overwrites
         if 'architectures' in f:
-            archlist = f['architectures']
+            yml['architectures'] = f['architectures']
+        if 'name' in f:
+            yml['name'] = f['name']
+        if 'summary' in f:
+            yml['summary'] = f['summary']
+        if 'version' in f:
+            yml['version'] = f['version']
 
-    if archlist is None:
+    if yml['architectures'] is None:
         die("No architecture defined")
 
     if yml['build_options'] is None:
         yml['build_options'] = []
 
-    return yml, archlist
+    return yml
 
-def get_product_dir(yml, flavor, archlist, release):
+def get_product_dir(yml, flavor, release):
     name = yml['name'] + "-" + str(yml['version'])
     if 'product_directory_name' in yml:
         # manual override
         name = yml['product_directory_name']
     if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
         name += "-" + flavor
-    if archlist:
-        visible_archs = archlist
+    if yml['architectures']:
+        visible_archs = yml['architectures']
         if 'local' in visible_archs:
             visible_archs.remove('local')
         name += "-" + "-".join(visible_archs)
@@ -192,7 +198,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
+def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -220,17 +226,28 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
         elif yml['debug'] != 'include':
             die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
-    for arch in archlist:
+    for arch in yml['architectures']:
         link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
 
-    for arch in archlist:
+    for arch in yml['architectures']:
         unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
 
-    post_createrepo(rpmdir, yml['name'])
+    repos=[]
+    if disturl:
+        match = re.match("^obs://([^/]*)/([^/]*)/.*", disturl)
+        if match:
+            obsname = match.group(1)
+            project = match.group(2)
+            repo = f"obsproduct://{obsname}/{project}/{yml['name']}/{yml['version']}"
+            repos = [repo]
+    if vcs:
+        repos.append(vcs)
+
+    post_createrepo(rpmdir, yml, content=["pool"], repos=repos)
     if debugdir:
-        post_createrepo(debugdir, yml['name'], content=["debug"])
+        post_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
-        post_createrepo(sourcedir, yml['name'], content=["source"])
+        post_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     if not os.path.exists(rpmdir + '/repodata'):
         return
@@ -272,33 +289,44 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, archlist):
 
     # repodata/*susedata*
     if os.path.exists("/usr/bin/add_product_susedata"):
-        args = [ "/usr/bin/add_product_susedata", '-u',
-                 '-k', kwdfile, '-p',
+        args = [ "/usr/bin/add_product_susedata",
+                 '-u', # unique filenames
+                 '-g', # add gpg key ids as tags
+                 '-k', kwdfile,
+                 '-p', #  diskusage data
                  '-e', '/usr/share/doc/packages/eulas',
                  '-d', rpmdir ]
         run_helper(args)
 
-    process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir)
+    process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if os.path.exists(rpmdir + "/license.tar.gz"):
-        run_helper(['gzip', '-d', rpmdir + "/license.tar.gz"],
+    licensefilename = 'license.tar'
+    if os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar') or os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar.gz'):
+        licensefilename = '/license-' + yml['name'] + '.tar'
+    if os.path.exists(rpmdir + licensefilename + '.gz'):
+        run_helper(['gzip', '-d', rpmdir + licensefilename + '.gz'],
                    failmsg="Uncompress of license.tar.gz failed")
-    if os.path.exists(rpmdir + "/license.tar"):
+    if os.path.exists(rpmdir + licensefilename):
         licensedir = rpmdir + ".license"
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
-        args = [ 'tar', 'xf', rpmdir + "/license.tar", '-C', licensedir ]
+        args = [ 'tar', 'xf', rpmdir + licensefilename, '-C', licensedir ]
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
 
         mr = ModifyrepoWrapper(
-            file=os.path.join(rpmdir, "license.tar"),
+            file=rpmdir + licensefilename,
             directory=os.path.join(rpmdir, "repodata"),
         )
         mr.run_cmd()
-        os.unlink(rpmdir + '/license.tar')
+        os.unlink(rpmdir + licensefilename)
+        # meta package may bring a second file or expanded symlink, so we need clean up
+        if os.path.exists(rpmdir + '/license.tar'):
+            os.unlink(rpmdir + '/license.tar')
+        if os.path.exists(rpmdir + '/license.tar.gz'):
+            os.unlink(rpmdir + '/license.tar.gz')
 
     # detached signature
     args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
@@ -387,7 +415,7 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 # Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir):
+def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     if not pool.updateinfos:
         return
 
@@ -395,7 +423,7 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
 
     # build the union of the package sets for all requested architectures
     main_pkgset = PkgSet('main')
-    for arch in archlist:
+    for arch in yml['architectures']:
         pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main'))
     main_pkgset_names = main_pkgset.names()
 
@@ -429,7 +457,7 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
                     parent.remove(pkgentry)
                     continue
                 # ignore unwanted architectures
-                if pkgarch != 'noarch' and pkgarch not in archlist:
+                if pkgarch != 'noarch' and pkgarch not in yml['architectures']:
                     parent.remove(pkgentry)
                     continue
 
@@ -466,17 +494,17 @@ def process_updateinfos(rpmdir, yml, pool, archlist, flavor, debugdir, sourcedir
         die('Abort due to missing packages')
 
 
-def post_createrepo(rpmdir, product_name, content=None):
-    # FIXME
-    distroname = "testgin"
-
-    # FIXME
-    content = content or []
-    # content.append("pool"]
+def post_createrepo(rpmdir, yml, content=[], repos=[]):
+    product_name = yml['name']
+    product_summary = yml['summary'] or yml['name']
+    product_summary += " " + str(yml['version'])
 
     cr = CreaterepoWrapper(directory=".")
-    cr.distro = distroname
-    # cr.split = True
+    cr.distro = product_summary
+    # FIXME: /o is only for operating systems, we have nothing else atm
+    cr.cpeid = f"cpe:/o:{yml['vendor']}:{yml['name']}:{yml['version']}"
+    cr.repos = repos
+# cr.split = True
     # cr.baseurl = "media://"
     cr.content = content
     cr.excludes = ["boot"]

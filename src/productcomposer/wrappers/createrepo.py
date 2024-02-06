@@ -7,7 +7,9 @@ class CreaterepoWrapper(BaseWrapper):
     baseurl: str | None = Field()
     checksum_type: str = Field(default=defaults.CREATEREPO_CHECKSUM_TYPE)
     content: list[str] | None = Field()
+    cpeid: str | None = Field()
     distro: str | None = Field()
+    repos: list[str] | None = Field()
     excludes: list[str] | None = Field()
     general_compress_type: str = Field(default=defaults.CREATEREPO_GENERAL_COMPRESS_TYPE)
     split: bool = Field(default=False)
@@ -28,11 +30,18 @@ class CreaterepoWrapper(BaseWrapper):
                 cmd.append(f"--content={i}")
 
         if self.distro:
-            cmd.append(f"--distro={self.distro}")
+            if self.cpeid:
+                cmd.append(f"--distro={self.cpeid},{self.distro}")
+            else:
+                cmd.append(f"--distro={self.distro}")
 
         if self.excludes:
             for i in self.excludes:
                 cmd.append(f"--excludes={i}")
+
+        if self.repos:
+            for i in self.repos:
+                cmd.append(f"--repo={i}")
 
         if self.split:
             cmd.append("--split")
