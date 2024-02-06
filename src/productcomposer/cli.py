@@ -283,24 +283,32 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor):
     process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if os.path.exists(rpmdir + "/license.tar.gz"):
-        run_helper(['gzip', '-d', rpmdir + "/license.tar.gz"],
+    licensefilename = 'license.tar'
+    if os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar') or os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar.gz'):
+        licensefilename = '/license-' + yml['name'] + '.tar'
+    if os.path.exists(rpmdir + licensefilename + '.gz'):
+        run_helper(['gzip', '-d', rpmdir + licensefilename + '.gz'],
                    failmsg="Uncompress of license.tar.gz failed")
-    if os.path.exists(rpmdir + "/license.tar"):
+    if os.path.exists(rpmdir + licensefilename):
         licensedir = rpmdir + ".license"
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
-        args = [ 'tar', 'xf', rpmdir + "/license.tar", '-C', licensedir ]
+        args = [ 'tar', 'xf', rpmdir + licensefilename, '-C', licensedir ]
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
 
         mr = ModifyrepoWrapper(
-            file=os.path.join(rpmdir, "license.tar"),
+            file=rpmdir + licensefilename,
             directory=os.path.join(rpmdir, "repodata"),
         )
         mr.run_cmd()
-        os.unlink(rpmdir + '/license.tar')
+        os.unlink(rpmdir + licensefilename)
+        # meta package may bring a second file or expanded symlink, so we need clean up
+        if os.path.exists(rpmdir + '/license.tar'):
+            os.unlink(rpmdir + '/license.tar')
+        if os.path.exists(rpmdir + '/license.tar.gz'):
+            os.unlink(rpmdir + '/license.tar.gz')
 
     # detached signature
     args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
