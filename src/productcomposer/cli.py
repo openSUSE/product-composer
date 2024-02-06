@@ -140,6 +140,9 @@ def parse_yaml(filename, flavor):
     if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1:
         die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
 
+    if yml['flavors'] is None:
+        yml['flavors'] = []
+
     archlist = None
     if 'architectures' in yml:
         archlist = yml['architectures']
@@ -152,6 +155,9 @@ def parse_yaml(filename, flavor):
 
     if archlist is None:
         die("No architecture defined")
+
+    if yml['build_options'] is None:
+        yml['build_options'] = []
 
     return yml, archlist
 
