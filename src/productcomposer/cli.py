@@ -301,7 +301,7 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
     process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    licensefilename = 'license.tar'
+    licensefilename = '/license.tar'
     if os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar') or os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar.gz'):
         licensefilename = '/license-' + yml['name'] + '.tar'
     if os.path.exists(rpmdir + licensefilename + '.gz'):
