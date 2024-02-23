@@ -11,6 +11,10 @@ description: >
   openSUSE Tumbleweed is the rolling distribution by the
   openSUSE.org project.
 
+iso:
+  publisher:
+  volume_id:
+
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
 - take_all_available_versions
@@ -34,6 +38,7 @@ flavors:
   large_arm:
     architectures: [armv7l, aarch64]
     name: Tumbleweed_ARM
+    summary: openSUSE Tumbleweed ARM
 
 unpack:
   - unpackset

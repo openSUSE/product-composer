@@ -341,25 +341,28 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
 
     # do we need an ISO file?
     if 'iso' in yml:
-        application_id = re.sub(r'^.*/', '', maindir)
-        args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
-        if True: # x86_64 efi only atm
+        for workdir in [maindir, sourcedir, debugdir]:
+            application_id = re.sub(r'^.*/', '', maindir)
+            args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
             args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
-            args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
-            args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
-            #args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
-            args += [ '-no-emul-boot' ]
-            #args += [ '-sort', $sort_file ]
-            #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
-            # FIXME: cannot use arch, we have an archlist!
-            args += [ '-b', "boot/"+arch+"/loader/isolinux.bin"]
-        if 'publisher' in yml['iso']:
-            args += [ '-publisher', yml['iso']['publisher'] ]
-        if 'volume_id' in yml['iso']:
-            args += [ '-V', yml['iso']['volume_id'] ]
-        args += [ '-A', application_id ]
-        args += [ '-o', maindir + '.iso', maindir ]
-        run_helper(args, cwd=maindir, failmsg="create iso file")
+            # FIXME: do proper multi arch handling
+            isolinux = 'boot/' + yml['architectures'][0] + '/loader/isolinux.bin'
+            if os.path.isfile(workdir + '/' + isolinux):
+                args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
+                args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
+                args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
+                args += [ '-no-emul-boot' ]
+                #args += [ '-sort', $sort_file ]
+                #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
+                args += [ '-b', isolinux]
+            if 'publisher' in yml['iso']:
+                args += [ '-publisher', yml['iso']['publisher'] ]
+            if 'volume_id' in yml['iso']:
+                args += [ '-V', yml['iso']['volume_id'] ]
+            args += [ '-A', application_id ]
+            args += [ '-o', workdir + '.iso', workdir ]
+            print(args)
+            run_helper(args, cwd=maindir, failmsg="create iso file")
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
