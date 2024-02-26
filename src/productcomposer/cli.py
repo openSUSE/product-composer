@@ -343,7 +343,7 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
     if 'iso' in yml:
         for workdir in [maindir, sourcedir, debugdir]:
             application_id = re.sub(r'^.*/', '', maindir)
-            args = [ '/bin/mkisofs', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
+            args = [ '/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
             args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
             # FIXME: do proper multi arch handling
             isolinux = 'boot/' + yml['architectures'][0] + '/loader/isolinux.bin'
@@ -361,7 +361,6 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
                 args += [ '-V', yml['iso']['volume_id'] ]
             args += [ '-A', application_id ]
             args += [ '-o', workdir + '.iso', workdir ]
-            print(args)
             run_helper(args, cwd=maindir, failmsg="create iso file")
 
     # create SBOM data
