@@ -32,6 +32,8 @@ tree_report = {}        # hashed via file name
 # hardcoded defaults for now
 chksums_tool = 'sha512sum'
 
+# global db for supportstatus
+supportstatus = {}
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -125,8 +127,7 @@ def build(args):
 
     product_base_dir = get_product_dir(yml, flavor, args.release)
 
-    kwdfile = args.filename.removesuffix('.productcompose') + '.kwd'
-    create_tree(args.out, product_base_dir, yml, pool, kwdfile, flavor, args.vcs, args.disturl)
+    create_tree(args.out, product_base_dir, yml, pool, flavor, args.vcs, args.disturl)
 
 
 def verify(args):
@@ -159,8 +160,8 @@ def parse_yaml(filename, flavor):
         if 'version' in f:
             yml['version'] = f['version']
 
-    if yml['architectures'] is None:
-        die("No architecture defined")
+    if not 'architectures' in yml: # and yml['architectures'] is None:
+        die("No architecture defined. Maybe wrong flavor?")
 
     if yml['build_options'] is None:
         yml['build_options'] = []
@@ -186,10 +187,12 @@ def get_product_dir(yml, flavor, release):
     return name
 
 
-def run_helper(args, cwd=None, stdout=None, failmsg=None):
+def run_helper(args, cwd=None, stdout=None, stdin=None, failmsg=None):
     if stdout is None:
         stdout=subprocess.PIPE
-    popen = subprocess.Popen(args, stdout=stdout, cwd=cwd)
+    if stdin is None:
+        stdin=subprocess.PIPE
+    popen = subprocess.Popen(args, stdout=stdout, stdin=stdin, cwd=cwd)
     if popen.wait():
         output = popen.stdout.read()
         if failmsg:
@@ -198,7 +201,7 @@ def run_helper(args, cwd=None, stdout=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
-def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, disturl=None):
+def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -242,8 +245,23 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
             repos = [repo]
     if vcs:
         repos.append(vcs)
+ 
+    default_content=["pool"]
+    for file in os.listdir(rpmdir):
+        if not file.startswith('gpg-pubkey-'):
+            continue
 
-    post_createrepo(rpmdir, yml, content=["pool"], repos=repos)
+        args=['gpg', '--no-keyring', '--no-default-keyring', '--with-colons',
+              '--import-options', 'show-only', '--import', '--fingerprint']
+        out = run_helper(args, stdin=open(f'{rpmdir}/{file}', 'rb'),
+                         failmsg="Finger printing of gpg file")
+        for line in out.splitlines():
+            if not str(line).startswith("b'fpr:"):
+                continue
+
+            default_content.append(str(line).split(':')[9])
+
+    post_createrepo(rpmdir, yml, content=default_content, repos=repos)
     if debugdir:
         post_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
@@ -288,15 +306,13 @@ def create_tree(outdir, product_base_dir, yml, pool, kwdfile, flavor, vcs=None, 
 #       run_helper(args)
 
     # repodata/*susedata*
-    if os.path.exists("/usr/bin/add_product_susedata"):
-        args = [ "/usr/bin/add_product_susedata",
-                 '-u', # unique filenames
-                 '-g', # add gpg key ids as tags
-                 '-k', kwdfile,
-                 '-p', #  diskusage data
-                 '-e', '/usr/share/doc/packages/eulas',
-                 '-d', rpmdir ]
-        run_helper(args)
+#   if os.path.exists("/usr/bin/add_product_susedata"):
+#       args = [ "/usr/bin/add_product_susedata",
+#                '-p', #  diskusage data
+#                '-d', rpmdir ]
+#       run_helper(args)
+
+    create_susedata_xml(rpmdir, yml)
 
     process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
@@ -416,6 +432,62 @@ def create_updateinfo_package(pkgentry):
         setattr(entry, tag, pkgentry.get(tag))
     return entry
 
+# Create the main susedata.xml with support and disk usage informations
+def create_susedata_xml(rpmdir, yml):
+    # read repomd.xml
+    ns='{http://linux.duke.edu/metadata/repo}'
+    tree = ET.parse(rpmdir + '/repodata/repomd.xml')
+    root = tree.getroot()
+    for p in root.findall(f".//{ns}data[@type='primary']/{ns}location"):
+        primary_fn = p.attrib['href']
+
+    # read primary.xml
+    content = None
+    if primary_fn.endswith('.gz'):
+      import gzip
+      content = gzip.open(primary_fn, 'r').read()
+    elif primary_fn.endswith('.zst'):
+      import zstandard
+      content = zstandard.open(rpmdir + '/' + primary_fn, 'rb').read()
+    root = ET.fromstring(content)
+    ns='{http://linux.duke.edu/metadata/common}'
+
+    # Create susedata structure
+    susedata = ET.Element('susedata')
+    susedata.set('xmlns', 'http://linux.duke.edu/metadata/susedata')
+    # go for every rpm file of the repo via the primary
+    count=0
+    for pkg in root.findall(f".//{ns}package[@type='rpm']"):
+        name = pkg.find(f'{ns}name').text
+        package = ET.SubElement(susedata, 'package')
+        package.set('name', name)
+        package.set('pkgid', pkg.find(f'{ns}checksum').text)
+        package.set('arch', pkg.find(f'{ns}arch').text)
+        ET.SubElement(package, 'version', pkg.find(f'{ns}version').attrib)
+        count=count + 1
+
+        supportlevel = None
+        if name in supportstatus and supportstatus[name] is not None:
+            supportlevel = supportstatus[name]
+        elif 'default_supportstatus' in yml:
+            supportlevel = yml['default_supportstatus']
+        if supportlevel:
+            ET.SubElement(package, 'keyword').text = f'support_{supportlevel}'
+
+    susedata.set('packages', str(count))
+    susedata_fn=rpmdir + '/susedata.xml'
+    sd_file = open(susedata_fn, 'x')
+    ET.indent(susedata, space="    ", level=0)
+    sd_file.write(ET.tostring(susedata, encoding='utf8', method='xml').decode())
+    sd_file.close()
+
+    mr = ModifyrepoWrapper(
+        file=susedata_fn,
+        directory=os.path.join(rpmdir, "repodata"),
+    )
+    mr.run_cmd()
+    os.unlink(susedata_fn)
+
 # Add updateinfo.xml to metadata
 def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     if not pool.updateinfos:
@@ -485,9 +557,9 @@ def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
         uitemp.close()
 
         mr = ModifyrepoWrapper(
-            file=os.path.join(rpmdir, "updateinfo.xml"),
-            directory=os.path.join(rpmdir, "repodata"),
-        )
+                file=os.path.join(rpmdir, "updateinfo.xml"),
+                directory=os.path.join(rpmdir, "repodata"),
+                )
         mr.run_cmd()
 
         os.unlink(rpmdir + '/updateinfo.xml')
@@ -581,6 +653,8 @@ def create_package_set(yml, arch, flavor, setname):
                 continue
         pkgset = PkgSet(name)
         pkgsets[name] = pkgset
+        if 'supportstatus' in entry:
+            pkgset.supportstatus = entry['supportstatus']
         if 'packages' in entry and entry['packages']:
             pkgset.add_specs(entry['packages'])
         for setop in 'add', 'sub', 'intersect':
@@ -628,6 +702,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
 
         for rpm in rpms:
             link_entry_into_dir(rpm, rpmdir)
+            supportstatus[rpm.name] = sel.supportstatus
 
             srcrpm = rpm.get_src_package()
             if not srcrpm:

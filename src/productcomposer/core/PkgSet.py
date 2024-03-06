@@ -9,6 +9,7 @@ class PkgSet:
         self.name = name
         self.pkgs = []
         self.byname = None
+        self.supportstatus = None
 
     def _create_byname(self):
         byname = {}
@@ -21,7 +22,7 @@ class PkgSet:
 
     def add_specs(self, specs):
         for spec in specs:
-            sel = PkgSelect(spec)
+            sel = PkgSelect(spec, supportstatus=self.supportstatus)
             self.pkgs.append(sel)
         self.byname = None
     

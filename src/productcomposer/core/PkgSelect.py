@@ -6,7 +6,8 @@ import re
 import rpm
 
 class PkgSelect:
-    def __init__(self, spec):
+    def __init__(self, spec, supportstatus = None):
+        self.supportstatus = supportstatus
         match = re.match(r'([^><=]*)([><=]=?)(.*)', spec.replace(' ', ''))
         if match:
             self.name  = match.group(1)
