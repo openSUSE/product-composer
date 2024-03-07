@@ -67,7 +67,6 @@ packagesets:
   - kernel-default-pae
 
 - packages:
-  supportstatus: l2
   - kernel-default
   # take only glibc packages newer than 2.38-9
   # note: this works like a rpm dependency, i.e. the release part is optional
@@ -75,3 +74,4 @@ packagesets:
   - glibc > 2.38-9
   add:
   - 32bit
+  supportstatus: l2
