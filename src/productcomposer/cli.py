@@ -480,14 +480,12 @@ def create_susedata_xml(rpmdir, yml):
         if name in supportstatus and supportstatus[name] is not None:
             ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
         count += 1
-
     susedata.set('packages', str(count))
-    susedata_fn=rpmdir + '/susedata.xml'
-    sd_file = open(susedata_fn, 'x')
     ET.indent(susedata, space="    ", level=0)
-    sd_file.write(ET.tostring(susedata, encoding='utf8', method='xml').decode())
-    sd_file.close()
 
+    susedate_fn = rpmdir + '/susedata.xml'
+    with open(susedata_fn, 'x') as sd_file:
+        sd_file.write(ET.tostring(susedata, encoding=ET_ENCODING))
     mr = ModifyrepoWrapper(
         file=susedata_fn,
         directory=os.path.join(rpmdir, "repodata"),
