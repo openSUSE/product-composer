@@ -34,6 +34,8 @@ chksums_tool = 'sha512sum'
 
 # global db for supportstatus
 supportstatus = {}
+# per package override via supportstatus.txt file
+supportstatus_override = {}
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -113,10 +115,15 @@ def build(args):
         die(None)
 
     yml = parse_yaml(args.filename, flavor)
+
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
     reposdir = args.reposdir if args.reposdir else directory + "/repos"
+
+    supportstatus_fn = os.path.join(directory,'supportstatus.txt')
+    if os.path.isfile(supportstatus_fn):
+        parse_supportstatus(supportstatus_fn)
 
     pool = Pool()
     note(f"scanning: {reposdir}")
@@ -167,6 +174,12 @@ def parse_yaml(filename, flavor):
         yml['build_options'] = []
 
     return yml
+
+def parse_supportstatus(filename):
+    with open(filename, 'r') as file:
+        for line in file.readlines():
+            a = line.strip().split(' ')
+            supportstatus_override[a[0]] = a[1]
 
 def get_product_dir(yml, flavor, release):
     name = yml['name'] + "-" + str(yml['version'])
@@ -696,7 +709,10 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
 
         for rpm in rpms:
             link_entry_into_dir(rpm, rpmdir)
-            supportstatus[rpm.name] = sel.supportstatus
+            if rpm.name in supportstatus_override:
+                supportstatus[rpm.name] = supportstatus_override[rpm.name]
+            else:
+                supportstatus[rpm.name] = sel.supportstatus
 
             srcrpm = rpm.get_src_package()
             if not srcrpm:
