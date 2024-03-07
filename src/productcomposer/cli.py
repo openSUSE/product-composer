@@ -143,11 +143,11 @@ def parse_yaml(filename, flavor):
     if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1:
         die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
 
-    if yml['flavors'] is None:
+    if 'flavors' not in yml:
         yml['flavors'] = []
 
     if flavor:
-        if 'flavors' not in yml or flavor not in yml['flavors']:
+        if flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
         # overwrite global values from flavor overwrites
@@ -160,10 +160,10 @@ def parse_yaml(filename, flavor):
         if 'version' in f:
             yml['version'] = f['version']
 
-    if not 'architectures' in yml: # and yml['architectures'] is None:
+    if 'architectures' not in yml or not yml['architectures']:
         die("No architecture defined. Maybe wrong flavor?")
 
-    if yml['build_options'] is None:
+    if 'build_options' not in yml:
         yml['build_options'] = []
 
     return yml
