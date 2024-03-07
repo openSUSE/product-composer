@@ -13,7 +13,9 @@ class Package:
             return
         self.location = location
         h = self._read_rpm_header(rpm_ts=rpm_ts)
-        for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', 'buildtime', 'disturl', 'license':
+        for tag in 'name', 'epoch', 'version', 'release', 'arch', 'sourcerpm', \
+                   'buildtime', 'disturl', 'license', 'filesizes', 'filemodes', \
+                   'filedevices', 'fileinodes', 'dirindexes', 'basenames', 'dirnames':
             val = h[tag]
             if isinstance(val, bytes):
                 val = val.decode('utf-8')

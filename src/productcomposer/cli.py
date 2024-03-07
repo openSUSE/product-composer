@@ -447,6 +447,22 @@ def create_updateinfo_package(pkgentry):
 
 # Create the main susedata.xml with support and disk usage informations
 def create_susedata_xml(rpmdir, yml):
+    # get supported translations based on local packages
+    i18ndir = '/usr/share/locale/en_US/LC_MESSAGES/'
+    p = re.compile('package-translations-(.+).mo')
+    languages = []
+    i18ndata = {}
+    i18ndata_count = {}
+    i18ntrans = {}
+    import gettext
+    for file in os.listdir(i18ndir):
+        m = p.match(file)
+        if m:
+            lang = m.group(1)
+            languages.append(lang)
+            i18ntrans[lang] = gettext.translation(f'package-translations-{lang}',
+                                                  languages=['en_US'])
+
     # read repomd.xml
     ns='{http://linux.duke.edu/metadata/repo}'
     tree = ET.parse(rpmdir + '/repodata/repomd.xml')
@@ -471,19 +487,46 @@ def create_susedata_xml(rpmdir, yml):
     # go for every rpm file of the repo via the primary
     count = 0
     for pkg in tree.findall(f".//{ns}package[@type='rpm']"):
-        name = pkg.find(f'{ns}name').text
+        name    = pkg.find(f'{ns}name').text
+        pkgid   = pkg.find(f'{ns}checksum').text
+        arch    = pkg.find(f'{ns}arch').text
+        version = pkg.find(f'{ns}version').attrib
+
         package = ET.SubElement(susedata, 'package')
         package.set('name', name)
-        package.set('pkgid', pkg.find(f'{ns}checksum').text)
-        package.set('arch', pkg.find(f'{ns}arch').text)
-        ET.SubElement(package, 'version', pkg.find(f'{ns}version').attrib)
+        package.set('pkgid', pkgid)
+        package.set('arch', arch)
+        ET.SubElement(package, 'version', version)
         if name in supportstatus and supportstatus[name] is not None:
             ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
         count += 1
+
+        # looking for translations for this package
+        summary = pkg.find(f'{ns}summary').text
+        description = pkg.find(f'{ns}description').text
+        for lang in languages:
+            isummary = i18ntrans[lang].gettext(summary)
+            idescription = i18ntrans[lang].gettext(description)
+            if isummary == summary and idescription == description:
+                continue
+            if lang not in i18ndata:
+                i18ndata[lang] = ET.Element('susedata')
+                i18ndata[lang].set('xmlns', 'http://linux.duke.edu/metadata/susedata')
+                i18ndata_count[lang] = 0
+            i18ndata_count[lang] += 1
+            ipackage = ET.SubElement(i18ndata[lang], 'package')
+            ipackage.set('name', name)
+            ipackage.set('pkgid', pkgid)
+            ipackage.set('arch', arch)
+            ET.SubElement(ipackage, 'version', version)
+            if isummary != summary:
+                ET.SubElement(ipackage, 'summary', {'lang': lang}).text = isummary
+            if idescription != description:
+                ET.SubElement(ipackage, 'description', {'lang': lang}).text = idescription
     susedata.set('packages', str(count))
     ET.indent(susedata, space="    ", level=0)
 
-    susedate_fn = rpmdir + '/susedata.xml'
+    susedata_fn = rpmdir + '/susedata.xml'
     with open(susedata_fn, 'x') as sd_file:
         sd_file.write(ET.tostring(susedata, encoding=ET_ENCODING))
     mr = ModifyrepoWrapper(
@@ -492,6 +535,22 @@ def create_susedata_xml(rpmdir, yml):
     )
     mr.run_cmd()
     os.unlink(susedata_fn)
+
+    for lang in i18ndata:
+        i18ndata[lang].set('packages', str(i18ndata_count[lang]))
+        susedata_fn=rpmdir + f'/susedata.{lang}.xml'
+        ET.indent(i18ndata[lang], space="    ", level=0)
+
+        with open(susedata_fn, 'x') as sd_file:
+            sd_file.write(ET.tostring(i18ndata[lang], encoding=ET_ENCODING))
+        mr = ModifyrepoWrapper(
+            file=susedata_fn,
+            mdtype=f'susedata.{lang}',
+            directory=os.path.join(rpmdir, "repodata"),
+        )
+        mr.run_cmd()
+        os.unlink(susedata_fn)
+
 
 # Add updateinfo.xml to metadata
 def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
