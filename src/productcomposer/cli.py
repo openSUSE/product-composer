@@ -437,42 +437,36 @@ def create_susedata_xml(rpmdir, yml):
     # read repomd.xml
     ns='{http://linux.duke.edu/metadata/repo}'
     tree = ET.parse(rpmdir + '/repodata/repomd.xml')
-    root = tree.getroot()
-    for p in root.findall(f".//{ns}data[@type='primary']/{ns}location"):
-        primary_fn = p.attrib['href']
+    primary_fn = tree.find(f".//{ns}data[@type='primary']/{ns}location").attrib['href']
 
-    # read primary.xml
-    content = None
+    # read compressed primary.xml
+    openfunction = None
     if primary_fn.endswith('.gz'):
-      import gzip
-      content = gzip.open(primary_fn, 'r').read()
+        import gzip
+        openfunction = gzip.open
     elif primary_fn.endswith('.zst'):
-      import zstandard
-      content = zstandard.open(rpmdir + '/' + primary_fn, 'rb').read()
-    root = ET.fromstring(content)
+        import zstandard
+        openfunction = zstandard.open
+    else:
+        die(f"unsupported primary compression type ({primary_fm})")
+    tree = ET.parse(openfunction(rpmdir + '/' + primary_fn, 'rb'))
     ns='{http://linux.duke.edu/metadata/common}'
 
     # Create susedata structure
     susedata = ET.Element('susedata')
     susedata.set('xmlns', 'http://linux.duke.edu/metadata/susedata')
     # go for every rpm file of the repo via the primary
-    count=0
-    for pkg in root.findall(f".//{ns}package[@type='rpm']"):
+    count = 0
+    for pkg in tree.findall(f".//{ns}package[@type='rpm']"):
         name = pkg.find(f'{ns}name').text
         package = ET.SubElement(susedata, 'package')
         package.set('name', name)
         package.set('pkgid', pkg.find(f'{ns}checksum').text)
         package.set('arch', pkg.find(f'{ns}arch').text)
         ET.SubElement(package, 'version', pkg.find(f'{ns}version').attrib)
-        count=count + 1
-
-        supportlevel = None
         if name in supportstatus and supportstatus[name] is not None:
-            supportlevel = supportstatus[name]
-        elif 'default_supportstatus' in yml:
-            supportlevel = yml['default_supportstatus']
-        if supportlevel:
-            ET.SubElement(package, 'keyword').text = f'support_{supportlevel}'
+            ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
+        count += 1
 
     susedata.set('packages', str(count))
     susedata_fn=rpmdir + '/susedata.xml'

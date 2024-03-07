@@ -131,6 +131,7 @@ class PkgSelect:
         out.epoch = self.epoch
         out.version = self.version
         out.release = self.release
+        out.supportstatus = self.supportstatus
         return out
 
     def __str__(self):

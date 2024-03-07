@@ -30,6 +30,9 @@ class PkgSet:
         s1 = set(self)
         for sel in other.pkgs:
             if sel not in s1:
+                if self.supportstatus is not None and sel.supportstatus is None:
+                    sel = sel.copy()
+                    sel.supportstatus = self.supportstatus
                 self.pkgs.append(sel)
                 s1.add(sel)
         self.byname = None
