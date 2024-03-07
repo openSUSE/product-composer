@@ -501,12 +501,18 @@ def create_susedata_xml(rpmdir, yml):
             ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
         count += 1
 
+        # look for pattern category
+        category = None
+        for c in pkg.findall(".//{http://linux.duke.edu/metadata/rpm}entry[@name='pattern-category()']"):
+            category = Package._cpeid_hexdecode(c.get('ver'))
+
         # looking for translations for this package
         summary = pkg.find(f'{ns}summary').text
         description = pkg.find(f'{ns}description').text
         for lang in languages:
             isummary = i18ntrans[lang].gettext(summary)
             idescription = i18ntrans[lang].gettext(description)
+            icategory = i18ntrans[lang].gettext(category) if category else None
             if isummary == summary and idescription == description:
                 continue
             if lang not in i18ndata:
@@ -523,6 +529,8 @@ def create_susedata_xml(rpmdir, yml):
                 ET.SubElement(ipackage, 'summary', {'lang': lang}).text = isummary
             if idescription != description:
                 ET.SubElement(ipackage, 'description', {'lang': lang}).text = idescription
+            if icategory != category:
+                ET.SubElement(ipackage, 'category', {'lang': lang}).text = icategory
     susedata.set('packages', str(count))
     ET.indent(susedata, space="    ", level=0)
 
