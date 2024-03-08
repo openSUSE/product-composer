@@ -457,8 +457,8 @@ def generate_du_data(pkg, maxdepth):
                 if cookie in seen:
                     next
                 seen.add(cookie)
-                size += filesize
-                count += 1
+            size += filesize
+            count += 1
         dir = '/' + dir.strip('/')
         subdir = ''
         depth = 0
