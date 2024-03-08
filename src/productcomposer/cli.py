@@ -281,14 +281,14 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
             default_content.append(str(line).split(':')[9])
 
-    post_createrepo(rpmdir, yml, content=default_content, repos=repos)
+    run_createrepo(rpmdir, yml, content=default_content, repos=repos)
     if debugdir:
-        post_createrepo(debugdir, yml, content=["debug"], repos=repos)
+        run_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
-        post_createrepo(sourcedir, yml, content=["source"], repos=repos)
+        run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     if not os.path.exists(rpmdir + '/repodata'):
-        return
+        die("run_createrepo did not create a repodata directory");
 
     write_report_file(maindir, maindir + '.report')
     if sourcedir and maindir != sourcedir:
@@ -323,7 +323,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     if sourcedir:
         create_susedata_xml(sourcedir, yml)
 
-    process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
+    create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     licensefilename = '/license.tar'
@@ -607,7 +607,7 @@ def create_susedata_xml(rpmdir, yml):
 
 
 # Add updateinfo.xml to metadata
-def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
+def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     if not pool.updateinfos:
         return
 
@@ -686,7 +686,7 @@ def process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir):
         die('Abort due to missing packages')
 
 
-def post_createrepo(rpmdir, yml, content=[], repos=[]):
+def run_createrepo(rpmdir, yml, content=[], repos=[]):
     product_name = yml['name']
     product_summary = yml['summary'] or yml['name']
     product_summary += " " + str(yml['version'])
