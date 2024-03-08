@@ -317,6 +317,10 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     create_checksums_file(maindir)
 
     create_susedata_xml(rpmdir, yml)
+    if debugdir:
+        create_susedata_xml(debugdir, yml)
+    if sourcedir:
+        create_susedata_xml(sourcedir, yml)
 
     process_updateinfos(rpmdir, yml, pool, flavor, debugdir, sourcedir)
 
