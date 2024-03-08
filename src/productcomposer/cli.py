@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import gettext
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
 
@@ -451,8 +452,6 @@ def generate_du_data(pkg, maxdepth):
     dudata_size = {}
     dudata_count = {}
     for dir, filedatas in pkg.get_directories().items():
-        if dir == '':
-            dir = '/usr/src/packages/'
         size = 0
         count = 0
         for filedata in filedatas:
@@ -463,6 +462,8 @@ def generate_du_data(pkg, maxdepth):
                 seen.add(cookie)
             size += filesize
             count += 1
+        if dir == '':
+            dir = '/usr/src/packages/'
         dir = '/' + dir.strip('/')
         subdir = ''
         depth = 0
@@ -483,25 +484,30 @@ def generate_du_data(pkg, maxdepth):
         dudata.append((dir, size, dudata_count[dir]))
     return dudata
 
-# Create the main susedata.xml with support and disk usage informations
-
-
-def create_susedata_xml(rpmdir, yml):
-    # get supported translations based on local packages
-    i18ndir = '/usr/share/locale/en_US/LC_MESSAGES/'
+# Get supported translations based on installed packages
+def get_package_translation_languages():
+    i18ndir = '/usr/share/locale/en_US/LC_MESSAGES'
     p = re.compile('package-translations-(.+).mo')
-    languages = []
-    i18ndata = {}
-    i18ndata_count = {}
-    i18ntrans = {}
-    import gettext
+    languages = set()
     for file in os.listdir(i18ndir):
         m = p.match(file)
         if m:
-            lang = m.group(1)
-            languages.append(lang)
-            i18ntrans[lang] = gettext.translation(f'package-translations-{lang}',
-                                                  languages=['en_US'])
+            languages.add(m.group(1))
+    return sorted(list(languages))
+
+# Create the main susedata.xml with translations, support, and disk usage information
+def create_susedata_xml(rpmdir, yml):
+    susedatas = {}
+    susedatas_count = {}
+
+    # find translation languages
+    languages = get_package_translation_languages()
+
+    # create gettext translator object
+    i18ntrans = {}
+    for lang in languages:
+        i18ntrans[lang] = gettext.translation(f'package-translations-{lang}',
+                                              languages=['en_US'])
 
     # read repomd.xml
     ns = '{http://linux.duke.edu/metadata/repo}'
@@ -521,24 +527,29 @@ def create_susedata_xml(rpmdir, yml):
     tree = ET.parse(openfunction(rpmdir + '/' + primary_fn, 'rb'))
     ns = '{http://linux.duke.edu/metadata/common}'
 
-    # Create susedata structure
-    susedata = ET.Element('susedata')
-    susedata.set('xmlns', 'http://linux.duke.edu/metadata/susedata')
+    # Create main susedata structure
+    susedatas[''] = ET.Element('susedata')
+    susedatas_count[''] = 0
+
     # go for every rpm file of the repo via the primary
-    count = 0
     for pkg in tree.findall(f".//{ns}package[@type='rpm']"):
         name = pkg.find(f'{ns}name').text
         pkgid = pkg.find(f'{ns}checksum').text
         arch = pkg.find(f'{ns}arch').text
         version = pkg.find(f'{ns}version').attrib
 
-        package = ET.SubElement(susedata, 'package')
+        susedatas_count[''] += 1
+        package = ET.SubElement(susedatas[''], 'package')
         package.set('name', name)
         package.set('pkgid', pkgid)
         package.set('arch', arch)
         ET.SubElement(package, 'version', version)
+
+        # add supportstatus
         if name in supportstatus and supportstatus[name] is not None:
             ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
+
+        # add disk usage data
         location = pkg.find(f'{ns}location').get('href')
         if os.path.exists(rpmdir + '/' + location):
             p = Package()
@@ -549,28 +560,25 @@ def create_susedata_xml(rpmdir, yml):
                 dirselement = ET.SubElement(duelement, 'dirs')
                 for duitem in dudata:
                     ET.SubElement(dirselement, 'dir', { 'name': duitem[0], 'size': str(duitem[1]), 'count': str(duitem[2]) })
-        count += 1
 
-        # look for pattern category
-        category = None
-        for c in pkg.findall(".//{http://linux.duke.edu/metadata/rpm}entry[@name='pattern-category()']"):
-            category = Package._cpeid_hexdecode(c.get('ver'))
-
-        # looking for translations for this package
+        # get summary/description/category of the package
         summary = pkg.find(f'{ns}summary').text
         description = pkg.find(f'{ns}description').text
+        category = pkg.find(".//{http://linux.duke.edu/metadata/rpm}entry[@name='pattern-category()']")
+        category = Package._cpeid_hexdecode(category.get('ver')) if category else None
+
+        # look for translations
         for lang in languages:
             isummary = i18ntrans[lang].gettext(summary)
             idescription = i18ntrans[lang].gettext(description)
-            icategory = i18ntrans[lang].gettext(category) if category else None
+            icategory = i18ntrans[lang].gettext(category) if category is not None else None
             if isummary == summary and idescription == description and icategory == category:
                 continue
-            if lang not in i18ndata:
-                i18ndata[lang] = ET.Element('susedata')
-                i18ndata[lang].set('xmlns', 'http://linux.duke.edu/metadata/susedata')
-                i18ndata_count[lang] = 0
-            i18ndata_count[lang] += 1
-            ipackage = ET.SubElement(i18ndata[lang], 'package')
+            if lang not in susedatas:
+                susedatas[lang] = ET.Element('susedata')
+                susedatas_count[lang] = 0
+            susedatas_count[lang] += 1
+            ipackage = ET.SubElement(susedatas[lang], 'package')
             ipackage.set('name', name)
             ipackage.set('pkgid', pkgid)
             ipackage.set('arch', arch)
@@ -581,29 +589,17 @@ def create_susedata_xml(rpmdir, yml):
                 ET.SubElement(ipackage, 'description', {'lang': lang}).text = idescription
             if icategory != category:
                 ET.SubElement(ipackage, 'category', {'lang': lang}).text = icategory
-    susedata.set('packages', str(count))
-    ET.indent(susedata, space="    ", level=0)
 
-    susedata_fn = rpmdir + '/susedata.xml'
-    with open(susedata_fn, 'x') as sd_file:
-        sd_file.write(ET.tostring(susedata, encoding=ET_ENCODING))
-    mr = ModifyrepoWrapper(
-        file=susedata_fn,
-        directory=os.path.join(rpmdir, "repodata"),
-    )
-    mr.run_cmd()
-    os.unlink(susedata_fn)
-
-    for lang in i18ndata:
-        i18ndata[lang].set('packages', str(i18ndata_count[lang]))
-        susedata_fn = rpmdir + f'/susedata.{lang}.xml'
-        ET.indent(i18ndata[lang], space="    ", level=0)
-
+    # write all susedata files
+    for lang, susedata in sorted(susedatas.items()):
+        susedata.set('xmlns', 'http://linux.duke.edu/metadata/susedata')
+        susedata.set('packages', str(susedatas_count[lang]))
+        ET.indent(susedata, space="    ", level=0)
+        susedata_fn = rpmdir + (f'/susedata.{lang}.xml' if lang else '/susedata.xml')
         with open(susedata_fn, 'x') as sd_file:
-            sd_file.write(ET.tostring(i18ndata[lang], encoding=ET_ENCODING))
+            sd_file.write(ET.tostring(susedata, encoding=ET_ENCODING))
         mr = ModifyrepoWrapper(
             file=susedata_fn,
-            mdtype=f'susedata.{lang}',
             directory=os.path.join(rpmdir, "repodata"),
         )
         mr.run_cmd()
