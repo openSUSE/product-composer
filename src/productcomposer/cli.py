@@ -314,22 +314,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     mediaproducts = [yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1']
     create_media_dir(maindir, mediavendor, mediaident, mediaproducts)
 
-    # CHECKSUMS file
     create_checksums_file(maindir)
-
-    # repodata/appdata
-    # currently not supported in ALP?
-#   if os.path.exists("/usr/bin/openSUSE-appstream-process"):
-#       args = [ "/usr/bin/openSUSE-appstream-process",
-#                rpmdir, rpmdir + "/repodata" ]
-#       run_helper(args)
-
-    # repodata/*susedata*
-#   if os.path.exists("/usr/bin/add_product_susedata"):
-#       args = [ "/usr/bin/add_product_susedata",
-#                '-p', #  diskusage data
-#                '-d', rpmdir ]
-#       run_helper(args)
 
     create_susedata_xml(rpmdir, yml)
 
