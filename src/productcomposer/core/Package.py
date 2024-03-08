@@ -114,4 +114,36 @@ class Package:
             return '<' in op
         return '=' in op
 
+    def get_directories(self):
+        h = self._read_rpm_header()
+        if h is None:
+            return None
+        dirs = {}
+        filedevs = h['filedevices']
+        fileinos= h['fileinodes']
+        filesizes = h['filesizes']
+        filemodes = h['filemodes']
+        dirnames = h['dirnames']
+        dirindexes = h['dirindexes']
+        basenames = h['basenames']
+        if not basenames:
+            return dirs
+        for basename, dirindex, filesize, filemode, filedev, fileino in zip(basenames, dirindexes, filesizes, filemodes, filedevs, fileinos):
+            dirname = dirnames[dirindex]
+            if isinstance(basename, bytes):
+                basename = basename.decode('utf-8')
+            if isinstance(dirname, bytes):
+                dirname = dirname.decode('utf-8')
+            if dirname != '' and not dirname.endswith('/'):
+                dirname += '/'
+            if not dirname in dirs:
+                dirs[dirname] = []
+            cookie = f"{filedev}/{fileino}"
+            if (filemode & 0o170000) != 0o100000:
+                filesize = 0
+            dirs[dirname].append((basename, filesize, cookie))
+        return dirs
+            
+            
+
 # vim: sw=4 et

@@ -456,6 +456,44 @@ def create_updateinfo_package(pkgentry):
         setattr(entry, tag, pkgentry.get(tag))
     return entry
 
+def generate_du_data(pkg, maxdepth):
+    dirs = pkg.get_directories()
+    seen = set()
+    dudata_size = {}
+    dudata_count = {}
+    for dir, filedatas in pkg.get_directories().items():
+        if dir == '':
+            dir = '/usr/src/packages/'
+        size = 0
+        count = 0
+        for filedata in filedatas:
+            (basename, filesize, cookie) = filedata
+            if cookie:
+                if cookie in seen:
+                    next
+                seen.add(cookie)
+                size += filesize
+                count += 1
+        dir = '/' + dir.strip('/')
+        subdir = ''
+        depth = 0
+        for comp in dir.split('/'):
+            if comp == '' and subdir != '':
+                next
+            subdir += comp + '/'
+            if subdir not in dudata_size:
+                dudata_size[subdir] = 0
+                dudata_count[subdir] = 0
+            dudata_size[subdir] += size
+            dudata_count[subdir] += count
+            depth += 1
+            if depth > maxdepth:
+                break
+    dudata = {}
+    for dir, size in dudata_size.items():
+        dudata[dir] = (size, dudata_count[dir])
+    return dudata
+
 # Create the main susedata.xml with support and disk usage informations
 
 
@@ -479,7 +517,7 @@ def create_susedata_xml(rpmdir, yml):
     # read repomd.xml
     ns = '{http://linux.duke.edu/metadata/repo}'
     tree = ET.parse(rpmdir + '/repodata/repomd.xml')
-    primary_fn = tree.find(f".//{ns}data[@type='primary']/{ns}location").attrib['href']
+    primary_fn = tree.find(f".//{ns}data[@type='primary']/{ns}location").get('href')
 
     # read compressed primary.xml
     openfunction = None
@@ -512,6 +550,13 @@ def create_susedata_xml(rpmdir, yml):
         ET.SubElement(package, 'version', version)
         if name in supportstatus and supportstatus[name] is not None:
             ET.SubElement(package, 'keyword').text = f'support_{supportstatus[name]}'
+        location = pkg.find(f'{ns}location').get('href')
+        if os.path.exists(rpmdir + '/' + location):
+            p = Package()
+            p.location = rpmdir + '/' + location
+            dudata = generate_du_data(p, 3)
+            for dirname, dirdata in sorted(dudata.items()):
+                ET.SubElement(package, 'diskusage').SubElement(package, 'dirs').SubElement(package, 'dir', {'name': dirname, 'size': dirdata[0], 'count': dirdata[1] })
         count += 1
 
         # look for pattern category
