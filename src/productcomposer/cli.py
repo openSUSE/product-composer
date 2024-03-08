@@ -513,7 +513,7 @@ def create_susedata_xml(rpmdir, yml):
             isummary = i18ntrans[lang].gettext(summary)
             idescription = i18ntrans[lang].gettext(description)
             icategory = i18ntrans[lang].gettext(category) if category else None
-            if isummary == summary and idescription == description:
+            if isummary == summary and idescription == description and icategory == category:
                 continue
             if lang not in i18ndata:
                 i18ndata[lang] = ET.Element('susedata')
