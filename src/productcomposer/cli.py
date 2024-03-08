@@ -474,9 +474,9 @@ def generate_du_data(pkg, maxdepth):
             depth += 1
             if depth > maxdepth:
                 break
-    dudata = {}
-    for dir, size in dudata_size.items():
-        dudata[dir] = (size, dudata_count[dir])
+    dudata = []
+    for dir, size in sorted(dudata_size.items()):
+        dudata.append((dir, size, dudata_count[dir]))
     return dudata
 
 # Create the main susedata.xml with support and disk usage informations
@@ -540,10 +540,11 @@ def create_susedata_xml(rpmdir, yml):
             p = Package()
             p.location = rpmdir + '/' + location
             dudata = generate_du_data(p, 3)
-            duelement = ET.SubElement(package, 'diskusage')
-            dirselement = ET.SubElement(duelement, 'dirs')
-            for dirname, dirdata in sorted(dudata.items()):
-                ET.SubElement(dirselement, 'dir', {'name': dirname, 'size': dirdata[0], 'count': dirdata[1] })
+            if dudata:
+                duelement = ET.SubElement(package, 'diskusage')
+                dirselement = ET.SubElement(duelement, 'dirs')
+                for duitem in dudata:
+                    ET.SubElement(dirselement, 'dir', { 'name': duitem[0], 'size': str(duitem[1]), 'count': str(duitem[2]) })
         count += 1
 
         # look for pattern category
