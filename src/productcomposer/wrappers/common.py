@@ -6,7 +6,6 @@ __all__ = (
 
 import os
 import subprocess
-from abc import ABC
 from abc import abstractmethod
 
 from pydantic import BaseModel

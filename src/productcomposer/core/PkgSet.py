@@ -4,6 +4,7 @@
 
 from .PkgSelect import PkgSelect
 
+
 class PkgSet:
     def __init__(self, name):
         self.name = name
@@ -25,7 +26,7 @@ class PkgSet:
             sel = PkgSelect(spec, supportstatus=self.supportstatus)
             self.pkgs.append(sel)
         self.byname = None
-    
+
     def add(self, other):
         s1 = set(self)
         for sel in other.pkgs:
@@ -90,5 +91,5 @@ class PkgSet:
 
     def __iter__(self):
         return iter(self.pkgs)
-        
+
 # vim: sw=4 et

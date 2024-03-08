@@ -5,21 +5,22 @@
 import re
 import rpm
 
+
 class PkgSelect:
-    def __init__(self, spec, supportstatus = None):
+    def __init__(self, spec, supportstatus=None):
         self.supportstatus = supportstatus
         match = re.match(r'([^><=]*)([><=]=?)(.*)', spec.replace(' ', ''))
         if match:
-            self.name  = match.group(1)
-            self.op    = match.group(2)
-            epoch      = '0'
-            version    = match.group(3)
-            release    = None
+            self.name = match.group(1)
+            self.op = match.group(2)
+            epoch = '0'
+            version = match.group(3)
+            release = None
             if ':' in version:
                 (epoch, version) = version.split(':', 2)
             if '-' in version:
                 (version, release) = version.rsplit('-', 2)
-            self.epoch   = epoch 
+            self.epoch = epoch
             self.version = version
             self.release = release
         else:
@@ -31,7 +32,7 @@ class PkgSelect:
 
     def matchespkg(self, arch, pkg):
         return pkg.matches(arch, self.name, self.op, self.epoch, self.version, self.release)
-    
+
     @staticmethod
     def _sub_ops(op1, op2):
         if '>' in op2:
@@ -113,7 +114,7 @@ class PkgSelect:
             if '>' in self.op and '<' not in other.op:
                 return other
             if '<' in other.op and '>' not in self.op:
-                return self 
+                return self
             if '<' not in other.op and '>' not in self.op:
                 return None
         elif cmp > 0:
@@ -143,7 +144,7 @@ class PkgSelect:
         if self.epoch and self.epoch != '0':
             evr = self.epoch + ':' + evr
         return self.name + ' ' + self.op + ' ' + evr
-    
+
     def __hash__(self):
         if self.op:
             return hash((self.name, self.op, self.epoch, self.version, self.release))
@@ -154,5 +155,5 @@ class PkgSelect:
         if self.name != other.name:
             return False
         return str(self) == str(other)
-        
+
 # vim: sw=4 et

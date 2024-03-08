@@ -3,6 +3,8 @@
     python -m productcomposer  ...
 
 """
+
+
 def main():
     """ Execute the application.
 

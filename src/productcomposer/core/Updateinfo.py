@@ -5,6 +5,7 @@ import functools
 
 from xml.etree import ElementTree as ET
 
+
 @functools.total_ordering
 class Updateinfo:
     def __init__(self, location=None):

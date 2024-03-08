@@ -6,6 +6,7 @@ import re
 import rpm
 import functools
 
+
 @functools.total_ordering
 class Package:
     def __init__(self, location=None, rpm_ts=None):
@@ -49,7 +50,7 @@ class Package:
         h = self._read_rpm_header()
         if h is None:
             return None
-        return [ dep.DNEVR()[2:] for dep in rpm.ds(h, 'provides') ]
+        return [dep.DNEVR()[2:] for dep in rpm.ds(h, 'provides')]
 
     def _read_rpm_header(self, rpm_ts=None):
         if self.location is None:

@@ -8,6 +8,7 @@ import rpm
 from .Package import Package
 from .Updateinfo import Updateinfo
 
+
 class Pool:
     def __init__(self):
         self.rpms = {}
@@ -44,11 +45,11 @@ class Pool:
                 elif filename.endswith('.rpm'):
                     pkg = self.make_rpm(fname, rpm_ts=ts)
                     self.add_rpm(pkg, os.path.join(reldirpath, filename))
-        
+
     def lookup_all_rpms(self, arch, name, op=None, epoch=None, version=None, release=None):
         if name not in self.rpms:
             return []
-        return [ rpm for rpm in self.rpms[name] if rpm.matches(arch, name, op, epoch, version, release) ]
+        return [rpm for rpm in self.rpms[name] if rpm.matches(arch, name, op, epoch, version, release)]
 
     def lookup_rpm(self, arch, name, op=None, epoch=None, version=None, release=None):
         return max(self.lookup_all_rpms(arch, name, op, epoch, version, release), default=None)

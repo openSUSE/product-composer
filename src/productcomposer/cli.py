@@ -9,10 +9,8 @@ import subprocess
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
 
-import rpm
 import yaml
 
-from . import __version__
 from .core.logger import logger
 from .core.PkgSet import PkgSet
 from .core.Package import Package
@@ -36,6 +34,7 @@ chksums_tool = 'sha512sum'
 supportstatus = {}
 # per package override via supportstatus.txt file
 supportstatus_override = {}
+
 
 def main(argv=None) -> int:
     """ Execute the application CLI.
@@ -85,6 +84,7 @@ def main(argv=None) -> int:
     args.func(args)
     return 0
 
+
 def die(msg, details=None):
     if msg:
         print("ERROR: " + msg)
@@ -92,10 +92,12 @@ def die(msg, details=None):
         print(details)
     raise SystemExit(1)
 
+
 def warn(msg, details=None):
     print("WARNING: " + msg)
     if details:
         print(details)
+
 
 def note(msg):
     print(msg)
@@ -121,7 +123,7 @@ def build(args):
         directory = os.path.dirname(args.filename)
     reposdir = args.reposdir if args.reposdir else directory + "/repos"
 
-    supportstatus_fn = os.path.join(directory,'supportstatus.txt')
+    supportstatus_fn = os.path.join(directory, 'supportstatus.txt')
     if os.path.isfile(supportstatus_fn):
         parse_supportstatus(supportstatus_fn)
 
@@ -139,6 +141,7 @@ def build(args):
 
 def verify(args):
     parse_yaml(args.filename, args.flavor)
+
 
 def parse_yaml(filename, flavor):
 
@@ -175,11 +178,13 @@ def parse_yaml(filename, flavor):
 
     return yml
 
+
 def parse_supportstatus(filename):
     with open(filename, 'r') as file:
         for line in file.readlines():
             a = line.strip().split(' ')
             supportstatus_override[a[0]] = a[1]
+
 
 def get_product_dir(yml, flavor, release):
     name = yml['name'] + "-" + str(yml['version'])
@@ -202,9 +207,9 @@ def get_product_dir(yml, flavor, release):
 
 def run_helper(args, cwd=None, stdout=None, stdin=None, failmsg=None):
     if stdout is None:
-        stdout=subprocess.PIPE
+        stdout = subprocess.PIPE
     if stdin is None:
-        stdin=subprocess.PIPE
+        stdin = subprocess.PIPE
     popen = subprocess.Popen(args, stdout=stdout, stdin=stdin, cwd=cwd)
     if popen.wait():
         output = popen.stdout.read()
@@ -214,12 +219,13 @@ def run_helper(args, cwd=None, stdout=None, stdin=None, failmsg=None):
             die("Failed to run" + args[0], details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
+
 def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
     maindir = outdir + '/' + product_base_dir
-    rpmdir = maindir # we may offer to set it up in sub directories
+    rpmdir = maindir  # we may offer to set it up in sub directories
     if not os.path.exists(rpmdir):
         os.mkdir(rpmdir)
 
@@ -238,7 +244,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             debugdir = outdir + '/' + product_base_dir + '-Debug'
             os.mkdir(debugdir)
         elif yml['debug'] == 'drop':
-            debugdir = None 
+            debugdir = None
         elif yml['debug'] != 'include':
             die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
@@ -246,9 +252,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
 
     for arch in yml['architectures']:
-        unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1) # only for first medium am
+        unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1)  # only for first medium am
 
-    repos=[]
+    repos = []
     if disturl:
         match = re.match("^obs://([^/]*)/([^/]*)/.*", disturl)
         if match:
@@ -258,13 +264,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             repos = [repo]
     if vcs:
         repos.append(vcs)
- 
-    default_content=["pool"]
+
+    default_content = ["pool"]
     for file in os.listdir(rpmdir):
         if not file.startswith('gpg-pubkey-'):
             continue
 
-        args=['gpg', '--no-keyring', '--no-default-keyring', '--with-colons',
+        args = ['gpg', '--no-keyring', '--no-default-keyring', '--with-colons',
               '--import-options', 'show-only', '--import', '--fingerprint']
         out = run_helper(args, stdin=open(f'{rpmdir}/{file}', 'rb'),
                          failmsg="Finger printing of gpg file")
@@ -293,19 +299,19 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     # the tools read the subdirectory of the rpmdir from environment variable
     os.environ['ROOT_ON_CD'] = '.'
     if os.path.exists("/usr/bin/mk_changelog"):
-        args = [ "/usr/bin/mk_changelog", rpmdir ]
+        args = ["/usr/bin/mk_changelog", rpmdir]
         run_helper(args)
 
     # ARCHIVES.gz
     if os.path.exists("/usr/bin/mk_listings"):
-        args = [ "/usr/bin/mk_listings", rpmdir ]
+        args = ["/usr/bin/mk_listings", rpmdir]
         run_helper(args)
 
     # media.X structures FIXME
     mediavendor = yml['vendor'] + ' - ' + product_base_dir
     mediaident = product_base_dir
     # FIXME: calculate from product provides
-    mediaproducts = [ yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1' ]
+    mediaproducts = [yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1']
     create_media_dir(maindir, mediavendor, mediaident, mediaproducts)
 
     # CHECKSUMS file
@@ -340,7 +346,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         licensedir = rpmdir + ".license"
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
-        args = [ 'tar', 'xf', rpmdir + licensefilename, '-C', licensedir ]
+        args = ['tar', 'xf', rpmdir + licensefilename, '-C', licensedir]
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
@@ -358,38 +364,38 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             os.unlink(rpmdir + '/license.tar.gz')
 
     # detached signature
-    args = [ '/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml" ]
+    args = ['/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml"]
     run_helper(args, failmsg="create detached signature")
-    args = [ '/usr/lib/build/signdummy', '-d', maindir + '/CHECKSUMS' ]
+    args = ['/usr/lib/build/signdummy', '-d', maindir + '/CHECKSUMS']
     run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
     # pubkey
     with open(rpmdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
-        args = [ '/usr/lib/build/signdummy', '-p' ]
+        args = ['/usr/lib/build/signdummy', '-p']
         run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
     # do we need an ISO file?
     if 'iso' in yml:
         for workdir in [maindir, sourcedir, debugdir]:
             application_id = re.sub(r'^.*/', '', maindir)
-            args = [ '/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer' ]
-            args += [ '-r', '-pad', '-f', '-J', '-joliet-long' ]
+            args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
+            args += ['-r', '-pad', '-f', '-J', '-joliet-long']
             # FIXME: do proper multi arch handling
             isolinux = 'boot/' + yml['architectures'][0] + '/loader/isolinux.bin'
             if os.path.isfile(workdir + '/' + isolinux):
-                args += [ '-no-emul-boot', '-boot-load-size', '4', '-boot-info-table' ]
-                args += [ '-hide', 'glump', '-hide-joliet', 'glump' ]
-                args += [ '-eltorito-alt-boot', '-eltorito-platform', 'efi' ]
-                args += [ '-no-emul-boot' ]
-                #args += [ '-sort', $sort_file ]
-                #args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
-                args += [ '-b', isolinux]
+                args += ['-no-emul-boot', '-boot-load-size', '4', '-boot-info-table']
+                args += ['-hide', 'glump', '-hide-joliet', 'glump']
+                args += ['-eltorito-alt-boot', '-eltorito-platform', 'efi']
+                args += ['-no-emul-boot']
+                # args += [ '-sort', $sort_file ]
+                # args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
+                args += ['-b', isolinux]
             if 'publisher' in yml['iso']:
-                args += [ '-publisher', yml['iso']['publisher'] ]
+                args += ['-publisher', yml['iso']['publisher']]
             if 'volume_id' in yml['iso']:
-                args += [ '-V', yml['iso']['volume_id'] ]
-            args += [ '-A', application_id ]
-            args += [ '-o', workdir + '.iso', workdir ]
+                args += ['-V', yml['iso']['volume_id']]
+            args += ['-A', application_id]
+            args += ['-o', workdir + '.iso', workdir]
             run_helper(args, cwd=maindir, failmsg="create iso file")
 
     # create SBOM data
@@ -397,36 +403,39 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         spdx_distro = "ALP"
         spdx_distro += "-" + str(yml['version'])
         # SPDX
-        args = [ "/usr/lib/build/generate_sbom",
+        args = ["/usr/lib/build/generate_sbom",
                  "--format", 'spdx',
                  "--distro", spdx_distro,
-                 "--product", rpmdir 
+                 "--product", rpmdir
                ]
         with open(rpmdir + ".spdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
         # CycloneDX
-        args = [ "/usr/lib/build/generate_sbom",
+        args = ["/usr/lib/build/generate_sbom",
                  "--format", 'cyclonedx',
                  "--distro", spdx_distro,
-                 "--product", rpmdir 
+                 "--product", rpmdir
                ]
         with open(rpmdir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
 # create media info files
+
+
 def create_media_dir(maindir, vendorstr, identstr, products):
     media1dir = maindir + '/' + 'media.1'
     if not os.path.isdir(media1dir):
-        os.mkdir(media1dir) # we do only support seperate media atm
+        os.mkdir(media1dir)  # we do only support seperate media atm
     with open(media1dir + '/media', 'w') as media_file:
         media_file.write(vendorstr + "\n")
         media_file.write(identstr + "\n")
         media_file.write("1\n")
     if products:
         with open(media1dir + '/products', 'w') as products_file:
-            for productname in products: 
+            for productname in products:
                 products_file.write('/ ' + productname + "\n")
+
 
 def create_checksums_file(maindir):
     with open(maindir + '/CHECKSUMS', 'a') as chksums_file:
@@ -439,6 +448,8 @@ def create_checksums_file(maindir):
                     run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
 
 # create a fake package entry from an updateinfo package spec
+
+
 def create_updateinfo_package(pkgentry):
     entry = Package()
     for tag in 'name', 'epoch', 'version', 'release', 'arch':
@@ -446,6 +457,8 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 # Create the main susedata.xml with support and disk usage informations
+
+
 def create_susedata_xml(rpmdir, yml):
     # get supported translations based on local packages
     i18ndir = '/usr/share/locale/en_US/LC_MESSAGES/'
@@ -464,7 +477,7 @@ def create_susedata_xml(rpmdir, yml):
                                                   languages=['en_US'])
 
     # read repomd.xml
-    ns='{http://linux.duke.edu/metadata/repo}'
+    ns = '{http://linux.duke.edu/metadata/repo}'
     tree = ET.parse(rpmdir + '/repodata/repomd.xml')
     primary_fn = tree.find(f".//{ns}data[@type='primary']/{ns}location").attrib['href']
 
@@ -479,7 +492,7 @@ def create_susedata_xml(rpmdir, yml):
     else:
         die(f"unsupported primary compression type ({primary_fm})")
     tree = ET.parse(openfunction(rpmdir + '/' + primary_fn, 'rb'))
-    ns='{http://linux.duke.edu/metadata/common}'
+    ns = '{http://linux.duke.edu/metadata/common}'
 
     # Create susedata structure
     susedata = ET.Element('susedata')
@@ -487,9 +500,9 @@ def create_susedata_xml(rpmdir, yml):
     # go for every rpm file of the repo via the primary
     count = 0
     for pkg in tree.findall(f".//{ns}package[@type='rpm']"):
-        name    = pkg.find(f'{ns}name').text
-        pkgid   = pkg.find(f'{ns}checksum').text
-        arch    = pkg.find(f'{ns}arch').text
+        name = pkg.find(f'{ns}name').text
+        pkgid = pkg.find(f'{ns}checksum').text
+        arch = pkg.find(f'{ns}arch').text
         version = pkg.find(f'{ns}version').attrib
 
         package = ET.SubElement(susedata, 'package')
@@ -546,7 +559,7 @@ def create_susedata_xml(rpmdir, yml):
 
     for lang in i18ndata:
         i18ndata[lang].set('packages', str(i18ndata_count[lang]))
-        susedata_fn=rpmdir + f'/susedata.{lang}.xml'
+        susedata_fn = rpmdir + f'/susedata.{lang}.xml'
         ET.indent(i18ndata[lang], space="    ", level=0)
 
         with open(susedata_fn, 'x') as sd_file:
@@ -656,6 +669,7 @@ def post_createrepo(rpmdir, yml, content=[], repos=[]):
     cr.excludes = ["boot"]
     cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
+
 def unpack_one_meta_rpm(rpmdir, rpm, medium):
     tempdir = rpmdir + "/temp"
     os.mkdir(tempdir)
@@ -666,9 +680,10 @@ def unpack_one_meta_rpm(rpmdir, rpm, medium):
         shutil.copytree(skel_dir, rpmdir, dirs_exist_ok=True)
     shutil.rmtree(tempdir)
 
+
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
     missing_package = False
-    for unpack_pkgset_name in yml.get('unpack', [ 'unpack' ]):
+    for unpack_pkgset_name in yml.get('unpack', ['unpack']):
         unpack_pkgset = create_package_set(yml, arch, flavor, unpack_pkgset_name)
         for sel in unpack_pkgset:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
@@ -681,11 +696,12 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
 
+
 def create_package_set_compat(yml, arch, flavor, setname):
     if setname == 'main':
-        oldname = 'packages' 
+        oldname = 'packages'
     elif setname == 'unpack':
-        oldname = 'unpack_packages' 
+        oldname = 'unpack_packages'
     else:
         return None
     if oldname not in yml:
@@ -701,8 +717,9 @@ def create_package_set_compat(yml, arch, flavor, setname):
                     continue
             pkgset.add_specs(entry['packages'])
         else:
-            pkgset.add_specs([ str(entry) ])
+            pkgset.add_specs([str(entry)])
     return pkgset
+
 
 def create_package_set(yml, arch, flavor, setname):
     if 'packagesets' not in yml:
@@ -752,6 +769,7 @@ def create_package_set(yml, arch, flavor, setname):
         pkgsets[setname] = PkgSet(setname)      # instantiate
     return pkgsets[setname]
 
+
 def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=None):
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
@@ -790,7 +808,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
                 if srpm:
                     link_entry_into_dir(srpm, sourcedir)
                 else:
-                    details=f"         required by  {rpm}"
+                    details = f"         required by  {rpm}"
                     warn(f"source rpm package {srcrpm} not found", details=details)
                     missing_package = True
 
@@ -805,6 +823,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
+
 
 def link_file_into_dir(filename, directory):
     if not os.path.exists(directory):
@@ -823,11 +842,13 @@ def link_entry_into_dir(entry, directory):
     link_file_into_dir(entry.location, directory + '/' + entry.arch)
     add_entry_to_report(entry, directory)
 
+
 def add_entry_to_report(entry, directory):
     outname = directory + '/' + entry.arch + '/' + os.path.basename(entry.location)
     # first one wins, see link_file_into_dir
     if outname not in tree_report:
         tree_report[outname] = entry
+
 
 def write_report_file(directory, outfile):
     root = ET.Element('report')
@@ -854,6 +875,7 @@ def write_report_file(directory, outfile):
                 binary.set('cpeid', cpeid)
     tree = ET.ElementTree(root)
     tree.write(outfile)
+
 
 if __name__ == "__main__":
     try:
