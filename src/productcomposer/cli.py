@@ -555,8 +555,10 @@ def create_susedata_xml(rpmdir, yml):
             p = Package()
             p.location = rpmdir + '/' + location
             dudata = generate_du_data(p, 3)
+            duelement = ET.SubElement(package, 'diskusage')
+            dirselement = ET.SubElement(duelement, 'dirs')
             for dirname, dirdata in sorted(dudata.items()):
-                ET.SubElement(package, 'diskusage').SubElement(package, 'dirs').SubElement(package, 'dir', {'name': dirname, 'size': dirdata[0], 'count': dirdata[1] })
+                ET.SubElement(dirselement, 'dir', {'name': dirname, 'size': dirdata[0], 'count': dirdata[1] })
         count += 1
 
         # look for pattern category
