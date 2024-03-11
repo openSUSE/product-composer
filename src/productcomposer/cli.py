@@ -534,15 +534,12 @@ def create_susedata_xml(rpmdir, yml):
     # go for every rpm file of the repo via the primary
     for pkg in tree.findall(f".//{ns}package[@type='rpm']"):
         name = pkg.find(f'{ns}name').text
-        pkgid = pkg.find(f'{ns}checksum').text
         arch = pkg.find(f'{ns}arch').text
+        pkgid = pkg.find(f'{ns}checksum').text
         version = pkg.find(f'{ns}version').attrib
 
         susedatas_count[''] += 1
-        package = ET.SubElement(susedatas[''], 'package')
-        package.set('name', name)
-        package.set('pkgid', pkgid)
-        package.set('arch', arch)
+        package = ET.SubElement(susedatas[''], 'package', {'name': name, 'arch': arch, 'pkgid': pkgid})
         ET.SubElement(package, 'version', version)
 
         # add supportstatus
@@ -559,7 +556,7 @@ def create_susedata_xml(rpmdir, yml):
                 duelement = ET.SubElement(package, 'diskusage')
                 dirselement = ET.SubElement(duelement, 'dirs')
                 for duitem in dudata:
-                    ET.SubElement(dirselement, 'dir', { 'name': duitem[0], 'size': str(duitem[1]), 'count': str(duitem[2]) })
+                    ET.SubElement(dirselement, 'dir', {'name': duitem[0], 'size': str(duitem[1]), 'count': str(duitem[2])})
 
         # get summary/description/category of the package
         summary = pkg.find(f'{ns}summary').text
@@ -578,10 +575,7 @@ def create_susedata_xml(rpmdir, yml):
                 susedatas[lang] = ET.Element('susedata')
                 susedatas_count[lang] = 0
             susedatas_count[lang] += 1
-            ipackage = ET.SubElement(susedatas[lang], 'package')
-            ipackage.set('name', name)
-            ipackage.set('pkgid', pkgid)
-            ipackage.set('arch', arch)
+            ipackage = ET.SubElement(susedatas[lang], 'package', {'name': name, 'arch': arch, 'pkgid': pkgid})
             ET.SubElement(ipackage, 'version', version)
             if isummary != summary:
                 ET.SubElement(ipackage, 'summary', {'lang': lang}).text = isummary
