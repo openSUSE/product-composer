@@ -710,7 +710,7 @@ def unpack_one_meta_rpm(rpmdir, rpm, medium):
 
 def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
     missing_package = False
-    for unpack_pkgset_name in yml.get('unpack', ['unpack']):
+    for unpack_pkgset_name in yml.get('unpack', []):
         unpack_pkgset = create_package_set(yml, arch, flavor, unpack_pkgset_name)
         for sel in unpack_pkgset:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
