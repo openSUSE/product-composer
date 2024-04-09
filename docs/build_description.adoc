@@ -186,3 +186,9 @@ the ignore_missing_packages built option is used.
 Defines the company responsible for the content. Can be for example
 openSUSE or SUSE. It is used by the install stack.
 
+==== set_updateinfo_from
+
+Can be set to replace the "from" attribute in updateinfo.xml files with a fixed value.
+This is shown as patch provider by zypp stack. Otherwise the value stays, OBS is setting
+the packager from _patchinfo file here by default.
+

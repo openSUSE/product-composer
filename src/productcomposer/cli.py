@@ -621,6 +621,9 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
 
+            if yml['set_updateinfo_from']:
+                update.set('from', yml['set_updateinfo_from'])
+
             for pkgentry in parent.findall('package'):
                 src = pkgentry.get('src')
                 if os.path.exists(rpmdir + '/' + src):
