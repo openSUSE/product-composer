@@ -151,7 +151,7 @@ def parse_yaml(filename, flavor):
 
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1:
+    if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1 and yml['product_compose_schema'] != 0.2:
         die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
 
     if 'flavors' not in yml:
@@ -685,10 +685,17 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     product_summary = yml['summary'] or yml['name']
     product_summary += " " + str(yml['version'])
 
+    product_type = '/o'
+    if 'product-type' in yml:
+      if yml['product-type'] == 'base':
+        product_type = '/o'
+      elif yml['product-type'] == 'module':
+        product_type = '/a'
+      else:
+        die('Undefined product-type')
     cr = CreaterepoWrapper(directory=".")
     cr.distro = product_summary
-    # FIXME: /o is only for operating systems, we have nothing else atm
-    cr.cpeid = f"cpe:/o:{yml['vendor']}:{yml['name']}:{yml['version']}"
+    cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
     cr.repos = repos
 # cr.split = True
     # cr.baseurl = "media://"

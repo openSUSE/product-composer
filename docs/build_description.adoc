@@ -3,10 +3,11 @@
 
 === minimal version
 
- product_compose_schema: 0.1
+ product_compose_schema: 0.2
  vendor: I_and_myself
  name: my_product
  version: 1.0
+ product-type: module
 
  architectures: [ x86_64 ]
 
@@ -79,6 +80,16 @@ The product name.
 ==== version
 
 The product version
+
+==== summary
+
+The product name in explaining words. It will be presented to the
+user on overview screens
+
+==== product-type
+
+Either 'base' for operation systems or 'module' for any product
+depending on any existing installation.
 
 ==== architectures
 

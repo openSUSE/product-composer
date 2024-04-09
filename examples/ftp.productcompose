@@ -1,15 +1,22 @@
 # Our initial schema version. Be prepared that it breaks until we are
 # in full production mode
-product_compose_schema: 0.1
+product_compose_schema: 0.2
 
 vendor: openSUSE
 name: Tumbleweed
 version: 1.0
-
+product-type: base # or module
+# summary is the short product description as available in meta data
 summary: openSUSE Tumbleweed
-description: >
-  openSUSE Tumbleweed is the rolling distribution by the
-  openSUSE.org project.
+
+# scc data has no effect to the build result, it is just managing data
+# for the infrastructure
+scc:
+  description: >
+    openSUSE Tumbleweed is the rolling distribution by the
+    openSUSE.org project.
+  # family: sl-micro
+  # free: false
 
 iso:
   publisher:
