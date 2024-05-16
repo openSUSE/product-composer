@@ -631,6 +631,12 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
             if yml['set_updateinfo_from']:
                 update.set('from', yml['set_updateinfo_from'])
 
+            if yml['set_updateinfo_id_prefix']:
+                id_node = update.find('id')
+                # avoid double application of same prefix
+                id_text = re.sub(r'^'+yml['set_updateinfo_id_prefix'], '', id_node.text)
+                id_node.text = yml['set_updateinfo_id_prefix'] + id_text
+
             for pkgentry in parent.findall('package'):
                 src = pkgentry.get('src')
                 if os.path.exists(rpmdir + '/' + src):

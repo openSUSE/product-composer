@@ -204,3 +204,11 @@ Can be set to replace the "from" attribute in updateinfo.xml files with a fixed 
 This is shown as patch provider by zypp stack. Otherwise the value stays, OBS is setting
 the packager from _patchinfo file here by default.
 
+==== set_updateinfo_id_prefix
+
+Sets a fixed prefix to all id's of included updateinfo data. It is not adding again
+if the prefix exists already.
+
+This can be used to have a common identifier for an update for many products, but
+still being able to identify the filtering for a specific product.
+
