@@ -9,6 +9,10 @@ product-type: base # or module
 # summary is the short product description as available in meta data
 summary: openSUSE Tumbleweed
 
+# OBS specials:
+# bcntsynctag: MyProductFamily
+# milestone: Beta1
+
 # scc data has no effect to the build result, it is just managing data
 # for the infrastructure
 scc:

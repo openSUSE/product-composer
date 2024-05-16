@@ -103,6 +103,18 @@ if the package is not found natively.
 Setting a global architecture list is optional, when architectures
 are listed for each flavor.
 
+==== bcntsynctag
+
+Optionaly defines a bcntsynctag for OBS. OBS will sync the build
+counter over all packages in same repository and architecture
+according to this tag.
+
+==== milestone
+
+Optionaly defines a milestone which will be used by OBS at release
+time. This can be used to turn candidate builds into a Beta1 for
+example
+
 ==== build_options
 
 The build options may be used to change the behaviour of the build
