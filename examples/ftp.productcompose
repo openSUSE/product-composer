@@ -32,6 +32,7 @@ build_options:
 ### do not abort on missing packages
 - ignore_missing_packages
 # - hide_flavor_in_product_directory_name
+- block_updates_under_embargo
 
 # Enable collection of source and debug packages. Either "include" it
 # on main medium, "drop" it or "split" it away on extra medium.

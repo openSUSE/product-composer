@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import gettext
+from datetime import datetime
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
 
@@ -632,10 +633,14 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
 
-            if yml['set_updateinfo_from']:
+            # drop OBS internal patchinforef element
+            for pr in update.findall('patchinforef'):
+                update.remove(pr)
+
+            if 'set_updateinfo_from' in yml:
                 update.set('from', yml['set_updateinfo_from'])
 
-            if yml['set_updateinfo_id_prefix']:
+            if 'set_updateinfo_id_prefix' in yml:
                 id_node = update.find('id')
                 # avoid double application of same prefix
                 id_text = re.sub(r'^'+yml['set_updateinfo_id_prefix'], '', id_node.text)
@@ -643,6 +648,26 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
 
             for pkgentry in parent.findall('package'):
                 src = pkgentry.get('src')
+
+                # check for embargo date
+                embargo = pkgentry.find('embargo_date')
+                if embargo is not None:
+                    try:
+                        embargo_time = datetime.strptime(embargo.text, '%Y-%m-%d %H:%M')
+                    except ValueError:
+                        embargo_time = datetime.strptime(embargo.text, '%Y-%m-%d')
+
+                    if embargo_time > datetime.now():
+                        print("WARNING: Update is still under embargo! ", update.find('id').text)
+                        if 'block_updates_under_embargo' in yml['build_options']:
+                            die("shutting down due to block_updates_under_embargo flag")
+
+                # clean internal elements
+                for internal_element in ['supportstatus', 'superseded_by', 'embargo_date']:
+                    for e in pkgentry.findall(internal_element):
+                        pkgentry.remove(e)
+
+                # check if we have files for the entry
                 if os.path.exists(rpmdir + '/' + src):
                     needed = True
                     continue
