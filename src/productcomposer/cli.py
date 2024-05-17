@@ -228,16 +228,15 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         os.mkdir(outdir)
 
     maindir = outdir + '/' + product_base_dir
-    rpmdir = maindir  # we may offer to set it up in sub directories
-    if not os.path.exists(rpmdir):
-        os.mkdir(rpmdir)
+    if not os.path.exists(maindir):
+        os.mkdir(maindir)
 
-    sourcedir = debugdir = maindir
-
+    workdirectories = [ maindir ]
     if "source" in yml:
         if yml['source'] == 'split':
             sourcedir = outdir + '/' + product_base_dir + '-Source'
             os.mkdir(sourcedir)
+            workdirectories.append(sourcedir)
         elif yml['source'] == 'drop':
             sourcedir = None
         elif yml['source'] != 'include':
@@ -246,16 +245,17 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         if yml['debug'] == 'split':
             debugdir = outdir + '/' + product_base_dir + '-Debug'
             os.mkdir(debugdir)
+            workdirectories.append(debugdir)
         elif yml['debug'] == 'drop':
             debugdir = None
         elif yml['debug'] != 'include':
             die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
     for arch in yml['architectures']:
-        link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir, sourcedir)
+        link_rpms_to_tree(maindir, yml, pool, arch, flavor, debugdir, sourcedir)
 
     for arch in yml['architectures']:
-        unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium=1)  # only for first medium am
+        unpack_meta_rpms(maindir, yml, pool, arch, flavor, medium=1)  # only for first medium am
 
     repos = []
     if disturl:
@@ -269,13 +269,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         repos.append(vcs)
 
     default_content = ["pool"]
-    for file in os.listdir(rpmdir):
+    for file in os.listdir(maindir):
         if not file.startswith('gpg-pubkey-'):
             continue
 
         args = ['gpg', '--no-keyring', '--no-default-keyring', '--with-colons',
               '--import-options', 'show-only', '--import', '--fingerprint']
-        out = run_helper(args, stdin=open(f'{rpmdir}/{file}', 'rb'),
+        out = run_helper(args, stdin=open(f'{maindir}/{file}', 'rb'),
                          failmsg="Finger printing of gpg file")
         for line in out.splitlines():
             if not str(line).startswith("b'fpr:"):
@@ -283,13 +283,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
             default_content.append(str(line).split(':')[9])
 
-    run_createrepo(rpmdir, yml, content=default_content, repos=repos)
+    run_createrepo(maindir, yml, content=default_content, repos=repos)
     if debugdir:
         run_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
-    if not os.path.exists(rpmdir + '/repodata'):
+    if not os.path.exists(maindir + '/repodata'):
         die("run_createrepo did not create a repodata directory");
 
     write_report_file(maindir, maindir + '.report')
@@ -299,15 +299,15 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         write_report_file(debugdir, debugdir + '.report')
 
     # CHANGELOG file
-    # the tools read the subdirectory of the rpmdir from environment variable
+    # the tools read the subdirectory of the maindir from environment variable
     os.environ['ROOT_ON_CD'] = '.'
     if os.path.exists("/usr/bin/mk_changelog"):
-        args = ["/usr/bin/mk_changelog", rpmdir]
+        args = ["/usr/bin/mk_changelog", maindir]
         run_helper(args)
 
     # ARCHIVES.gz
     if os.path.exists("/usr/bin/mk_listings"):
-        args = ["/usr/bin/mk_listings", rpmdir]
+        args = ["/usr/bin/mk_listings", maindir]
         run_helper(args)
 
     # media.X structures FIXME
@@ -319,56 +319,57 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
     create_checksums_file(maindir)
 
-    create_susedata_xml(rpmdir, yml)
+    create_susedata_xml(maindir, yml)
     if debugdir:
         create_susedata_xml(debugdir, yml)
     if sourcedir:
         create_susedata_xml(sourcedir, yml)
 
-    create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir)
+    create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     licensefilename = '/license.tar'
-    if os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar') or os.path.exists(rpmdir + '/license-' + yml['name'] + '.tar.gz'):
+    if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
         licensefilename = '/license-' + yml['name'] + '.tar'
-    if os.path.exists(rpmdir + licensefilename + '.gz'):
-        run_helper(['gzip', '-d', rpmdir + licensefilename + '.gz'],
+    if os.path.exists(maindir + licensefilename + '.gz'):
+        run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
                    failmsg="Uncompress of license.tar.gz failed")
-    if os.path.exists(rpmdir + licensefilename):
-        licensedir = rpmdir + ".license"
+    if os.path.exists(maindir + licensefilename):
+        licensedir = maindir + ".license"
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
-        args = ['tar', 'xf', rpmdir + licensefilename, '-C', licensedir]
+        args = ['tar', 'xf', maindir + licensefilename, '-C', licensedir]
         output = run_helper(args, failmsg="extract license tar ball")
         if not os.path.exists(licensedir + "/license.txt"):
             die("No license.txt extracted", details=output)
 
         mr = ModifyrepoWrapper(
-            file=rpmdir + licensefilename,
-            directory=os.path.join(rpmdir, "repodata"),
+            file=maindir + licensefilename,
+            directory=os.path.join(maindir, "repodata"),
         )
         mr.run_cmd()
-        os.unlink(rpmdir + licensefilename)
+        os.unlink(maindir + licensefilename)
         # meta package may bring a second file or expanded symlink, so we need clean up
-        if os.path.exists(rpmdir + '/license.tar'):
-            os.unlink(rpmdir + '/license.tar')
-        if os.path.exists(rpmdir + '/license.tar.gz'):
-            os.unlink(rpmdir + '/license.tar.gz')
+        if os.path.exists(maindir + '/license.tar'):
+            os.unlink(maindir + '/license.tar')
+        if os.path.exists(maindir + '/license.tar.gz'):
+            os.unlink(maindir + '/license.tar.gz')
 
-    # detached signature
-    args = ['/usr/lib/build/signdummy', '-d', rpmdir + "/repodata/repomd.xml"]
-    run_helper(args, failmsg="create detached signature")
-    args = ['/usr/lib/build/signdummy', '-d', maindir + '/CHECKSUMS']
-    run_helper(args, failmsg="create detached signature for CHECKSUMS")
+    for workdir in workdirectories:
+        # detached signature
+        args = ['/usr/lib/build/signdummy', '-d', workdir + "/repodata/repomd.xml"]
+        run_helper(args, failmsg="create detached signature")
+        if os.path.exists(workdir + '/CHECKSUMS'):
+            args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
+            run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
-    # pubkey
-    with open(rpmdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
-        args = ['/usr/lib/build/signdummy', '-p']
-        run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
+        # pubkey
+        with open(workdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
+            args = ['/usr/lib/build/signdummy', '-p']
+            run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
-    # do we need an ISO file?
-    if 'iso' in yml:
-        for workdir in [maindir, sourcedir, debugdir]:
+        # do we need an ISO file?
+        if 'iso' in yml:
             application_id = re.sub(r'^.*/', '', maindir)
             args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
             args += ['-r', '-pad', '-f', '-J', '-joliet-long']
@@ -403,18 +404,18 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         args = ["/usr/lib/build/generate_sbom",
                  "--format", 'spdx',
                  "--distro", spdx_distro,
-                 "--product", rpmdir
+                 "--product", maindir
                ]
-        with open(rpmdir + ".spdx.json", 'w') as sbom_file:
+        with open(maindir + ".spdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
         # CycloneDX
         args = ["/usr/lib/build/generate_sbom",
                  "--format", 'cyclonedx',
                  "--distro", spdx_distro,
-                 "--product", rpmdir
+                 "--product", maindir
                ]
-        with open(rpmdir + ".cdx.json", 'w') as sbom_file:
+        with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
 # create media info files
