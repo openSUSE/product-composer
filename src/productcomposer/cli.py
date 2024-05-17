@@ -389,7 +389,10 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                 args += ['-V', yml['iso']['volume_id']]
             args += ['-A', application_id]
             args += ['-o', workdir + '.iso', workdir]
-            run_helper(args, cwd=maindir, failmsg="create iso file")
+            run_helper(args, cwd=outdir, failmsg="create iso file")
+            # simple tag media call ... we may add options for pading or triggering media check later
+            args = [ 'tagmedia' , '--digest' , 'sha256', workdir + '.iso' ]
+            run_helper(args, cwd=outdir, failmsg="tagmedia iso file")
             # creating .sha256 for iso file
             with open(workdir + ".iso.sha256", 'w') as sha_file:
                 # argument must not have the path
