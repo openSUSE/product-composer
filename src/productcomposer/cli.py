@@ -173,6 +173,8 @@ def parse_yaml(filename, flavor):
             yml['version'] = f['version']
         if 'product-type' in f:
             yml['product-type'] = f['product-type']
+        if 'product_directory_name' in f:
+            yml['product_directory_name'] = f['product_directory_name']
 
     if 'architectures' not in yml or not yml['architectures']:
         die("No architecture defined. Maybe wrong flavor?")
