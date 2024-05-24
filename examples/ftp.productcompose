@@ -29,10 +29,10 @@ iso:
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
 - take_all_available_versions
-### do not abort on missing packages
-- ignore_missing_packages
+# - ignore_missing_packages
 # - hide_flavor_in_product_directory_name
-- block_updates_under_embargo
+# - block_updates_under_embargo
+# - add_slsa_provenance
 
 # Enable collection of source and debug packages. Either "include" it
 # on main medium, "drop" it or "split" it away on extra medium.

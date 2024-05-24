@@ -15,26 +15,14 @@
   - my-single-rpm-package
 
 === build options
-==== take_all_available_versions
 
-By default only "the best" version of each rpm is taken.
-Use this switch to put all candidates on the medium.
-For example for maintenance repositories.
+The build options may be used to change the behaviour of the build
+process. The options are described in the details below.
 
-==== ignore_missing_packages
+Just add them to enable the desired functionality, no further
+arguments are allowed.
 
-Missing packages lead by default to a build failure.
-Use this switch to continue. The missing packages are
-still listed in the build log.
-
-==== hide_flavor_in_product_directory_name
-
-The flavor name is by default part of the directory
-name of the build result. This can be disabled, 
-when each flavor has a different arch list. Otherwise
-conflicts can happen.
-
-==== flavors
+=== flavors
 
 Flavors can be defined with any name. These can be
 used to build multiple media from one build description.
@@ -46,7 +34,7 @@ It can also be used to add different package sets.
 You need to add a _multibuild file to your sources
 to enable the build.
 
-==== unpack
+=== unpack
 
 unpack defines the packageset to be used for extracting
 the content of the rpm packages directly on the medium.
@@ -58,7 +46,7 @@ These rpm packages need to provide these files below
 Currently it gets only extracted to the first/main medium,
 but not on source or debug media.
 
-==== packagesets
+=== packagesets
 
 The packages list lists rpm names to be put on the medium.
 
@@ -117,10 +105,28 @@ example
 
 ==== build_options
 
-The build options may be used to change the behaviour of the build
-process. The options are described above.
+===== take_all_available_versions
 
-Just add them to enable them, no further arguments are allowed.
+By default only "the best" version of each rpm is taken.
+Use this switch to put all candidates on the medium.
+For example for maintenance repositories.
+
+===== ignore_missing_packages
+
+Missing packages lead by default to a build failure.
+Use this switch to continue. The missing packages are
+still listed in the build log.
+
+===== hide_flavor_in_product_directory_name
+
+The flavor name is by default part of the directory
+name of the build result. This can be disabled, 
+when each flavor has a different arch list. Otherwise
+conflicts can happen.
+
+===== add_slsa_provenance
+
+Add slsa provenance files for each rpm if available
 
 ==== debug
 
