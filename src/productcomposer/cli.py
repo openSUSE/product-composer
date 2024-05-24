@@ -927,7 +927,8 @@ def link_entry_into_dir(entry, directory, add_slsa=False):
         add_entry_to_report(entry, outname)
         if add_slsa:
             slsaname = entry.location.removesuffix('.rpm') + '.slsa_provenance.json'
-            link_file_into_dir(slsaname, directory + '/' + entry.arch)
+            if os.path.exists(slsaname):
+                link_file_into_dir(slsaname, directory + '/' + entry.arch)
 
 def add_entry_to_report(entry, outname):
     # first one wins, see link_file_into_dir
