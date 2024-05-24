@@ -853,6 +853,9 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
+    add_slsa = False
+    if 'add_slsa_provenance' in yml['build_options']:
+        add_slsa = True
 
     main_pkgset = create_package_set(yml, arch, flavor, 'main')
 
@@ -870,7 +873,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
             continue
 
         for rpm in rpms:
-            link_entry_into_dir(rpm, rpmdir)
+            link_entry_into_dir(rpm, rpmdir, add_slsa=add_slsa)
             if rpm.name in supportstatus_override:
                 supportstatus[rpm.name] = supportstatus_override[rpm.name]
             else:
@@ -885,7 +888,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
                 # so we need to add also the src rpm
                 srpm = pool.lookup_rpm(srcrpm.arch, srcrpm.name, '=', None, srcrpm.version, srcrpm.release)
                 if srpm:
-                    link_entry_into_dir(srpm, sourcedir)
+                    link_entry_into_dir(srpm, sourcedir, add_slsa=add_slsa)
                 else:
                     details = f"         required by  {rpm}"
                     warn(f"source rpm package {srcrpm} not found", details=details)
@@ -894,11 +897,11 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
             if debugdir:
                 drpm = pool.lookup_rpm(arch, srcrpm.name + "-debugsource", '=', None, srcrpm.version, srcrpm.release)
                 if drpm:
-                    link_entry_into_dir(drpm, debugdir)
+                    link_entry_into_dir(drpm, debugdir, add_slsa=add_slsa)
 
                 drpm = pool.lookup_rpm(arch, rpm.name + "-debuginfo", '=', rpm.epoch, rpm.version, rpm.release)
                 if drpm:
-                    link_entry_into_dir(drpm, debugdir)
+                    link_entry_into_dir(drpm, debugdir, add_slsa=add_slsa)
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages')
@@ -917,13 +920,16 @@ def link_file_into_dir(filename, directory):
             os.link(filename, outname)
 
 
-def link_entry_into_dir(entry, directory):
-    link_file_into_dir(entry.location, directory + '/' + entry.arch)
-    add_entry_to_report(entry, directory)
-
-
-def add_entry_to_report(entry, directory):
+def link_entry_into_dir(entry, directory, add_slsa=False):
     outname = directory + '/' + entry.arch + '/' + os.path.basename(entry.location)
+    if not os.path.exists(outname):
+        link_file_into_dir(entry.location, directory + '/' + entry.arch)
+        add_entry_to_report(entry, outname)
+        if add_slsa:
+            slsaname = entry.location.removesuffix('.rpm') + '.slsa_provenance.json'
+            link_file_into_dir(slsaname, directory + '/' + entry.arch)
+
+def add_entry_to_report(entry, outname):
     # first one wins, see link_file_into_dir
     if outname not in tree_report:
         tree_report[outname] = entry
