@@ -737,7 +737,6 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
       if yml['product-type'] == 'base':
         product_type = '/o'
       elif yml['product-type'] in ['module', 'extension']:
-        # TODO: Validate that modules and extensions share the same CPE prefix.
         product_type = '/a'
       else:
         die('Undefined product-type')
