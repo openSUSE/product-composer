@@ -912,28 +912,32 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
         die('Abort due to missing packages')
 
 
-def link_file_into_dir(filename, directory):
+def link_file_into_dir(source, directory, name=None):
     if not os.path.exists(directory):
         os.mkdir(directory)
-    outname = directory + '/' + os.path.basename(filename)
+    if name is None:
+        name = os.path.basename(source)
+    outname = directory + '/' + name
     if not os.path.exists(outname):
-        if os.path.islink(filename):
+        if os.path.islink(source):
             # osc creates a repos/ structure with symlinks to it's cache
             # but these would point outside of our media
-            shutil.copyfile(filename, outname)
+            shutil.copyfile(source, outname)
         else:
-            os.link(filename, outname)
+            os.link(source, outname)
 
 
 def link_entry_into_dir(entry, directory, add_slsa=False):
-    outname = directory + '/' + entry.arch + '/' + os.path.basename(entry.location)
+    canonfilename = entry.canonfilename
+    outname = directory + '/' + entry.arch + '/' + canonfilename
     if not os.path.exists(outname):
-        link_file_into_dir(entry.location, directory + '/' + entry.arch)
+        link_file_into_dir(entry.location, directory + '/' + entry.arch, name=canonfilename)
         add_entry_to_report(entry, outname)
         if add_slsa:
-            slsaname = entry.location.removesuffix('.rpm') + '.slsa_provenance.json'
-            if os.path.exists(slsaname):
-                link_file_into_dir(slsaname, directory + '/' + entry.arch)
+            slsalocation = entry.location.removesuffix('.rpm') + '.slsa_provenance.json'
+            if os.path.exists(slsalocation):
+                slsaname = canonfilename.removesuffix('.rpm') + '.slsa_provenance.json'
+                link_file_into_dir(slsalocation, directory + '/' + entry.arch, name=slsaname)
 
 def add_entry_to_report(entry, outname):
     # first one wins, see link_file_into_dir

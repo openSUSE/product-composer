@@ -46,6 +46,10 @@ class Package:
         return f"{self.name}-{self.evr}.{self.arch}"
 
     @property
+    def canonfilename(self):
+        return f"{self.name}-{self.version}-{self.release}.{self.arch}"
+
+    @property
     def provides(self):
         h = self._read_rpm_header()
         if h is None:
