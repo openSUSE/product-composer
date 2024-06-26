@@ -47,7 +47,7 @@ class Package:
 
     @property
     def canonfilename(self):
-        return f"{self.name}-{self.version}-{self.release}.{self.arch}"
+        return f"{self.name}-{self.version}-{self.release}.{self.arch}.rpm"
 
     @property
     def provides(self):
