@@ -737,7 +737,7 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     if 'product-type' in yml:
       if yml['product-type'] == 'base':
         product_type = '/o'
-      elif yml['product-type'] == 'module':
+      elif yml['product-type'] in ['module', 'extension']:
         product_type = '/a'
       else:
         die('Undefined product-type')
