@@ -817,7 +817,9 @@ def create_package_set(yml, arch, flavor, setname):
             die(f'package set {name} is already defined')
         pkgsets[name] = None
         if 'flavors' in entry:
-            if flavor is None or flavor not in entry['flavors']:
+            if flavor is None or entry['flavors'] is None:
+                continue
+            if flavor not in entry['flavors']:
                 continue
         if 'architectures' in entry:
             if arch not in entry['architectures']:
