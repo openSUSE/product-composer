@@ -235,6 +235,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         os.mkdir(maindir)
 
     workdirectories = [ maindir ]
+    debugdir = sourcedir = None
     if "source" in yml:
         if yml['source'] == 'split':
             sourcedir = outdir + '/' + product_base_dir + '-Source'
