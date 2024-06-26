@@ -79,6 +79,8 @@ user on overview screens
 Either 'base' for operation systems or 'module' for any product
 depending on any existing installation.
 
+'extension' is handled as alias for 'module'.
+
 ==== architectures
 
 An array of the master architectures to be put into the repository.
