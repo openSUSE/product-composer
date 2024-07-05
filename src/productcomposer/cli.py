@@ -625,7 +625,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     # build the union of the package sets for all requested architectures
     main_pkgset = PkgSet('main')
     for arch in yml['architectures']:
-        pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main'))
+        pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main', pool=pool))
     main_pkgset_names = main_pkgset.names()
 
     uitemp = None
@@ -803,7 +803,14 @@ def create_package_set_compat(yml, arch, flavor, setname):
     return pkgset
 
 
-def create_package_set(yml, arch, flavor, setname):
+def create_package_set_all(setname, pool, arch):
+    if pool is None:
+        die('need a package pool to create the __all__ package set')
+    pkgset = PkgSet(setname)
+    pkgset.add_specs(pool.names(arch))
+    return pkgset
+
+def create_package_set(yml, arch, flavor, setname, pool=None):
     if 'packagesets' not in yml:
         pkgset = create_package_set_compat(yml, arch, flavor, setname)
         if pkgset is None:
@@ -834,6 +841,8 @@ def create_package_set(yml, arch, flavor, setname):
             if setop not in entry:
                 continue
             for oname in entry[setop]:
+                if oname == '__all__' and oname not in pkgsets:
+                    pkgsets[oname] = create_package_set_all(oname, pool, arch)
                 if oname == name or oname not in pkgsets:
                     die(f'package set {oname} does not exist')
                 if pkgsets[oname] is None:
@@ -862,7 +871,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
     if 'add_slsa_provenance' in yml['build_options']:
         add_slsa = True
 
-    main_pkgset = create_package_set(yml, arch, flavor, 'main')
+    main_pkgset = create_package_set(yml, arch, flavor, 'main', pool=pool)
 
     missing_package = None
     for sel in main_pkgset:

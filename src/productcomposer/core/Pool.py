@@ -57,4 +57,15 @@ class Pool:
     def lookup_all_updateinfos(self):
         return self.updateinfos.values()
 
+    def names(self, arch=None):
+        if arch is None:
+            return set(self.rpms.keys())
+        names = set()
+        for name in self.rpms:
+            for pkg in self.rpms[name]:
+                if pkg.matches(arch, None, None, None, None, None):
+                    names.add(name)
+                    break
+        return names
+
 # vim: sw=4 et
