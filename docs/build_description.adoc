@@ -59,6 +59,44 @@ architectures.
 The packageset requires at least a packages definition,
 but may optionaly also a name, flavors or architectures.
 
+==== name
+
+Defines the name of the package set. 'main' is the default
+name.
+
+==== architecture
+
+Lists the architectures where the set is to be used. The
+default is for all architectures.
+
+==== flavor
+
+Lists the flavors where the set is to be used. The
+default is for all flavors.
+
+==== add
+
+Can be used to add further packagesets by specifing
+their names.
+
+A special packageset called '__all__' will add all
+package names local available.
+
+==== sub
+
+Can be used to remove packages from the specified
+packageset names.
+
+==== intersect
+
+Can be used to filter packages with specified package
+set lists.
+
+==== packages
+
+Lists all package names to be added. This is just the rpm
+name, not the file name.
+
 === Details
 
 ==== name
