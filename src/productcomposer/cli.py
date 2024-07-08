@@ -604,11 +604,13 @@ def create_susedata_xml(rpmdir, yml):
         susedata.set('xmlns', 'http://linux.duke.edu/metadata/susedata')
         susedata.set('packages', str(susedatas_count[lang]))
         ET.indent(susedata, space="    ", level=0)
-        susedata_fn = rpmdir + (f'/susedata.{lang}.xml' if lang else '/susedata.xml')
+        mdtype = (f'susedata.{lang}' if lang else 'susedata')
+        susedata_fn = f'{rpmdir}/{mdtype}.xml'
         with open(susedata_fn, 'x') as sd_file:
             sd_file.write(ET.tostring(susedata, encoding=ET_ENCODING))
         mr = ModifyrepoWrapper(
             file=susedata_fn,
+            mdtype=mdtype,
             directory=os.path.join(rpmdir, "repodata"),
         )
         mr.run_cmd()
