@@ -179,8 +179,11 @@ def parse_yaml(filename, flavor):
     if 'architectures' not in yml or not yml['architectures']:
         die("No architecture defined. Maybe wrong flavor?")
 
-    if 'build_options' not in yml:
+    if 'build_options' not in yml or yml['build_options'] is None:
         yml['build_options'] = []
+
+    if 'installcheck' in yml and yml['installcheck'] is None:
+        yml['installcheck'] = []
 
     return yml
 
@@ -211,18 +214,22 @@ def get_product_dir(yml, flavor, release):
     return name
 
 
-def run_helper(args, cwd=None, stdout=None, stdin=None, failmsg=None):
+def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None):
     if stdout is None:
         stdout = subprocess.PIPE
     if stdin is None:
         stdin = subprocess.PIPE
     popen = subprocess.Popen(args, stdout=stdout, stdin=stdin, cwd=cwd)
     if popen.wait():
-        output = popen.stdout.read()
+        output = popen.stdout.read().decode(errors='backslashreplace')
         if failmsg:
-            die("Failed to " + failmsg, details=output)
+            msg="Failed to " + failmsg
         else:
-            die("Failed to run" + args[0], details=output)
+            msg="Failed to run " + args[0]
+        if fatal:
+            die(msg, details=output)
+        else:
+            warn(msg, details=output)
     return popen.stdout.read() if stdout == subprocess.PIPE else ''
 
 
@@ -328,6 +335,16 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         create_susedata_xml(debugdir, yml)
     if sourcedir:
         create_susedata_xml(sourcedir, yml)
+
+    if 'installcheck' in yml:
+       for arch in yml['architectures']:
+           args = ['installcheck', arch, '--withsrc']
+           args.append(find_primary(maindir))
+           if debugdir:
+               args.append(find_primary(debugdir))
+           if sourcedir:
+               args.append(find_primary(sourcedir))
+           run_helper(args, fatal=('ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
 
     create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
@@ -510,6 +527,12 @@ def get_package_translation_languages():
             languages.add(m.group(1))
     return sorted(list(languages))
 
+# get the file name from repomd.xml
+def find_primary(directory):
+    ns = '{http://linux.duke.edu/metadata/repo}'
+    tree = ET.parse(directory + '/repodata/repomd.xml')
+    return directory + '/' + tree.find(f".//{ns}data[@type='primary']/{ns}location").get('href')
+
 # Create the main susedata.xml with translations, support, and disk usage information
 def create_susedata_xml(rpmdir, yml):
     susedatas = {}
@@ -524,10 +547,7 @@ def create_susedata_xml(rpmdir, yml):
         i18ntrans[lang] = gettext.translation(f'package-translations-{lang}',
                                               languages=['en_US'])
 
-    # read repomd.xml
-    ns = '{http://linux.duke.edu/metadata/repo}'
-    tree = ET.parse(rpmdir + '/repodata/repomd.xml')
-    primary_fn = tree.find(f".//{ns}data[@type='primary']/{ns}location").get('href')
+    primary_fn = find_primary(rpmdir)
 
     # read compressed primary.xml
     openfunction = None
@@ -538,8 +558,8 @@ def create_susedata_xml(rpmdir, yml):
         import zstandard
         openfunction = zstandard.open
     else:
-        die(f"unsupported primary compression type ({primary_fm})")
-    tree = ET.parse(openfunction(rpmdir + '/' + primary_fn, 'rb'))
+        die(f"unsupported primary compression type ({primary_fn})")
+    tree = ET.parse(openfunction(primary_fn, 'rb'))
     ns = '{http://linux.duke.edu/metadata/common}'
 
     # Create main susedata structure

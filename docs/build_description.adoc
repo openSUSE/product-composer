@@ -168,6 +168,15 @@ conflicts can happen.
 
 Add slsa provenance files for each rpm if available
 
+==== installcheck
+
+Runs a repository closure test for each architecture. This will
+report any missing dependencies and abort.
+
+===== ignore_errors
+
+For reporting the dependency errors, but ignoring them.
+
 ==== debug
 
 Configure the handling of debuginfo and debugsource rpms.
