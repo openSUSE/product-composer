@@ -11,7 +11,7 @@ class ModifyrepoWrapper(BaseWrapper):
     checksum_type: str = Field(default=defaults.CREATEREPO_CHECKSUM_TYPE)
     compress: bool = Field(default=True)
     compress_type: str = Field(default=defaults.CREATEREPO_GENERAL_COMPRESS_TYPE)
-    mdtype: str | None = Field()
+    mdtype: str | None = Field(default=None)
 
     def get_cmd(self):
         cmd = ["modifyrepo", self.file, self.directory]
