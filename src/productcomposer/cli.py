@@ -829,7 +829,8 @@ def create_package_set_all(setname, pool, arch):
     if pool is None:
         die('need a package pool to create the __all__ package set')
     pkgset = PkgSet(setname)
-    pkgset.add_specs(pool.names(arch))
+    pkgset.add_specs([n for n in pool.names(arch) if not (n.endswith('-debuginfo') or n.endswith('-debugsource'))])
+
     return pkgset
 
 def create_package_set(yml, arch, flavor, setname, pool=None):
