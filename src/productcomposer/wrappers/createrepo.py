@@ -4,13 +4,13 @@ from .. import defaults
 
 class CreaterepoWrapper(BaseWrapper):
     directory: str = Field()
-    baseurl: str | None = Field()
+    baseurl: str | None = Field(default=None)
     checksum_type: str = Field(default=defaults.CREATEREPO_CHECKSUM_TYPE)
-    content: list[str] | None = Field()
-    cpeid: str | None = Field()
-    distro: str | None = Field()
-    repos: list[str] | None = Field()
-    excludes: list[str] | None = Field()
+    content: list[str] | None = Field(default=None)
+    cpeid: str | None = Field(default=None)
+    distro: str | None = Field(default=None)
+    repos: list[str] | None = Field(default=None)
+    excludes: list[str] | None = Field(default=None)
     general_compress_type: str = Field(default=defaults.CREATEREPO_GENERAL_COMPRESS_TYPE)
     split: bool = Field(default=False)
 
