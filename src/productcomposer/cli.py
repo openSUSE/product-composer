@@ -404,9 +404,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                 # args += [ '-sort', $sort_file ]
                 # args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
                 args += ['-b', isolinux]
-            if 'publisher' in yml['iso']:
+            if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
                 args += ['-publisher', yml['iso']['publisher']]
-            if 'volume_id' in yml['iso']:
+            if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
                 args += ['-V', yml['iso']['volume_id']]
             args += ['-A', application_id]
             args += ['-o', workdir + '.iso', workdir]
