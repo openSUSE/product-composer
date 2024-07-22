@@ -21,6 +21,11 @@ class PkgSet:
             byname[name].append(sel)
         self.byname = byname
 
+    def _byname(self):
+        if self.byname is None:
+            self._create_byname()
+        return self.byname
+
     def add_specs(self, specs):
         for spec in specs:
             sel = PkgSelect(spec, supportstatus=self.supportstatus)
@@ -39,7 +44,7 @@ class PkgSet:
         self.byname = None
 
     def sub(self, other):
-        otherbyname = other.namedict()
+        otherbyname = other._byname()
         pkgs = []
         for sel in self.pkgs:
             name = sel.name
@@ -55,7 +60,7 @@ class PkgSet:
         self.byname = None
 
     def intersect(self, other):
-        otherbyname = other.namedict()
+        otherbyname = other._byname()
         pkgs = []
         s1 = set()
         pkgs = []
