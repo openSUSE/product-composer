@@ -168,6 +168,13 @@ conflicts can happen.
 
 Add slsa provenance files for each rpm if available
 
+===== abort_on_empty_updateinfo
+
+Existing updateinfo.xml are scanned by default and reduced to
+the available package binaries. In case none are found the
+update is skipped. Enableing this option leads to a build failure
+instead.
+
 ==== installcheck
 
 Runs a repository closure test for each architecture. This will
