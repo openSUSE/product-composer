@@ -34,6 +34,11 @@ It can also be used to add different package sets.
 You need to add a _multibuild file to your sources
 to enable the build.
 
+=== iso
+
+Enables iso file generation and requires configuration of
+iso9660 headers.
+
 === unpack
 
 unpack defines the packageset to be used for extracting
@@ -174,6 +179,20 @@ Existing updateinfo.xml are scanned by default and reduced to
 the available package binaries. In case none are found the
 update is skipped. Enableing this option leads to a build failure
 instead.
+
+==== iso
+
+===== publisher
+
+For setting the iso9660 PUBLISHER header
+
+===== vendor_id
+
+For setting the iso9660 VENDOR_ID header
+
+===== tree
+
+Can be set to "drop" for creating only the iso files.
 
 ==== installcheck
 

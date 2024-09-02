@@ -163,18 +163,16 @@ def parse_yaml(filename, flavor):
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
         # overwrite global values from flavor overwrites
-        if 'architectures' in f:
-            yml['architectures'] = f['architectures']
-        if 'name' in f:
-            yml['name'] = f['name']
-        if 'summary' in f:
-            yml['summary'] = f['summary']
-        if 'version' in f:
-            yml['version'] = f['version']
-        if 'product-type' in f:
-            yml['product-type'] = f['product-type']
-        if 'product_directory_name' in f:
-            yml['product_directory_name'] = f['product_directory_name']
+        for tag in ['architectures', 'name', 'summary', 'version',
+                    'product-type', 'product_directory_name']:
+            if tag in f:
+                yml[tag] = f[tag]
+        if 'iso' in f:
+            if not 'iso' in yml:
+                yml['iso'] = {}
+            for tag in ['volume_id', 'publisher', 'tree']:
+                if tag in f['iso']:
+                    yml['iso'][tag] = f['iso'][tag]
 
     if 'architectures' not in yml or not yml['architectures']:
         die("No architecture defined. Maybe wrong flavor?")
@@ -419,6 +417,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                 # argument must not have the path
                 args = [ 'sha256sum', workdir.split('/')[-1] + '.iso' ]
                 run_helper(args, cwd=outdir, stdout=sha_file, failmsg="create .iso.sha256 file")
+            if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
+                args = [ 'rm', '-rf', workdir ]
+                run_helper(args, failmsg="dropping rpm-md tree")
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
