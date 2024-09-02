@@ -25,6 +25,7 @@ scc:
 iso:
   publisher:
   volume_id:
+#  tree: drop
 
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
