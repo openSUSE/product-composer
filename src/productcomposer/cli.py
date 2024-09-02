@@ -665,8 +665,8 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
             if 'set_updateinfo_from' in yml:
                 update.set('from', yml['set_updateinfo_from'])
 
+            id_node = update.find('id')
             if 'set_updateinfo_id_prefix' in yml:
-                id_node = update.find('id')
                 # avoid double application of same prefix
                 id_text = re.sub(r'^'+yml['set_updateinfo_id_prefix'], '', id_node.text)
                 id_node.text = yml['set_updateinfo_id_prefix'] + id_text
@@ -727,6 +727,8 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                 parent.remove(pkgentry)
 
             if not needed:
+                if 'abort_on_empty_updateinfo' in yml['build_options']:
+                    die(f'Stumbled over an updateinfo.xml where no rpm is used: {id_node.text}')
                 continue
 
             if not uitemp:
