@@ -261,9 +261,11 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
     for arch in yml['architectures']:
+        note(f"Linking rpms for {arch}")
         link_rpms_to_tree(maindir, yml, pool, arch, flavor, debugdir, sourcedir)
 
     for arch in yml['architectures']:
+        note(f"Unpack rpms for {arch}")
         unpack_meta_rpms(maindir, yml, pool, arch, flavor, medium=1)  # only for first medium am
 
     repos = []
@@ -292,19 +294,25 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
             default_content.append(str(line).split(':')[9])
 
+    note("Create rpm-md data")
     run_createrepo(maindir, yml, content=default_content, repos=repos)
     if debugdir:
+        note("Create rpm-md data for debug directory")
         run_createrepo(debugdir, yml, content=["debug"], repos=repos)
     if sourcedir:
+        note("Create rpm-md data for source directory")
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     if not os.path.exists(maindir + '/repodata'):
         die("run_createrepo did not create a repodata directory");
 
+    note("Write report file")
     write_report_file(maindir, maindir + '.report')
     if sourcedir and maindir != sourcedir:
+        note("Write report file for source directory")
         write_report_file(sourcedir, sourcedir + '.report')
     if debugdir and maindir != debugdir:
+        note("Write report file for debug directory")
         write_report_file(debugdir, debugdir + '.report')
 
     # CHANGELOG file
@@ -336,6 +344,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
     if 'installcheck' in yml:
        for arch in yml['architectures']:
+           note(f"Run installcheck for {arch}")
            args = ['installcheck', arch, '--withsrc']
            args.append(find_primary(maindir))
            if debugdir:
@@ -354,6 +363,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
                    failmsg="Uncompress of license.tar.gz failed")
     if os.path.exists(maindir + licensefilename):
+        note("Setup .license directory")
         licensedir = maindir + ".license"
         if not os.path.exists(licensedir):
             os.mkdir(licensedir)
@@ -389,6 +399,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
         # do we need an ISO file?
         if 'iso' in yml:
+            note("Create iso files")
             application_id = re.sub(r'^.*/', '', maindir)
             args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
             args += ['-r', '-pad', '-f', '-J', '-joliet-long']
@@ -423,8 +434,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
     # create SBOM data
     if os.path.exists("/usr/lib/build/generate_sbom"):
-        spdx_distro = "ALP"
-        spdx_distro += "-" + str(yml['version'])
+        spdx_distro = f"{yml['name']}-{yml['version']}"
+        note(f"Creating sboom data for {spdx_distro}")
         # SPDX
         args = ["/usr/lib/build/generate_sbom",
                  "--format", 'spdx',
