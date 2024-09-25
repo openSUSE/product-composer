@@ -218,8 +218,12 @@ def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None
     if stdin is None:
         stdin = subprocess.PIPE
     popen = subprocess.Popen(args, stdout=stdout, stdin=stdin, cwd=cwd)
-    if popen.wait():
-        output = popen.stdout.read().decode(errors='backslashreplace')
+
+    output = popen.communicate()[0]
+    if isinstance(output, bytes):
+        output = output.decode(errors='backslashreplace')
+
+    if popen.returncode:
         if failmsg:
             msg="Failed to " + failmsg
         else:
@@ -228,7 +232,7 @@ def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None
             die(msg, details=output)
         else:
             warn(msg, details=output)
-    return popen.stdout.read() if stdout == subprocess.PIPE else ''
+    return output if stdout == subprocess.PIPE else ''
 
 
 def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=None):
