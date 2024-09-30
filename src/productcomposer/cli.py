@@ -355,7 +355,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                args.append(find_primary(debugdir))
            if sourcedir:
                args.append(find_primary(sourcedir))
-           run_helper(args, fatal=('ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
+           run_helper(args, fatal=(not 'ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
 
     create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
