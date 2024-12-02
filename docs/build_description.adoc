@@ -156,6 +156,17 @@ By default only "the best" version of each rpm is taken.
 Use this switch to put all candidates on the medium.
 For example for maintenance repositories.
 
+===== OBS_unordered_product_repos
+
+OBS is by default filtering rpm packages based on the repository
+path layering.
+
+This switch can be used to disable this behaviour in cases where
+a binary from a lower priorisated repository should be used.
+
+This can increase the amount of required binaries a lot when
+dealing with deep path lists.
+
 ===== ignore_missing_packages
 
 Missing packages lead by default to a build failure.
