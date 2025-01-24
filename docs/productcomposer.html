@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc" />
+<meta name="generator" content="AsciiDoc 10.2.1" />
 <title>productcomposer</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
@@ -837,10 +837,11 @@ architecture.</p></div>
 <h3 id="_minimal_version">5.1. minimal version</h3>
 <div class="literalblock">
 <div class="content">
-<pre><code>product_compose_schema: 0
+<pre><code>product_compose_schema: 0.2
 vendor: I_and_myself
 name: my_product
-version: 1.0</code></pre>
+version: 1.0
+product-type: module</code></pre>
 </div></div>
 <div class="literalblock">
 <div class="content">
@@ -854,27 +855,13 @@ version: 1.0</code></pre>
 </div>
 <div class="sect2">
 <h3 id="_build_options">5.2. build options</h3>
-<div class="sect3">
-<h4 id="_take_all_available_versions">5.2.1. take_all_available_versions</h4>
-<div class="paragraph"><p>By default only "the best" version of each rpm is taken.
-Use this switch to put all candidates on the medium.
-For example for maintenance repositories.</p></div>
+<div class="paragraph"><p>The build options may be used to change the behaviour of the build
+process. The options are described in the details below.</p></div>
+<div class="paragraph"><p>Just add them to enable the desired functionality, no further
+arguments are allowed.</p></div>
 </div>
-<div class="sect3">
-<h4 id="_ignore_missing_packages">5.2.2. ignore_missing_packages</h4>
-<div class="paragraph"><p>Missing packages lead by default to a build failure.
-Use this switch to continue. The missing packages are
-still listed in the build log.</p></div>
-</div>
-<div class="sect3">
-<h4 id="_hide_flavor_in_product_directory_name">5.2.3. hide_flavor_in_product_directory_name</h4>
-<div class="paragraph"><p>The flavor name is by default part of the directory
-name of the build result. This can be disabled,
-when each flavor has a different arch list. Otherwise
-conflicts can happen.</p></div>
-</div>
-<div class="sect3">
-<h4 id="_flavors">5.2.4. flavors</h4>
+<div class="sect2">
+<h3 id="_flavors">5.3. flavors</h3>
 <div class="paragraph"><p>Flavors can be defined with any name. These can be
 used to build multiple media from one build description.</p></div>
 <div class="paragraph"><p>Each flavor may define an own architecture list.</p></div>
@@ -882,34 +869,93 @@ used to build multiple media from one build description.</p></div>
 <div class="paragraph"><p>You need to add a _multibuild file to your sources
 to enable the build.</p></div>
 </div>
-<div class="sect3">
-<h4 id="_packages">5.2.5. packages</h4>
+<div class="sect2">
+<h3 id="_iso">5.4. iso</h3>
+<div class="paragraph"><p>Enables iso file generation and requires configuration of
+iso9660 headers.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_unpack">5.5. unpack</h3>
+<div class="paragraph"><p>unpack defines the packageset to be used for extracting
+the content of the rpm packages directly on the medium.</p></div>
+<div class="paragraph"><p>These rpm packages need to provide these files below</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><code>/usr/lib/skelcd/CD1</code></pre>
+</div></div>
+<div class="paragraph"><p>Currently it gets only extracted to the first/main medium,
+but not on source or debug media.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_packagesets">5.6. packagesets</h3>
 <div class="paragraph"><p>The packages list lists rpm names to be put on the medium.</p></div>
 <div class="paragraph"><p>There is usually one master list and in addition there
 can be addional optional lists.</p></div>
 <div class="paragraph"><p>The additional lists can be filtered by flavors and/or
 architectures.</p></div>
+<div class="paragraph"><p>The packageset requires at least a packages definition,
+but may optionaly also a name, flavors or architectures.</p></div>
+<div class="sect3">
+<h4 id="_name">5.6.1. name</h4>
+<div class="paragraph"><p>Defines the name of the package set. <em>main</em> is the default
+name.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_unpack_packages">5.2.6. unpack_packages</h4>
-<div class="paragraph"><p>The unpack_packages section can be used in the same way
-as the packages section.</p></div>
-<div class="paragraph"><p>The difference is that not the rpm itself is put
-on the medium, but the extracted content only.</p></div>
+<h4 id="_architecture">5.6.2. architecture</h4>
+<div class="paragraph"><p>Lists the architectures where the set is to be used. The
+default is for all architectures.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_flavor">5.6.3. flavor</h4>
+<div class="paragraph"><p>Lists the flavors where the set is to be used. The
+default is for all flavors.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_add">5.6.4. add</h4>
+<div class="paragraph"><p>Can be used to add further packagesets by specifing
+their names.</p></div>
+<div class="paragraph"><p>A special packageset called <em><em>all</em></em> will add all
+package names local available.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_sub">5.6.5. sub</h4>
+<div class="paragraph"><p>Can be used to remove packages from the specified
+packageset names.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_intersect">5.6.6. intersect</h4>
+<div class="paragraph"><p>Can be used to filter packages with specified package
+set lists.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_packages">5.6.7. packages</h4>
+<div class="paragraph"><p>Lists all package names to be added. This is just the rpm
+name, not the file name.</p></div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_details">5.3. Details</h3>
+<h3 id="_details">5.7. Details</h3>
 <div class="sect3">
-<h4 id="_name">5.3.1. name</h4>
+<h4 id="_name_2">5.7.1. name</h4>
 <div class="paragraph"><p>The product name.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_version">5.3.2. version</h4>
+<h4 id="_version">5.7.2. version</h4>
 <div class="paragraph"><p>The product version</p></div>
 </div>
 <div class="sect3">
-<h4 id="_architectures">5.3.3. architectures</h4>
+<h4 id="_summary">5.7.3. summary</h4>
+<div class="paragraph"><p>The product name in explaining words. It will be presented to the
+user on overview screens</p></div>
+</div>
+<div class="sect3">
+<h4 id="_product_type">5.7.4. product-type</h4>
+<div class="paragraph"><p>Either <em>base</em> for operation systems or <em>module</em> for any product
+depending on any existing installation.</p></div>
+<div class="paragraph"><p><em>extension</em> is handled as alias for <em>module</em>.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_architectures">5.7.5. architectures</h4>
 <div class="paragraph"><p>An array of the master architectures to be put into the repository.
 This can be used to build a single repository usable for many
 hardware architectures.</p></div>
@@ -919,20 +965,112 @@ if the package is not found natively.</p></div>
 are listed for each flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_build_options_2">5.3.4. build_options</h4>
-<div class="paragraph"><p>The build options may be used to change the behaviour of the build
-process. The options are described above.</p></div>
-<div class="paragraph"><p>Just add them to enable them, no further arguments are allowed.</p></div>
+<h4 id="_bcntsynctag">5.7.6. bcntsynctag</h4>
+<div class="paragraph"><p>Optionaly defines a bcntsynctag for OBS. OBS will sync the build
+counter over all packages in same repository and architecture
+according to this tag.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_debug">5.3.5. debug</h4>
+<h4 id="_milestone">5.7.7. milestone</h4>
+<div class="paragraph"><p>Optionaly defines a milestone which will be used by OBS at release
+time. This can be used to turn candidate builds into a Beta1 for
+example</p></div>
+</div>
+<div class="sect3">
+<h4 id="_build_options_2">5.7.8. build_options</h4>
+<div class="sect4">
+<h5 id="_take_all_available_versions">take_all_available_versions</h5>
+<div class="paragraph"><p>By default only "the best" version of each rpm is taken.
+Use this switch to put all candidates on the medium.
+For example for maintenance repositories.</p></div>
+</div>
+<div class="sect4">
+<h5 id="_obs_unordered_product_repos">OBS_unordered_product_repos</h5>
+<div class="paragraph"><p>OBS is by default filtering rpm packages based on the repository
+path layering.</p></div>
+<div class="paragraph"><p>This switch can be used to disable this behaviour in cases where
+a binary from a lower priorisated repository should be used.</p></div>
+<div class="paragraph"><p>This can increase the amount of required binaries a lot when
+dealing with deep path lists.</p></div>
+</div>
+<div class="sect4">
+<h5 id="_ignore_missing_packages">ignore_missing_packages</h5>
+<div class="paragraph"><p>Missing packages lead by default to a build failure.
+Use this switch to continue. The missing packages are
+still listed in the build log.</p></div>
+</div>
+<div class="sect4">
+<h5 id="_hide_flavor_in_product_directory_name">hide_flavor_in_product_directory_name</h5>
+<div class="paragraph"><p>The flavor name is by default part of the directory
+name of the build result. This can be disabled,
+when each flavor has a different arch list. Otherwise
+conflicts can happen.</p></div>
+</div>
+<div class="sect4">
+<h5 id="_add_slsa_provenance">add_slsa_provenance</h5>
+<div class="paragraph"><p>Add slsa provenance files for each rpm if available</p></div>
+</div>
+<div class="sect4">
+<h5 id="_abort_on_empty_updateinfo">abort_on_empty_updateinfo</h5>
+<div class="paragraph"><p>Existing updateinfo.xml are scanned by default and reduced to
+the available package binaries. In case none are found the
+update is skipped. Enableing this option leads to a build failure
+instead.</p></div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_iso_2">5.7.9. iso</h4>
+<div class="sect4">
+<h5 id="_publisher">publisher</h5>
+<div class="paragraph"><p>For setting the iso9660 PUBLISHER header</p></div>
+</div>
+<div class="sect4">
+<h5 id="_vendor_id">vendor_id</h5>
+<div class="paragraph"><p>For setting the iso9660 VENDOR_ID header</p></div>
+</div>
+<div class="sect4">
+<h5 id="_tree">tree</h5>
+<div class="paragraph"><p>Can be set to "drop" for creating only the iso files.</p></div>
+</div>
+<div class="sect4">
+<h5 id="_base">base</h5>
+<div class="paragraph"><p>Can be used to copy the result into a pre generated iso file.
+product-composer itself is not creating bootable iso images,
+aka installer images. But it can used for example iso images
+with the agama-installer and copies it&#8217;s build result.</p></div>
+<div class="paragraph"><p>Define an image prefix via base which needs to be available in
+/usr/libexec/base-isos directory.</p></div>
+<div class="paragraph"><p>product-composer will add the main product tree into /install
+directory of this media. The build result will be a single
+iso file name with the product name and a .install.iso suffix.</p></div>
+<div class="paragraph"><p>Only a single repository per product is usable. In case source
+or debug rpm&#8217;s need to be added, they need to be part of the
+main repository.</p></div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_installcheck">5.7.10. installcheck</h4>
+<div class="paragraph"><p>Runs a repository closure test for each architecture. This will
+report any missing dependencies and abort.</p></div>
+<div class="sect4">
+<h5 id="_ignore_errors">ignore_errors</h5>
+<div class="paragraph"><p>For reporting the dependency errors, but ignoring them.</p></div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_debug">5.7.11. debug</h4>
 <div class="paragraph"><p>Configure the handling of debuginfo and debugsource rpms.
 Use either</p></div>
 <div class="literalblock">
 <div class="content">
+<pre><code>debug: include</code></pre>
+</div></div>
+<div class="paragraph"><p>to include them or</p></div>
+<div class="literalblock">
+<div class="content">
 <pre><code>debug: drop</code></pre>
 </div></div>
-<div class="paragraph"><p>to exclude them or</p></div>
+<div class="paragraph"><p>to drop all debug packages or</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><code>debug: split</code></pre>
@@ -941,7 +1079,7 @@ Use either</p></div>
 <div class="paragraph"><p>Missing debug packages will always be ignored.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_packages_2">5.3.6. packages</h4>
+<h4 id="_packages_2">5.7.12. packages</h4>
 <div class="paragraph"><p>The package list. It can contain either simple name or it can
 be extended by a &gt;, &gt;=, =, &lt;, &#8656; operator to specify a
 specific version constraint.</p></div>
@@ -956,27 +1094,33 @@ matches any release.</p></div>
 or architectures.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_product_compose_schema">5.3.7. product_compose_schema</h4>
-<div class="paragraph"><p>Defines the level of the yaml syntax. We are currently at level 0.
+<h4 id="_product_compose_schema">5.7.13. product_compose_schema</h4>
+<div class="paragraph"><p>Defines the level of the yaml syntax.
 Please expect incompatible changes at any time atm.</p></div>
-<div class="paragraph"><p>This to used to provide backward compability.</p></div>
+<div class="paragraph"><p>This will be used to provide backward compability once
+we stabilized.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_product_directory_name">5.3.8. product_directory_name</h4>
+<h4 id="_product_directory_name">5.7.14. product_directory_name</h4>
 <div class="paragraph"><p>Can be used to specify a directory or medium name manually.
 The default is "name-version".</p></div>
 <div class="paragraph"><p>The directory name will always be suffixed by the architecture
 and build number.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_source">5.3.9. source</h4>
+<h4 id="_source">5.7.15. source</h4>
 <div class="paragraph"><p>Configure the handling of src or nosrc rpms for the picked binaries.
 Use either</p></div>
 <div class="literalblock">
 <div class="content">
+<pre><code>source: include</code></pre>
+</div></div>
+<div class="paragraph"><p>to include all source packages or</p></div>
+<div class="literalblock">
+<div class="content">
 <pre><code>source: drop</code></pre>
 </div></div>
-<div class="paragraph"><p>to exclude all source packages or</p></div>
+<div class="paragraph"><p>to drop all source packages or</p></div>
 <div class="literalblock">
 <div class="content">
 <pre><code>source: split</code></pre>
@@ -986,9 +1130,27 @@ Use either</p></div>
 the ignore_missing_packages built option is used.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_vendor">5.3.10. vendor</h4>
+<h4 id="_vendor">5.7.16. vendor</h4>
 <div class="paragraph"><p>Defines the company responsible for the content. Can be for example
 openSUSE or SUSE. It is used by the install stack.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_set_updateinfo_from">5.7.17. set_updateinfo_from</h4>
+<div class="paragraph"><p>Can be set to replace the "from" attribute in updateinfo.xml files with a fixed value.
+This is shown as patch provider by zypp stack. Otherwise the value stays, OBS is setting
+the packager from _patchinfo file here by default.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_set_updateinfo_id_prefix">5.7.18. set_updateinfo_id_prefix</h4>
+<div class="paragraph"><p>Sets a fixed prefix to all id&#8217;s of included updateinfo data. It is not adding again
+if the prefix exists already.</p></div>
+<div class="paragraph"><p>This can be used to have a common identifier for an update for many products, but
+still being able to identify the filtering for a specific product.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_block_updates_under_embargo">5.7.19. block_updates_under_embargo</h4>
+<div class="paragraph"><p>The current default is to include maintenance updates under embargo. This option can
+be set to abort when an embargo date is in future.</p></div>
 </div>
 </div>
 </div>
@@ -998,7 +1160,7 @@ openSUSE or SUSE. It is used by the install stack.</p></div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2023-12-05 15:26:40 CET
+ 2024-05-24 15:14:38 CEST
 </div>
 </div>
 </body>

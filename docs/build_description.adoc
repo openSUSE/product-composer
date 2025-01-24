@@ -205,6 +205,24 @@ For setting the iso9660 VENDOR_ID header
 
 Can be set to "drop" for creating only the iso files.
 
+===== base
+
+Can be used to copy the result into a pre generated iso file.
+product-composer itself is not creating bootable iso images,
+aka installer images. But it can used for example iso images
+with the agama-installer and copies it's build result.
+
+Define an image prefix via base which needs to be available in
+/usr/libexec/base-isos directory.
+
+product-composer will add the main product tree into /install
+directory of this media. The build result will be a single
+iso file name with the product name and a .install.iso suffix.
+
+Only a single repository per product is usable. In case source
+or debug rpm's need to be added, they need to be part of the
+main repository.
+
 ==== installcheck
 
 Runs a repository closure test for each architecture. This will

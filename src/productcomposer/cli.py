@@ -170,7 +170,7 @@ def parse_yaml(filename, flavor):
         if 'iso' in f:
             if not 'iso' in yml:
                 yml['iso'] = {}
-            for tag in ['volume_id', 'publisher', 'tree']:
+            for tag in ['volume_id', 'publisher', 'tree', 'base']:
                 if tag in f['iso']:
                     yml['iso'][tag] = f['iso'][tag]
 
@@ -401,8 +401,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             args = ['/usr/lib/build/signdummy', '-p']
             run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
-        # do we need an ISO file?
-        if 'iso' in yml:
+        if 'iso' in yml and not 'base' in yml['iso']:
             note("Create iso files")
             application_id = re.sub(r'^.*/', '', maindir)
             args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
@@ -435,6 +434,14 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
                 args = [ 'rm', '-rf', workdir ]
                 run_helper(args, failmsg="dropping rpm-md tree")
+
+    if 'iso' in yml and 'base' in yml['iso']:
+        note("Export main tree into agama iso file")
+        import glob
+        agamas = glob.glob(f"/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
+        args = ['xorriso', '-dev', agamas[0], '-map', workdirectories[0], '/install', '-outdev', workdirectories[0] + '.install.iso']
+        run_helper(args, failmsg="Adding tree to agama image")
+
 
     # create SBOM data
     generate_sbom_call = None
