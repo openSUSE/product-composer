@@ -437,11 +437,22 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                 run_helper(args, failmsg="dropping rpm-md tree")
 
     # create SBOM data
+    generate_sbom_call = None
     if os.path.exists("/usr/lib/build/generate_sbom"):
+        generate_sbom_call = ["/usr/lib/build/generate_sbom"]
+
+    # Take sbom generation from OBS server
+    # Con: build results are not reproducible
+    # Pro: SBOM formats are constant changing, we don't need to adapt always all distributions for that
+    if os.path.exists("/.build/generate_sbom"):
+        # unfortunatly, it is not exectuable by default
+        generate_sbom_call = ["perl", "-I", "/.build", "/.build/generate_sbom"]
+
+    if generate_sbom_call:
         spdx_distro = f"{yml['name']}-{yml['version']}"
         note(f"Creating sboom data for {spdx_distro}")
         # SPDX
-        args = ["/usr/lib/build/generate_sbom",
+        args = generate_sbom_call + [
                  "--format", 'spdx',
                  "--distro", spdx_distro,
                  "--product", maindir
@@ -450,10 +461,10 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
         # CycloneDX
-        args = ["/usr/lib/build/generate_sbom",
-                 "--format", 'cyclonedx',
-                 "--distro", spdx_distro,
-                 "--product", maindir
+        args = generate_sbom_call + [
+                  "--format", 'cyclonedx',
+                  "--distro", spdx_distro,
+                  "--product", maindir
                ]
         with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
