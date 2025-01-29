@@ -439,6 +439,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         note("Export main tree into agama iso file")
         import glob
         agamas = glob.glob(f"/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
+        if len(agamas) < 1:
+          print(f"ERROR: Base iso {yml['iso']['base']} not found in /usr/libexec/base-isos/")
+          exit(1)
+        if len(agamas) > 1:
+          print(f"ERROR: Multiple base isos for {yml['iso']['base']} are found in /usr/libexec/base-isos/")
+          exit(1)
         tempdir = f"{outdir}/mksusecd"
         os.mkdir(tempdir)
         args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
