@@ -439,13 +439,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         note("Export main tree into agama iso file")
         import glob
         agamas = glob.glob(f"/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
-        args = ['xorriso', '-boot_image', 'any', 'keep', '-indev', agamas[0], '-map', workdirectories[0], '/install', '-outdev', workdirectories[0] + '.install.iso']
-        if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
-            args += ['-publisher', yml['iso']['publisher']]
-        if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
-            args += ['-volid', yml['iso']['volume_id']]
+        tempdir = f"{outdir}/mksusecd"
+        os.mkdir(tempdir)
+        args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
         run_helper(args, failmsg="Adding tree to agama image")
-
+        args = ['mksusecd', agamas[0], tempdir, '--create', workdirectories[0] + '.install.iso']
+        run_helper(args, failmsg="Adding tree to agama image")
+        shutil.rmtree(tempdir)
 
     # create SBOM data
     generate_sbom_call = None
