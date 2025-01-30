@@ -36,6 +36,8 @@ chksums_tool = 'sha512sum'
 supportstatus = {}
 # per package override via supportstatus.txt file
 supportstatus_override = {}
+# debug aka verbose
+verbose_level = 0
 
 
 def main(argv=None) -> int:
@@ -111,6 +113,8 @@ def build(args):
         f = args.flavor.split('.')
         if f[0] != '':
             flavor = f[0]
+    if args.verbose:
+        verbose_level = 1
 
     if not args.out:
         # No subcommand was specified.
@@ -437,21 +441,42 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
     if 'iso' in yml and 'base' in yml['iso']:
         note("Export main tree into agama iso file")
+        if verbose_level > 0:
+            print(f"INFO: Looking for baseiso-{yml['iso']['base']} rpm on {yml['architectures'][0]}")
+        agama = pool.lookup_rpm(yml['architectures'][0], f"baseiso-{yml['iso']['base']}")
+        if agama is None:
+          print(f"ERROR: Base iso in baseiso-{yml['iso']['base']} rpm was not found")
+          exit(1)
+        if verbose_level > 0:
+            print(f"INFO: Found {agama.location}")
+        baseisodir = f"{outdir}/baseiso"
+        os.mkdir(baseisodir)
+        args = ['unrpm', '-q', agama.location]
+        run_helper(args, cwd=baseisodir, failmsg=f"Failing unpacking {agama.location}")
         import glob
-        agamas = glob.glob(f"/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
-        if len(agamas) < 1:
-          print(f"ERROR: Base iso {yml['iso']['base']} not found in /usr/libexec/base-isos/")
-          exit(1)
-        if len(agamas) > 1:
-          print(f"ERROR: Multiple base isos for {yml['iso']['base']} are found in /usr/libexec/base-isos/")
-          exit(1)
+        files = glob.glob(f"{baseisodir}/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
+        if len(files) < 1:
+           print(f"ERROR: Base iso {yml['iso']['base']} not found in {agama.location}")
+           exit(1)
+        if len(files) > 1:
+           print(f"ERROR: Multiple base isos for {yml['iso']['base']} are found in {agama.location}")
+           exit(1)
+        agamaiso = files[0]
+        if verbose_level > 0:
+            print(f"INFO: Found base iso image {agamaiso}")
+
+        # create new iso
         tempdir = f"{outdir}/mksusecd"
         os.mkdir(tempdir)
         args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
         run_helper(args, failmsg="Adding tree to agama image")
-        args = ['mksusecd', agamas[0], tempdir, '--create', workdirectories[0] + '.install.iso']
+        args = ['mksusecd', agamaiso, tempdir, '--create', workdirectories[0] + '.install.iso']
+        if verbose_level > 0:
+            print("Calling: ", args)
         run_helper(args, failmsg="Adding tree to agama image")
+        # cleanup
         shutil.rmtree(tempdir)
+        shutil.rmtree(baseisodir)
 
     # create SBOM data
     generate_sbom_call = None
