@@ -1036,10 +1036,13 @@ instead.</p></div>
 <h5 id="_base">base</h5>
 <div class="paragraph"><p>Can be used to copy the result into a pre generated iso file.
 product-composer itself is not creating bootable iso images,
-aka installer images. But it can used for example iso images
-with the agama-installer and copies it&#8217;s build result.</p></div>
-<div class="paragraph"><p>Define an image prefix via base which needs to be available in
-/usr/libexec/base-isos directory.</p></div>
+aka installer images. But it can used for example to use iso
+images with the agama-installer where it copies the main tree
+inside.</p></div>
+<div class="paragraph"><p>When defining a base iso name, it is expected that:
+ * the image gets provided via an rpm called baseiso-NAME
+ * the image is available in the /usr/libexec/base-isos directory
+   with the given NAME prefix.</p></div>
 <div class="paragraph"><p>product-composer will add the main product tree into /install
 directory of this media. The build result will be a single
 iso file name with the product name and a .install.iso suffix.</p></div>
