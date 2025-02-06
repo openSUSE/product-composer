@@ -191,6 +191,12 @@ the available package binaries. In case none are found the
 update is skipped. Enableing this option leads to a build failure
 instead.
 
+===== skip_updateinfos
+
+No updateinfo meta information is added to the media.
+This might be required when not using take_all_available_versions,
+but building on a former released code base.
+
 ==== iso
 
 ===== publisher
