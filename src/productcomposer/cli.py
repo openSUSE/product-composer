@@ -417,16 +417,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             application_id = re.sub(r'^.*/', '', maindir)
             args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
             args += ['-r', '-pad', '-f', '-J', '-joliet-long']
-            # FIXME: do proper multi arch handling
-            isolinux = 'boot/' + yml['architectures'][0] + '/loader/isolinux.bin'
-            if os.path.isfile(workdir + '/' + isolinux):
-                args += ['-no-emul-boot', '-boot-load-size', '4', '-boot-info-table']
-                args += ['-hide', 'glump', '-hide-joliet', 'glump']
-                args += ['-eltorito-alt-boot', '-eltorito-platform', 'efi']
-                args += ['-no-emul-boot']
-                # args += [ '-sort', $sort_file ]
-                # args += [ '-boot-load-size', block_size("boot/"+arch+"/loader") ]
-                args += ['-b', isolinux]
             if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
                 args += ['-publisher', yml['iso']['publisher']]
             if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
@@ -441,8 +431,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             create_sha256_for(workdir + ".iso")
             # cleanup
             if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
-                args = [ 'rm', '-rf', workdir ]
-                run_helper(args, failmsg="dropping rpm-md tree")
+                shutil.rmtree(workdir)
 
     if 'iso' in yml and 'base' in yml['iso']:
         note("Export main tree into agama iso file")
@@ -485,8 +474,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         shutil.rmtree(tempdir)
         shutil.rmtree(baseisodir)
         if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
-            args = [ 'rm', '-rf', workdir ]
-            run_helper(args, failmsg="dropping rpm-md tree")
+            shutil.rmtree(workdirectories[0])
 
     # create SBOM data
     generate_sbom_call = None
