@@ -57,6 +57,8 @@ flavors:
     architectures: [armv7l, aarch64]
     name: Tumbleweed_ARM
     summary: openSUSE Tumbleweed ARM
+    # debug: include
+    # source: drop
 
 unpack:
   - unpackset

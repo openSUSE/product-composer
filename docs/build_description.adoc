@@ -260,6 +260,8 @@ to create a seperate medium mwith -Debug suffix.
 
 Missing debug packages will always be ignored.
 
+This default setting may get specified per flavor.
+
 ==== packages
 
 The package list. It can contain either simple name or it can
@@ -311,6 +313,8 @@ to create a seperate medium with -Source suffix.
 
 A missing source package leads to a build failure unless
 the ignore_missing_packages built option is used.
+
+This default setting may get specified per flavor.
 
 ==== vendor
 
