@@ -239,6 +239,11 @@ def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None
             warn(msg, details=output)
     return output if stdout == subprocess.PIPE else ''
 
+def create_sha256_for(filename):
+    with open(filename + '.sha256', 'w') as sha_file:
+        # argument must not have the path
+        args = [ 'sha256sum', filename.split('/')[-1] ]
+        run_helper(args, cwd=("/"+os.path.join(*filename.split('/')[:-1])), stdout=sha_file, failmsg="create .sha256 file")
 
 def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
@@ -433,10 +438,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             args = [ 'tagmedia' , '--digest' , 'sha256', workdir + '.iso' ]
             run_helper(args, cwd=outdir, failmsg="tagmedia iso file")
             # creating .sha256 for iso file
-            with open(workdir + ".iso.sha256", 'w') as sha_file:
-                # argument must not have the path
-                args = [ 'sha256sum', workdir.split('/')[-1] + '.iso' ]
-                run_helper(args, cwd=outdir, stdout=sha_file, failmsg="create .iso.sha256 file")
+            create_sha256_for(workdir + ".iso")
+            # cleanup
             if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
                 args = [ 'rm', '-rf', workdir ]
                 run_helper(args, failmsg="dropping rpm-md tree")
@@ -476,9 +479,14 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         if verbose_level > 0:
             print("Calling: ", args)
         run_helper(args, failmsg="Adding tree to agama image")
+        # creating .sha256 for iso file
+        create_sha256_for(workdirectories[0] + '.install.iso')
         # cleanup
         shutil.rmtree(tempdir)
         shutil.rmtree(baseisodir)
+        if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
+            args = [ 'rm', '-rf', workdir ]
+            run_helper(args, failmsg="dropping rpm-md tree")
 
     # create SBOM data
     generate_sbom_call = None
