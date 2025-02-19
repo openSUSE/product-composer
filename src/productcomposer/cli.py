@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import gettext
+from copy import deepcopy
 from datetime import datetime
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
@@ -317,6 +318,14 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         note("Create rpm-md data for source directory")
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
+    repodatadirectories = []
+    if 'repodata' in yml and yml['repodata'] != 'all':
+        repodatadirectories = deepcopy(workdirectories)
+    if 'repodata' in yml:
+        for workdir in workdirectories:
+            for arch in yml['architectures']:
+                repodatadirectories.append(workdir + f"/{arch}")
+
     note("Write report file")
     write_report_file(maindir, maindir + '.report')
     if sourcedir and maindir != sourcedir:
@@ -347,21 +356,20 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
 
     create_checksums_file(maindir)
 
-    create_susedata_xml(maindir, yml)
-    if debugdir:
-        create_susedata_xml(debugdir, yml)
-    if sourcedir:
-        create_susedata_xml(sourcedir, yml)
+    for repodatadir in repodatadirectories:
+        create_susedata_xml(repodatadir, yml)
 
     if 'installcheck' in yml:
        for arch in yml['architectures']:
            note(f"Run installcheck for {arch}")
            args = ['installcheck', arch, '--withsrc']
-           args.append(find_primary(maindir))
+           if 'repodata' in yml:
+               subdir = f"/{arch}"
+           args.append(find_primary(maindir + subdir))
            if debugdir:
-               args.append(find_primary(debugdir))
+               args.append(find_primary(debugdir + subdir))
            if sourcedir:
-               args.append(find_primary(sourcedir))
+               args.append(find_primary(sourcedir + subdir))
            run_helper(args, fatal=(not 'ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
@@ -396,18 +404,20 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         if os.path.exists(maindir + '/license.tar.gz'):
             os.unlink(maindir + '/license.tar.gz')
 
-    for workdir in workdirectories:
+    for repodatadir in repodatadirectories:
         # detached signature
-        args = ['/usr/lib/build/signdummy', '-d', workdir + "/repodata/repomd.xml"]
+        args = ['/usr/lib/build/signdummy', '-d', repodatadir + "/repodata/repomd.xml"]
         run_helper(args, failmsg="create detached signature")
+
+        # pubkey
+        with open(repodatadir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
+            args = ['/usr/lib/build/signdummy', '-p']
+            run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
+
+    for workdir in workdirectories:
         if os.path.exists(workdir + '/CHECKSUMS'):
             args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
             run_helper(args, failmsg="create detached signature for CHECKSUMS")
-
-        # pubkey
-        with open(workdir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
-            args = ['/usr/lib/build/signdummy', '-p']
-            run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
         if 'iso' in yml and not 'base' in yml['iso']:
             note("Create iso files")
@@ -506,7 +516,10 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
-# create media info files
+    # cleanup main repodata if wanted
+    if 'repodata' in yml and yml['repodata'] != 'all':
+        for workdir in workdirectories:
+            shutil.rmtree(workdir + "/repodata")
 
 
 def create_media_dir(maindir, vendorstr, identstr, products):
@@ -838,8 +851,8 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     cr.content = content
     cr.excludes = ["boot"]
     # default case including all architectures. Unique URL for all of them.
-    if not 'repodata' in yml or yml['repodata'] != 'split':
-      cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
+    # we need it in any case at least temporarly
+    cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
     # multiple arch specific meta data set
     if 'repodata' in yml:
       cr.complete_arch_list = yml['architectures']

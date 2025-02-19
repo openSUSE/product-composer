@@ -52,6 +52,7 @@ class CreaterepoWrapper(BaseWrapper):
             cmd.append("--location-prefix=../")
             cmd.append(f"--outputdir={self.arch_specific_repodata}")
             for exclude in self.complete_arch_list:
-                cmd.append(f"--excludes=*.{exclude}.rpm$")
+                if exclude != self.arch_specific_repodata:
+                    cmd.append(f"--excludes=*.{exclude}.rpm")
 
         return cmd
