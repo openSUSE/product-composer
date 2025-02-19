@@ -316,6 +316,20 @@ the ignore_missing_packages built option is used.
 
 This default setting may get specified per flavor.
 
+==== repodata
+
+Write architecture specific repository meta data into the architecture
+specific sub directories. This way a client needs to process less
+data. The disadvantage is that different URL's need to be handled 
+per architecture.
+
+  repodata: split
+
+It is also possible to have a main repodata including all architectures
+in addition to the architecture splitted ones.
+
+  repodata: all
+
 ==== vendor
 
 Defines the company responsible for the content. Can be for example

@@ -1086,6 +1086,7 @@ Use either</p></div>
 </div></div>
 <div class="paragraph"><p>to create a seperate medium mwith -Debug suffix.</p></div>
 <div class="paragraph"><p>Missing debug packages will always be ignored.</p></div>
+<div class="paragraph"><p>This default setting may get specified per flavor.</p></div>
 </div>
 <div class="sect3">
 <h4 id="_packages_2">5.7.12. packages</h4>
@@ -1137,27 +1138,45 @@ Use either</p></div>
 <div class="paragraph"><p>to create a seperate medium with -Source suffix.</p></div>
 <div class="paragraph"><p>A missing source package leads to a build failure unless
 the ignore_missing_packages built option is used.</p></div>
+<div class="paragraph"><p>This default setting may get specified per flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_vendor">5.7.16. vendor</h4>
+<h4 id="_repodata">5.7.16. repodata</h4>
+<div class="paragraph"><p>Write architecture specific repository meta data into the architecture
+specific sub directories. This way a client needs to process less
+data. The disadvantage is that different URL&#8217;s need to be handled
+per architecture.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><code>repodata: split</code></pre>
+</div></div>
+<div class="paragraph"><p>It is also possible to have a main repodata including all architectures
+in addition to the architecture splitted ones.</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><code>repodata: all</code></pre>
+</div></div>
+</div>
+<div class="sect3">
+<h4 id="_vendor">5.7.17. vendor</h4>
 <div class="paragraph"><p>Defines the company responsible for the content. Can be for example
 openSUSE or SUSE. It is used by the install stack.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_set_updateinfo_from">5.7.17. set_updateinfo_from</h4>
+<h4 id="_set_updateinfo_from">5.7.18. set_updateinfo_from</h4>
 <div class="paragraph"><p>Can be set to replace the "from" attribute in updateinfo.xml files with a fixed value.
 This is shown as patch provider by zypp stack. Otherwise the value stays, OBS is setting
 the packager from _patchinfo file here by default.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_set_updateinfo_id_prefix">5.7.18. set_updateinfo_id_prefix</h4>
+<h4 id="_set_updateinfo_id_prefix">5.7.19. set_updateinfo_id_prefix</h4>
 <div class="paragraph"><p>Sets a fixed prefix to all id&#8217;s of included updateinfo data. It is not adding again
 if the prefix exists already.</p></div>
 <div class="paragraph"><p>This can be used to have a common identifier for an update for many products, but
 still being able to identify the filtering for a specific product.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_block_updates_under_embargo">5.7.19. block_updates_under_embargo</h4>
+<h4 id="_block_updates_under_embargo">5.7.20. block_updates_under_embargo</h4>
 <div class="paragraph"><p>The current default is to include maintenance updates under embargo. This option can
 be set to abort when an embargo date is in future.</p></div>
 </div>

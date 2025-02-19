@@ -45,6 +45,11 @@ build_options:
 source: split
 debug: drop
 
+# repository meta data is written into arch specific directories
+# + smaller size of meta data to be processed by the client
+# - different URL's per arch are needed
+repodata: split
+
 # The default architecture list. Each of these will be put on the medium.
 # It is optional to have a default list, when each flavor defines an
 # architecture list. The main package won't be build in that case.

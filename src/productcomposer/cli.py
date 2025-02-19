@@ -317,9 +317,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         note("Create rpm-md data for source directory")
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
-    if not os.path.exists(maindir + '/repodata'):
-        die("run_createrepo did not create a repodata directory");
-
     note("Write report file")
     write_report_file(maindir, maindir + '.report')
     if sourcedir and maindir != sourcedir:
@@ -840,7 +837,15 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     # cr.baseurl = "media://"
     cr.content = content
     cr.excludes = ["boot"]
-    cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
+    # default case including all architectures. Unique URL for all of them.
+    if not 'repodata' in yml or yml['repodata'] != 'split':
+      cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
+    # multiple arch specific meta data set
+    if 'repodata' in yml:
+      cr.complete_arch_list = yml['architectures']
+      for arch in yml['architectures']:
+        cr.arch_specific_repodata = arch
+        cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
 
 def unpack_one_meta_rpm(rpmdir, rpm, medium):

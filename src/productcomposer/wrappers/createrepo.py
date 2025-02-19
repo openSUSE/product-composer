@@ -13,6 +13,8 @@ class CreaterepoWrapper(BaseWrapper):
     excludes: list[str] | None = Field(default=None)
     general_compress_type: str = Field(default=defaults.CREATEREPO_GENERAL_COMPRESS_TYPE)
     split: bool = Field(default=False)
+    arch_specific_repodata: str | None = Field(default=None)
+    complete_arch_list: list[str] | None = Field(default=None)
 
     def get_cmd(self):
         cmd = ["createrepo", self.directory]
@@ -45,5 +47,11 @@ class CreaterepoWrapper(BaseWrapper):
 
         if self.split:
             cmd.append("--split")
+
+        if self.arch_specific_repodata:
+            cmd.append("--location-prefix=../")
+            cmd.append(f"--outputdir={self.arch_specific_repodata}")
+            for exclude in self.complete_arch_list:
+                cmd.append(f"--excludes=*.{exclude}.rpm$")
 
         return cmd
