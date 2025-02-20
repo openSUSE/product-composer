@@ -475,8 +475,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         if verbose_level > 0:
             print("Calling: ", args)
         run_helper(args, failmsg="Adding tree to agama image")
-        # just for the bootable image
-        run_helper(['verifymedia', workdirectories[0] + '.install.iso'], fatal=False, failmsg="Verification of install.iso")
+        # just for the bootable image, signature is not yet applied, so ignore that error
+        run_helper(['verifymedia', workdirectories[0] + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="Verification of install.iso")
         # creating .sha256 for iso file
         create_sha256_for(workdirectories[0] + '.install.iso')
         # cleanup
