@@ -521,7 +521,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     # cleanup main repodata if wanted
     if 'repodata' in yml and yml['repodata'] != 'all':
         for workdir in workdirectories:
-            shutil.rmtree(workdir + "/repodata")
+            if sourcedir != workdir:
+                shutil.rmtree(workdir + "/repodata")
 
 
 def create_media_dir(maindir, vendorstr, identstr, products):
@@ -859,8 +860,9 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     if 'repodata' in yml:
       cr.complete_arch_list = yml['architectures']
       for arch in yml['architectures']:
-        cr.arch_specific_repodata = arch
-        cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
+        if os.path.isdir(f"{rpmdir}/{arch}"):
+          cr.arch_specific_repodata = arch
+          cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
 
 def unpack_one_meta_rpm(rpmdir, rpm, medium):
