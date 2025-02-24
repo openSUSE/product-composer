@@ -323,6 +323,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         repodatadirectories = deepcopy(workdirectories)
     if 'repodata' in yml:
         for workdir in workdirectories:
+            if sourcedir == workdir:
+                continue
             for arch in yml['architectures']:
                 repodatadirectories.append(workdir + f"/{arch}")
 
@@ -357,7 +359,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     create_checksums_file(maindir)
 
     for repodatadir in repodatadirectories:
-        create_susedata_xml(repodatadir, yml)
+        if os.path.exists(f"{repodatadir}/repodata"):
+            create_susedata_xml(repodatadir, yml)
 
     if 'installcheck' in yml:
        for arch in yml['architectures']:
@@ -368,8 +371,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
            args.append(find_primary(maindir + subdir))
            if debugdir:
                args.append(find_primary(debugdir + subdir))
-           if sourcedir:
-               args.append(find_primary(sourcedir + subdir))
            run_helper(args, fatal=(not 'ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
