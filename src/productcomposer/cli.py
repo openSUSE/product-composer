@@ -368,6 +368,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
            args = ['installcheck', arch, '--withsrc']
            if 'repodata' in yml:
                subdir = f"/{arch}"
+           if not os.path.exists(maindir + subdir):
+               print(f"WARNING: expected path is missing, no rpm files matched? ({maindir}{subdir})")
+               continue
            args.append(find_primary(maindir + subdir))
            if debugdir:
                args.append(find_primary(debugdir + subdir))
