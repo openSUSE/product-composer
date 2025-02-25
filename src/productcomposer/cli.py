@@ -522,11 +522,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
-    # cleanup main repodata if wanted
+    # cleanup main repodata if wanted and existing
     if 'repodata' in yml and yml['repodata'] != 'all':
         for workdir in workdirectories:
-            if sourcedir != workdir:
-                shutil.rmtree(workdir + "/repodata")
+            repodatadir = workdir + "/repodata"
+            if os.path.exists(repodatadir):
+                shutil.rmtree(repodatadir)
 
 
 def create_media_dir(maindir, vendorstr, identstr, products):
