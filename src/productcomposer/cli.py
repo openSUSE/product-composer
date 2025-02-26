@@ -366,6 +366,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
        for arch in yml['architectures']:
            note(f"Run installcheck for {arch}")
            args = ['installcheck', arch, '--withsrc']
+           subdir = ""
            if 'repodata' in yml:
                subdir = f"/{arch}"
            if not os.path.exists(maindir + subdir):
