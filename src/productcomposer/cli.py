@@ -470,8 +470,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         # create new iso
         tempdir = f"{outdir}/mksusecd"
         os.mkdir(tempdir)
-        args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
-        run_helper(args, failmsg="Adding tree to agama image")
+        if not 'base_skip_packages' in yml['build_options']:
+            args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
+            run_helper(args, failmsg="Adding tree to agama image")
         args = ['mksusecd', agamaiso, tempdir, '--create', workdirectories[0] + '.install.iso']
         if verbose_level > 0:
             print("Calling: ", args)
