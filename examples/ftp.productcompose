@@ -34,8 +34,9 @@ build_options:
 # - ignore_missing_packages
 # - hide_flavor_in_product_directory_name
 # - block_updates_under_embargo
-# - skip_updateinfos
 # - add_slsa_provenance
+# - skip_updateinfos
+# - updateinfo_packages_only
 
 #installcheck:
 # - ignore_errors

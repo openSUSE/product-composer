@@ -197,6 +197,11 @@ No updateinfo meta information is added to the media.
 This might be required when not using take_all_available_versions,
 but building on a former released code base.
 
+===== updateinfo_packages_only
+
+Build a pure update repository. Skipping all matching rpms
+which are not referenced via an updateinfo.
+
 ==== iso
 
 ===== publisher
