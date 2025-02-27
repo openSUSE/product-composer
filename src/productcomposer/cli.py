@@ -325,7 +325,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             if sourcedir and sourcedir == workdir:
                 continue
             for arch in yml['architectures']:
-                repodatadirectories.append(workdir + f"/{arch}")
+                if os.path.exists(workdir + f"/{arch}"):
+                    repodatadirectories.append(workdir + f"/{arch}")
 
     note("Write report file")
     write_report_file(maindir, maindir + '.report')
