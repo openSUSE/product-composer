@@ -1071,11 +1071,11 @@ def link_file_into_dir(source, directory, name=None):
             os.link(source, outname)
 
 
-def link_entry_into_dir(entry, directory, add_slsa=False, positivelist=None):
+def link_entry_into_dir(entry, directory, add_slsa=False, positivelist={}):
     canonfilename = entry.canonfilename
     outname = directory + '/' + entry.arch + '/' + canonfilename
     if not os.path.exists(outname):
-        if not positivelist is None:
+        if positivelist:
             targetname = entry.arch + '/' + canonfilename
             if not targetname in positivelist:
                 print("No update for " + targetname)
