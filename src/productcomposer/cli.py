@@ -319,7 +319,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     repodatadirectories = []
-    if 'repodata' in yml and yml['repodata'] != 'all':
+    if yml.get('repodata', 'all') == 'all':
         repodatadirectories = deepcopy(workdirectories)
     if 'repodata' in yml:
         for workdir in workdirectories:
