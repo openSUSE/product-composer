@@ -7,7 +7,6 @@ import re
 import shutil
 import subprocess
 import gettext
-from copy import deepcopy
 from datetime import datetime
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
@@ -318,12 +317,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         note("Create rpm-md data for source directory")
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
-    repodatadirectories = []
-    if yml.get('repodata', 'all') == 'all':
-        repodatadirectories = deepcopy(workdirectories)
+    repodatadirectories = workdirectories.copy()
     if 'repodata' in yml:
+        if yml['repodata'] != 'all':
+            repodatadirectories = []
         for workdir in workdirectories:
-            if sourcedir == workdir:
+            if sourcedir and sourcedir == workdir:
                 continue
             for arch in yml['architectures']:
                 repodatadirectories.append(workdir + f"/{arch}")
@@ -845,12 +844,12 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
 
     product_type = '/o'
     if 'product-type' in yml:
-      if yml['product-type'] == 'base':
-        product_type = '/o'
-      elif yml['product-type'] in ['module', 'extension']:
-        product_type = '/a'
-      else:
-        die('Undefined product-type')
+        if yml['product-type'] == 'base':
+            product_type = '/o'
+        elif yml['product-type'] in ['module', 'extension']:
+            product_type = '/a'
+        else:
+            die('Undefined product-type')
     cr = CreaterepoWrapper(directory=".")
     cr.distro = product_summary
     cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
@@ -864,11 +863,11 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
     # multiple arch specific meta data set
     if 'repodata' in yml:
-      cr.complete_arch_list = yml['architectures']
-      for arch in yml['architectures']:
-        if os.path.isdir(f"{rpmdir}/{arch}"):
-          cr.arch_specific_repodata = arch
-          cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
+        cr.complete_arch_list = yml['architectures']
+        for arch in yml['architectures']:
+            if os.path.isdir(f"{rpmdir}/{arch}"):
+                cr.arch_specific_repodata = arch
+                cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
 
 
 def unpack_one_meta_rpm(rpmdir, rpm, medium):
