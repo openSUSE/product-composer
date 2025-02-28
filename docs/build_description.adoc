@@ -202,6 +202,14 @@ but building on a former released code base.
 Build a pure update repository. Skipping all matching rpms
 which are not referenced via an updateinfo.
 
+===== base_skip_packages
+
+Controls whether packages should be copied in the `/install` directory
+when using base iso images.
+
+Enabling this would result in a simply repacked base image, without
+any package copied there.
+
 ==== iso
 
 ===== publisher

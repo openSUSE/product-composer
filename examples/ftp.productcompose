@@ -37,6 +37,7 @@ build_options:
 # - add_slsa_provenance
 # - skip_updateinfos
 # - updateinfo_packages_only
+# - base_skip_packages
 
 #installcheck:
 # - ignore_errors

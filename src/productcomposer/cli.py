@@ -169,7 +169,7 @@ def parse_yaml(filename, flavor):
         # overwrite global values from flavor overwrites
         for tag in ['architectures', 'name', 'summary', 'version',
                     'product-type', 'product_directory_name',
-                    'source', 'debug']:
+                    'build_options', 'source', 'debug']:
             if tag in f:
                 yml[tag] = f[tag]
         if 'iso' in f:
@@ -325,7 +325,8 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             if sourcedir and sourcedir == workdir:
                 continue
             for arch in yml['architectures']:
-                repodatadirectories.append(workdir + f"/{arch}")
+                if os.path.exists(workdir + f"/{arch}"):
+                    repodatadirectories.append(workdir + f"/{arch}")
 
     note("Write report file")
     write_report_file(maindir, maindir + '.report')
@@ -470,8 +471,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         # create new iso
         tempdir = f"{outdir}/mksusecd"
         os.mkdir(tempdir)
-        args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
-        run_helper(args, failmsg="Adding tree to agama image")
+        if not 'base_skip_packages' in yml['build_options']:
+            args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
+            run_helper(args, failmsg="Adding tree to agama image")
         args = ['mksusecd', agamaiso, tempdir, '--create', workdirectories[0] + '.install.iso']
         if verbose_level > 0:
             print("Calling: ", args)
