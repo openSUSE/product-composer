@@ -447,13 +447,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     if 'iso' in yml and 'base' in yml['iso']:
         note("Export main tree into agama iso file")
         if verbose_level > 0:
-            print(f"INFO: Looking for baseiso-{yml['iso']['base']} rpm on {yml['architectures'][0]}")
+            note(f"Looking for baseiso-{yml['iso']['base']} rpm on {yml['architectures'][0]}")
         agama = pool.lookup_rpm(yml['architectures'][0], f"baseiso-{yml['iso']['base']}")
         if agama is None:
-          print(f"ERROR: Base iso in baseiso-{yml['iso']['base']} rpm was not found")
-          exit(1)
+            die(f"Base iso in baseiso-{yml['iso']['base']} rpm was not found")
         if verbose_level > 0:
-            print(f"INFO: Found {agama.location}")
+            note(f"Found {agama.location}")
         baseisodir = f"{outdir}/baseiso"
         os.mkdir(baseisodir)
         args = ['unrpm', '-q', agama.location]
@@ -461,14 +460,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         import glob
         files = glob.glob(f"{baseisodir}/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
         if len(files) < 1:
-           print(f"ERROR: Base iso {yml['iso']['base']} not found in {agama.location}")
-           exit(1)
+            die(f"Base iso {yml['iso']['base']} not found in {agama.location}")
         if len(files) > 1:
-           print(f"ERROR: Multiple base isos for {yml['iso']['base']} are found in {agama.location}")
-           exit(1)
+            die(f"Multiple base isos for {yml['iso']['base']} are found in {agama.location}")
         agamaiso = files[0]
         if verbose_level > 0:
-            print(f"INFO: Found base iso image {agamaiso}")
+            note(f"Found base iso image {agamaiso}")
 
         # create new iso
         tempdir = f"{outdir}/mksusecd"
@@ -993,8 +990,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
     referenced_update_rpms = None
     if 'updateinfo_packages_only' in yml['build_options']:
         if not pool.updateinfos:
-            print("ERROR: filtering for updates enabled, but no updateinfo found")
-            exit(1)
+            die("filtering for updates enabled, but no updateinfo found")
 
         referenced_update_rpms = {}
         for u in sorted(pool.lookup_all_updateinfos()):
