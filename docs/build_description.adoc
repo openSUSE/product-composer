@@ -335,6 +335,9 @@ in addition to the architecture splitted ones.
 
   repodata: all
 
+In absence of the repodata element only the main repodata is create
+and includes all architectures.
+
 ==== vendor
 
 Defines the company responsible for the content. Can be for example
