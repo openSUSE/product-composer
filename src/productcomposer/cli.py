@@ -990,12 +990,13 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
     if 'add_slsa_provenance' in yml['build_options']:
         add_slsa = True
 
-    referenced_update_rpms = {}
+    referenced_update_rpms = None
     if 'updateinfo_packages_only' in yml['build_options']:
         if not pool.updateinfos:
             print("ERROR: filtering for updates enabled, but no updateinfo found")
             exit(1)
 
+        referenced_update_rpms = {}
         for u in sorted(pool.lookup_all_updateinfos()):
             for update in u.root.findall('update'):
                 parent = update.findall('pkglist')[0].findall('collection')[0]
@@ -1020,8 +1021,12 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
             continue
 
         for rpm in rpms:
-            if not link_entry_into_dir(rpm, rpmdir, add_slsa=add_slsa, positivelist=referenced_update_rpms):
-                continue
+            if referenced_update_rpms is not None:
+                if (rpm.arch + '/' + rpm.canonfilename) not in referenced_update_rpms:
+                    print(f"No update for {rpm}")
+                    continue
+
+            link_entry_into_dir(rpm, rpmdir, add_slsa=add_slsa)
             if rpm.name in supportstatus_override:
                 supportstatus[rpm.name] = supportstatus_override[rpm.name]
             else:
@@ -1070,15 +1075,10 @@ def link_file_into_dir(source, directory, name=None):
             os.link(source, outname)
 
 
-def link_entry_into_dir(entry, directory, add_slsa=False, positivelist={}):
+def link_entry_into_dir(entry, directory, add_slsa=False):
     canonfilename = entry.canonfilename
     outname = directory + '/' + entry.arch + '/' + canonfilename
     if not os.path.exists(outname):
-        if positivelist:
-            targetname = entry.arch + '/' + canonfilename
-            if not targetname in positivelist:
-                print("No update for " + targetname)
-                return False
         link_file_into_dir(entry.location, directory + '/' + entry.arch, name=canonfilename)
         add_entry_to_report(entry, outname)
         if add_slsa:
@@ -1086,7 +1086,6 @@ def link_entry_into_dir(entry, directory, add_slsa=False, positivelist={}):
             if os.path.exists(slsalocation):
                 slsaname = canonfilename.removesuffix('.rpm') + '.slsa_provenance.json'
                 link_file_into_dir(slsalocation, directory + '/' + entry.arch, name=slsaname)
-    return True
 
 def add_entry_to_report(entry, outname):
     # first one wins, see link_file_into_dir
