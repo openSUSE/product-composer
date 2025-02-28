@@ -169,7 +169,7 @@ def parse_yaml(filename, flavor):
         # overwrite global values from flavor overwrites
         for tag in ['architectures', 'name', 'summary', 'version',
                     'product-type', 'product_directory_name',
-                    'source', 'debug']:
+                    'build_options', 'source', 'debug']:
             if tag in f:
                 yml[tag] = f[tag]
         if 'iso' in f:
