@@ -319,7 +319,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     repodatadirectories = []
-    if 'repodata' in yml and yml['repodata'] != 'all':
+    if yml.get('repodata', 'all') == 'all':
         repodatadirectories = deepcopy(workdirectories)
     if 'repodata' in yml:
         for workdir in workdirectories:
@@ -1071,11 +1071,11 @@ def link_file_into_dir(source, directory, name=None):
             os.link(source, outname)
 
 
-def link_entry_into_dir(entry, directory, add_slsa=False, positivelist=None):
+def link_entry_into_dir(entry, directory, add_slsa=False, positivelist={}):
     canonfilename = entry.canonfilename
     outname = directory + '/' + entry.arch + '/' + canonfilename
     if not os.path.exists(outname):
-        if not positivelist is None:
+        if positivelist:
             targetname = entry.arch + '/' + canonfilename
             if not targetname in positivelist:
                 print("No update for " + targetname)
