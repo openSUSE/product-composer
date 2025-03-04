@@ -837,8 +837,9 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
 
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
-    product_name = yml['name']
-    product_summary = yml['summary'] or yml['name']
+    product_name = product_summary = yml['name']
+    if 'summary' in yml:
+        product_summary = yml['summary']
     product_summary += " " + str(yml['version'])
 
     product_type = '/o'
