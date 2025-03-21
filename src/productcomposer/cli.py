@@ -424,7 +424,52 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
             run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
-        if 'iso' in yml and not 'base' in yml['iso']:
+        # When using the baseiso feature, the primary media should be
+        # the base iso, with the packages added.
+        # Other medias/workdirs would then be generated as usual, as
+        # presumably you wouldn't need a bootable iso for source and
+        # debuginfo packages.
+        if workdir == maindir and 'base' in yml.get('iso', {}):
+            note("Export main tree into agama iso file")
+            if verbose_level > 0:
+                note(f"Looking for baseiso-{yml['iso']['base']} rpm on {yml['architectures'][0]}")
+            agama = pool.lookup_rpm(yml['architectures'][0], f"baseiso-{yml['iso']['base']}")
+            if agama is None:
+                die(f"Base iso in baseiso-{yml['iso']['base']} rpm was not found")
+            if verbose_level > 0:
+                note(f"Found {agama.location}")
+            baseisodir = f"{outdir}/baseiso"
+            os.mkdir(baseisodir)
+            args = ['unrpm', '-q', agama.location]
+            run_helper(args, cwd=baseisodir, failmsg=f"Failing unpacking {agama.location}")
+            import glob
+            files = glob.glob(f"{baseisodir}/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
+            if len(files) < 1:
+                die(f"Base iso {yml['iso']['base']} not found in {agama.location}")
+            if len(files) > 1:
+                die(f"Multiple base isos for {yml['iso']['base']} are found in {agama.location}")
+            agamaiso = files[0]
+            if verbose_level > 0:
+                note(f"Found base iso image {agamaiso}")
+
+            # create new iso
+            tempdir = f"{outdir}/mksusecd"
+            os.mkdir(tempdir)
+            if not 'base_skip_packages' in yml['build_options']:
+                args = ['cp', '-al', workdir, f"{tempdir}/install"]
+                run_helper(args, failmsg="Adding tree to agama image")
+            args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
+            if verbose_level > 0:
+                print("Calling: ", args)
+            run_helper(args, failmsg="Adding tree to agama image")
+            # just for the bootable image, signature is not yet applied, so ignore that error
+            run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="Verification of install.iso")
+            # creating .sha256 for iso file
+            create_sha256_for(workdir + '.install.iso')
+            # cleanup
+            shutil.rmtree(tempdir)
+            shutil.rmtree(baseisodir)
+        elif 'iso' in yml:
             note("Create iso files")
             application_id = re.sub(r'^.*/', '', maindir)
             args = ['/usr/bin/mkisofs', '-quiet', '-p', 'Product Composer - http://www.github.com/openSUSE/product-composer']
@@ -441,52 +486,10 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             run_helper(args, cwd=outdir, failmsg="tagmedia iso file")
             # creating .sha256 for iso file
             create_sha256_for(workdir + ".iso")
-            # cleanup
-            if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
-                shutil.rmtree(workdir)
 
-    if 'iso' in yml and 'base' in yml['iso']:
-        note("Export main tree into agama iso file")
-        if verbose_level > 0:
-            note(f"Looking for baseiso-{yml['iso']['base']} rpm on {yml['architectures'][0]}")
-        agama = pool.lookup_rpm(yml['architectures'][0], f"baseiso-{yml['iso']['base']}")
-        if agama is None:
-            die(f"Base iso in baseiso-{yml['iso']['base']} rpm was not found")
-        if verbose_level > 0:
-            note(f"Found {agama.location}")
-        baseisodir = f"{outdir}/baseiso"
-        os.mkdir(baseisodir)
-        args = ['unrpm', '-q', agama.location]
-        run_helper(args, cwd=baseisodir, failmsg=f"Failing unpacking {agama.location}")
-        import glob
-        files = glob.glob(f"{baseisodir}/usr/libexec/base-isos/{yml['iso']['base']}*.iso", recursive=True)
-        if len(files) < 1:
-            die(f"Base iso {yml['iso']['base']} not found in {agama.location}")
-        if len(files) > 1:
-            die(f"Multiple base isos for {yml['iso']['base']} are found in {agama.location}")
-        agamaiso = files[0]
-        if verbose_level > 0:
-            note(f"Found base iso image {agamaiso}")
-
-        # create new iso
-        tempdir = f"{outdir}/mksusecd"
-        os.mkdir(tempdir)
-        if not 'base_skip_packages' in yml['build_options']:
-            args = ['cp', '-al', workdirectories[0], f"{tempdir}/install"]
-            run_helper(args, failmsg="Adding tree to agama image")
-        args = ['mksusecd', agamaiso, tempdir, '--create', workdirectories[0] + '.install.iso']
-        if verbose_level > 0:
-            print("Calling: ", args)
-        run_helper(args, failmsg="Adding tree to agama image")
-        # just for the bootable image, signature is not yet applied, so ignore that error
-        run_helper(['verifymedia', workdirectories[0] + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="Verification of install.iso")
-        # creating .sha256 for iso file
-        create_sha256_for(workdirectories[0] + '.install.iso')
         # cleanup
-        shutil.rmtree(tempdir)
-        shutil.rmtree(baseisodir)
-        if 'tree' in yml['iso'] and yml['iso']['tree'] == 'drop':
-            shutil.rmtree(workdirectories[0])
+        if yml.get('iso', {}).get('tree') == 'drop':
+            shutil.rmtree(workdir)
 
     # create SBOM data
     generate_sbom_call = None
