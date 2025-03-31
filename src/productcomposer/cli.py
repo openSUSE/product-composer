@@ -762,22 +762,21 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                 src = pkgentry.get('src')
 
                 # check for embargo date
-                embargo = pkgentry.find('embargo_date')
+                embargo = pkgentry.get('embargo_date')
                 if embargo is not None:
                     try:
-                        embargo_time = datetime.strptime(embargo.text, '%Y-%m-%d %H:%M')
+                        embargo_time = datetime.strptime(embargo, '%Y-%m-%d %H:%M')
                     except ValueError:
-                        embargo_time = datetime.strptime(embargo.text, '%Y-%m-%d')
+                        embargo_time = datetime.strptime(embargo, '%Y-%m-%d')
 
                     if embargo_time > datetime.now():
                         print("WARNING: Update is still under embargo! ", update.find('id').text)
                         if 'block_updates_under_embargo' in yml['build_options']:
                             die("shutting down due to block_updates_under_embargo flag")
 
-                # clean internal elements
-                for internal_element in ['supportstatus', 'superseded_by', 'embargo_date']:
-                    for e in pkgentry.findall(internal_element):
-                        pkgentry.remove(e)
+                # clean internal attributes
+                for internal_attributes in ['supportstatus', 'superseded_by', 'embargo_date']:
+                    pkgentry.attrib.pop(internal_attributes, None)
 
                 # check if we have files for the entry
                 if os.path.exists(rpmdir + '/' + src):
