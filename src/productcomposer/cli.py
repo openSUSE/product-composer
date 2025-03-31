@@ -49,12 +49,12 @@ def main(argv=None) -> int:
     #
     # Setup CLI parser
     #
-    parser = ArgumentParser('productcomposer', description='An example sub-command implementation')
+    parser = ArgumentParser('productcomposer')
     subparsers = parser.add_subparsers(required=True, help='sub-command help')
 
     # One sub parser for each command
-    verify_parser = subparsers.add_parser('verify', help='The first sub-command')
-    build_parser = subparsers.add_parser('build', help='The second sub-command')
+    verify_parser = subparsers.add_parser('verify', help='Verify the build recipe')
+    build_parser = subparsers.add_parser('build', help='Run a product build')
 
     verify_parser.set_defaults(func=verify)
     build_parser.set_defaults(func=build)
@@ -370,7 +370,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
            if 'repodata' in yml:
                subdir = f"/{arch}"
            if not os.path.exists(maindir + subdir):
-               print(f"WARNING: expected path is missing, no rpm files matched? ({maindir}{subdir})")
+               warn(f"expected path is missing, no rpm files matched? ({maindir}{subdir})")
                continue
            args.append(find_primary(maindir + subdir))
            if debugdir:
@@ -770,7 +770,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                         embargo_time = datetime.strptime(embargo, '%Y-%m-%d')
 
                     if embargo_time > datetime.now():
-                        print("WARNING: Update is still under embargo! ", update.find('id').text)
+                        warn(f"Update is still under embargo! {update.find('id').text}")
                         if 'block_updates_under_embargo' in yml['build_options']:
                             die("shutting down due to block_updates_under_embargo flag")
 
