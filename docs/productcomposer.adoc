@@ -6,29 +6,29 @@
 
 == Goals
 
-A lightweight success or product builder.
+A lightweight successor for product builder.
 
-It is used to generate product rpm repositories out of a pool of rpms.
+It is used to generate product RPM repositories out of a pool of RPMs.
 Unlike product builder, these can also be used to ship maintenance updates.
 
 .Currently it supports:
-- processing based on a list of rpm package names.
-  product compose is not take care of dependencies atm.
-- providing matching source and/or debug packages for picked rpm packages.
+- processing based on a list of RPM package names.
+  product compose is currently not taking care of dependencies.
+- providing matching source and/or debug packages for picked RPM packages.
   These can be either included into main repository or prepared via
   extra repositories
 - optional filters for architectures, versions and flavors can be defined
-- it can provide either just a single rpm of a given name or all of them
+- it can provide either just a single RPM of a given name or all of them
 - it can post process updateinfo data
-- post processing to provide various rpm meta data generation
+- post processing to provide various types of RPM meta data generation
 
 Not yet implemented:
 - create bootable iso files
 
 == Design
 
-product composer issupposed to be used only inside of OBS builds atm.
-OBS or osc is preparing all binary rpm candidates in local directory 
+product composer is supposed to be used only inside of OBS builds atm.
+OBS or osc is preparing all binary RPM candidates in local directory 
 before starting the build.
 
 == Setup in OBS
@@ -54,7 +54,7 @@ in the build configuration (aka prjconf).
 Ensure to build your patchinfo builds in a repository where "local" is the first
 architecture.
 
-Your productcompose file may provide all versions of each rpm if you enable
+Your productcompose file may provide all versions of each RPM if you enable
 "take_all_available_versions" in the build options.
 
 include::build_description.adoc[]
