@@ -112,6 +112,14 @@ The product name.
 
 The product version
 
+==== update
+
+Optional update level string for CPE
+
+==== edition
+
+Optional edition string for CPE
+
 ==== summary
 
 The product name in explaining words. It will be presented to the

@@ -180,7 +180,7 @@ def parse_yaml(filename, flavor):
             die("Flavor not found: " + flavor)
         f = yml['flavors'][flavor]
         # overwrite global values from flavor overwrites
-        for tag in ['architectures', 'name', 'summary', 'version',
+        for tag in ['architectures', 'name', 'summary', 'version', 'update', 'edition',
                     'product-type', 'product_directory_name',
                     'build_options', 'source', 'debug', 'repodata']:
             if tag in f:
@@ -201,6 +201,8 @@ def parse_yaml(filename, flavor):
     if 'installcheck' in yml and yml['installcheck'] is None:
         yml['installcheck'] = []
 
+    # FIXME: validate strings, eg. right set of chars
+    
     return yml
 
 
@@ -868,6 +870,12 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     cr = CreaterepoWrapper(directory=".")
     cr.distro = product_summary
     cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
+    if 'update' in yml:
+        cr.cpeid = cr.cpeid + f":{yml['update']}"
+        if 'edition' in yml:
+            cr.cpeid = cr.cpeid + f":{yml['edition']}"
+    elif 'edition' in yml:
+        cr.cpeid = cr.cpeid + f":*:{yml['edition']}"
     cr.repos = repos
 # cr.split = True
     # cr.baseurl = "media://"

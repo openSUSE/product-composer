@@ -5,6 +5,7 @@ product_compose_schema: 0.2
 vendor: openSUSE
 name: Tumbleweed
 version: 1.0
+# update: sp7
 product-type: base # or module
 # summary is the short product description as available in meta data
 summary: openSUSE Tumbleweed
@@ -64,6 +65,7 @@ flavors:
     architectures: [armv7l, aarch64]
     name: Tumbleweed_ARM
     summary: openSUSE Tumbleweed ARM
+    edition: arm
     # debug: include
     # source: drop
 
