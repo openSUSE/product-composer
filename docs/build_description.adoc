@@ -343,8 +343,10 @@ in addition to the architecture splitted ones.
 
   repodata: all
 
-In absence of the repodata element only the main repodata is create
+In absence of the repodata element only the main repodata is created
 and includes all architectures.
+
+This may get specified per flavor.
 
 ==== vendor
 
