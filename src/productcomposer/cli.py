@@ -875,7 +875,7 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
         if 'edition' in yml:
             cr.cpeid = cr.cpeid + f":{yml['edition']}"
     elif 'edition' in yml:
-        cr.cpeid = cr.cpeid + f":*:{yml['edition']}"
+        cr.cpeid = cr.cpeid + f"::{yml['edition']}"
     cr.repos = repos
 # cr.split = True
     # cr.baseurl = "media://"
