@@ -137,6 +137,19 @@ def build(args):
     note(f"scanning: {reposdir}")
     pool.scan(reposdir)
 
+    # clean up black listed packages
+    for u in sorted(pool.lookup_all_updateinfos()):
+        for update in u.root.findall('update'):
+            if not update.find('blocked_in_product'):
+                 continue
+
+            parent = update.findall('pkglist')[0].findall('collection')[0]
+            for pkgentry in parent.findall('package'):
+                name = pkgentry.get('name')
+                epoch = pkgentry.get('epoch')
+                version = pkgentry.get('version')
+                pool.remove_rpms(None, name, '=', epoch, version)
+
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
 
