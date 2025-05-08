@@ -69,6 +69,7 @@ def main(argv=None) -> int:
     # build command options
     build_parser.add_argument('-r', '--release', default=None,  help='Define a build release counter')
     build_parser.add_argument('--disturl', default=None,  help='Define a disturl')
+    build_parser.add_argument('--build-option', nargs='+', default=[],  help='Set a build option')
     build_parser.add_argument('--vcs', default=None,  help='Define a source repository identifier')
     build_parser.add_argument('--clean', action='store_true',  help='Remove existing output directory first')
     build_parser.add_argument('out',  help='Directory to write the result')
@@ -123,6 +124,9 @@ def build(args):
         die(None)
 
     yml = parse_yaml(args.filename, flavor)
+
+    for option in args.build_option:
+        yml['build_options'].append(option)
 
     directory = os.getcwd()
     if args.filename.startswith('/'):
