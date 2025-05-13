@@ -526,7 +526,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     # Pro: SBOM formats are constant changing, we don't need to adapt always all distributions for that
     if os.path.exists("/.build/generate_sbom"):
         # unfortunatly, it is not exectuable by default
-        generate_sbom_call = ["perl", "-I", "/.build", "/.build/generate_sbom"]
+        generate_sbom_call = ['env', 'BUILD_DIR=/.build', 'perl', '/.build/generate_sbom']
 
     if generate_sbom_call:
         spdx_distro = f"{yml['name']}-{yml['version']}"
