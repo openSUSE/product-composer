@@ -329,10 +329,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         out = run_helper(args, stdin=open(f'{maindir}/{file}', 'rb'),
                          failmsg="Finger printing of gpg file")
         for line in out.splitlines():
-            if not str(line).startswith("b'fpr:"):
-                continue
-
-            default_content.append(str(line).split(':')[9])
+            if line.startswith("fpr:"):
+                content = f"{file}?fpr={line.split(':')[9]}"
+                default_content.append(content)
 
     note("Create rpm-md data")
     run_createrepo(maindir, yml, content=default_content, repos=repos)
