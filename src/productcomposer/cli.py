@@ -142,7 +142,7 @@ def build(args):
     note(f"scanning: {reposdir}")
     pool.scan(reposdir)
 
-    # clean up black listed packages
+    # clean up blacklisted packages
     for u in sorted(pool.lookup_all_updateinfos()):
         for update in u.root.findall('update'):
             if not update.find('blocked_in_product'):
@@ -1027,12 +1027,13 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
     if 'updateinfo_packages_only' in yml['build_options']:
         if not pool.updateinfos:
             die("filtering for updates enabled, but no updateinfo found")
+        if singlemode:
+            die("filtering for updates enabled, but take_all_available_versions is not set")
 
         referenced_update_rpms = {}
         for u in sorted(pool.lookup_all_updateinfos()):
             for update in u.root.findall('update'):
                 parent = update.findall('pkglist')[0].findall('collection')[0]
-
                 for pkgentry in parent.findall('package'):
                     referenced_update_rpms[pkgentry.get('src')] = 1
 
@@ -1048,6 +1049,8 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
             rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
 
         if not rpms:
+            if referenced_update_rpms is not None:
+                continue
             warn(f"package {sel} not found for {arch}")
             missing_package = True
             continue
