@@ -69,7 +69,7 @@ def main(argv=None) -> int:
     # build command options
     build_parser.add_argument('-r', '--release', default=None,  help='Define a build release counter')
     build_parser.add_argument('--disturl', default=None,  help='Define a disturl')
-    build_parser.add_argument('--build-option', nargs='+', default=[],  help='Set a build option')
+    build_parser.add_argument('--build-option', action='append', nargs='+', default=[],  help='Set a build option')
     build_parser.add_argument('--vcs', default=None,  help='Define a source repository identifier')
     build_parser.add_argument('--clean', action='store_true',  help='Remove existing output directory first')
     build_parser.add_argument('out',  help='Directory to write the result')
@@ -125,8 +125,9 @@ def build(args):
 
     yml = parse_yaml(args.filename, flavor)
 
-    for option in args.build_option:
-        yml['build_options'].append(option)
+    for arg in args.build_option:
+        for option in arg:
+            yml['build_options'].append(option)
 
     directory = os.getcwd()
     if args.filename.startswith('/'):
@@ -854,7 +855,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
         os.unlink(rpmdir + '/updateinfo.xml')
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        die('Abort due to missing packages')
+        die('Abort due to missing packages for updateinfo')
 
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
@@ -921,7 +922,7 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
             unpack_one_meta_rpm(rpmdir, rpm, medium)
 
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
-        die('Abort due to missing packages')
+        die('Abort due to missing meta packages')
 
 
 def create_package_set_compat(yml, arch, flavor, setname):
