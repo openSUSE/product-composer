@@ -180,6 +180,9 @@ def parse_yaml(filename, flavor):
     if 'flavors' not in yml:
         yml['flavors'] = []
 
+    if 'build_options' not in yml or yml['build_options'] is None:
+        yml['build_options'] = []
+
     if flavor:
         if flavor not in yml['flavors']:
             die("Flavor not found: " + flavor)
@@ -187,9 +190,15 @@ def parse_yaml(filename, flavor):
         # overwrite global values from flavor overwrites
         for tag in ['architectures', 'name', 'summary', 'version', 'update', 'edition',
                     'product-type', 'product_directory_name',
-                    'build_options', 'source', 'debug', 'repodata']:
+                    'source', 'debug', 'repodata']:
             if tag in f:
                 yml[tag] = f[tag]
+
+        # Add additional build_options instead of replacing global defined set.
+        if 'build_options' in f:
+            for option in f['build_options']:
+                yml['build_options'].append(option)
+
         if 'iso' in f:
             if not 'iso' in yml:
                 yml['iso'] = {}
@@ -199,9 +208,6 @@ def parse_yaml(filename, flavor):
 
     if 'architectures' not in yml or not yml['architectures']:
         die("No architecture defined. Maybe wrong flavor?")
-
-    if 'build_options' not in yml or yml['build_options'] is None:
-        yml['build_options'] = []
 
     if 'installcheck' in yml and yml['installcheck'] is None:
         yml['installcheck'] = []
