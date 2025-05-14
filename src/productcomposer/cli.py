@@ -541,7 +541,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         # debuginfo packages.
         if workdir == maindir and 'base' in yml.get('iso', {}):
             agama_arch = yml['architectures'][0]
-            note("Export main tree into agama iso file for {agama_arch}")
+            note(f"Export main tree into agama iso file for {agama_arch}")
             create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, agama_arch)
         elif 'iso' in yml:
             create_iso(outdir, yml, pool, flavor, workdir, application_id);
