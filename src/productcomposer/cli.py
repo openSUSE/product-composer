@@ -275,7 +275,7 @@ def get_product_dir(yml, flavor, release):
 
 def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None, verbose=False):
     if verbose:
-        note("Calling {args}")
+        note(f'Calling {args}')
     if stdout is None:
         stdout = subprocess.PIPE
     if stdin is None:
