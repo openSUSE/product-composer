@@ -319,8 +319,14 @@ def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     if not 'base_skip_packages' in yml['build_options']:
         args = ['cp', '-al', workdir, f"{tempdir}/install"]
         run_helper(args, failmsg="Adding tree to agama image")
-    # mksusecd takes the volume_id, publisher, application_id, preparer from the agama iso
     args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
+    # mksusecd would take the volume_id, publisher, application_id, preparer from the agama iso
+    args += ['--preparer', ISO_PREPARER]
+    if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
+        args += ['--vendor', yml['iso']['publisher']]
+    if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
+        args += ['--volume', yml['iso']['volume_id']]
+    args += ['--application', application_id]
     run_helper(args, failmsg="Adding tree to agama image", verbose=verbose)
     # mksusecd already did a tagmedia call with a sha256 digest
     # cleanup directories
