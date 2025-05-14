@@ -46,7 +46,7 @@ verbose_level = 0
 
 
 def main(argv=None) -> int:
-    """ Execute the application CLI.
+    """Execute the application CLI.
 
     :param argv: argument list to parse (sys.argv by default)
     :return: exit status
@@ -155,7 +155,7 @@ def build(args):
     for u in sorted(pool.lookup_all_updateinfos()):
         for update in u.root.findall('update'):
             if not update.find('blocked_in_product'):
-                 continue
+                continue
 
             parent = update.findall('pkglist')[0].findall('collection')[0]
             for pkgentry in parent.findall('package'):
