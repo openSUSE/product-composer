@@ -755,7 +755,7 @@ def create_susedata_xml(rpmdir, yml):
             isummary = i18ntrans[lang].gettext(summary)
             idescription = i18ntrans[lang].gettext(description)
             icategory = i18ntrans[lang].gettext(category) if category is not None else None
-            ieula = eulas.get(name + '.' + lang, default=eula) if eula is not None else None
+            ieula = eulas.get(name + '.' + lang, eula) if eula is not None else None
             if isummary == summary and idescription == description and icategory == category and ieula == eula:
                 continue
             if lang not in susedatas:
