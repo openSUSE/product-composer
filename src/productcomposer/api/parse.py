@@ -10,4 +10,4 @@ def main(name="World") -> str:
     :param name: name to use in greeting
     """
     logger.debug("executing hello command")
-    return f"Hello, parser!"
+    return "Hello, parser!"

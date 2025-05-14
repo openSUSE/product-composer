@@ -116,6 +116,8 @@ def note(msg):
 
 def build(args):
     flavor = None
+    global verbose_level
+
     if args.flavor:
         f = args.flavor.split('.')
         if f[0] != '':
@@ -124,10 +126,7 @@ def build(args):
         verbose_level = 1
 
     if not args.out:
-        # No subcommand was specified.
-        print("No output directory given")
-        parser.print_help()
-        die(None)
+        die("No output directory given")
 
     yml = parse_yaml(args.filename, flavor)
 
@@ -162,7 +161,7 @@ def build(args):
                 name = pkgentry.get('name')
                 epoch = pkgentry.get('epoch')
                 version = pkgentry.get('version')
-                pool.remove_rpms(None, name, '=', epoch, version)
+                pool.remove_rpms(None, name, '=', epoch, version, release=None)
 
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
@@ -222,7 +221,7 @@ def parse_yaml(filename, flavor):
         yml['installcheck'] = []
 
     # FIXME: validate strings, eg. right set of chars
-    
+
     return yml
 
 
@@ -625,7 +624,6 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 def generate_du_data(pkg, maxdepth):
-    dirs = pkg.get_directories()
     seen = set()
     dudata_size = {}
     dudata_count = {}
@@ -801,7 +799,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     # build the union of the package sets for all requested architectures
     main_pkgset = PkgSet('main')
     for arch in yml['architectures']:
-        pkgset = main_pkgset.add(create_package_set(yml, arch, flavor, 'main', pool=pool))
+        main_pkgset.add(create_package_set(yml, arch, flavor, 'main', pool=pool))
     main_pkgset_names = main_pkgset.names()
 
     uitemp = None
@@ -904,13 +902,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     if missing_package and not 'ignore_missing_packages' in yml['build_options']:
         die('Abort due to missing packages for updateinfo')
 
-
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
-    product_name = product_summary = yml['name']
-    if 'summary' in yml:
-        product_summary = yml['summary']
-    product_summary += " " + str(yml['version'])
-
     product_type = '/o'
     if 'product-type' in yml:
         if yml['product-type'] == 'base':
@@ -920,7 +912,7 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
         else:
             die('Undefined product-type')
     cr = CreaterepoWrapper(directory=".")
-    cr.distro = product_summary
+    cr.distro = f"{yml.get('summary', yml['name'])} {yml['version']}"
     cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
     if 'update' in yml:
         cr.cpeid = cr.cpeid + f":{yml['update']}"
@@ -929,7 +921,7 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     elif 'edition' in yml:
         cr.cpeid = cr.cpeid + f"::{yml['edition']}"
     cr.repos = repos
-# cr.split = True
+    # cr.split = True
     # cr.baseurl = "media://"
     cr.content = content
     cr.excludes = ["boot"]
