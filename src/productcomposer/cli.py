@@ -27,6 +27,7 @@ __all__ = "main",
 
 ET_ENCODING = "unicode"
 ISO_PREPARER = "Product Composer - http://www.github.com/openSUSE/product-composer"
+DEFAULT_EULADIR = "/usr/share/doc/packages/eulas"
 
 
 tree_report = {}        # hashed via file name
@@ -36,6 +37,8 @@ chksums_tool = 'sha512sum'
 
 # global db for supportstatus
 supportstatus = {}
+# global db for eulas
+eulas = {}
 # per package override via supportstatus.txt file
 supportstatus_override = {}
 # debug aka verbose
@@ -74,6 +77,7 @@ def main(argv=None) -> int:
     build_parser.add_argument('--build-option', action='append', nargs='+', default=[],  help='Set a build option')
     build_parser.add_argument('--vcs', default=None,  help='Define a source repository identifier')
     build_parser.add_argument('--clean', action='store_true',  help='Remove existing output directory first')
+    build_parser.add_argument('--euladir', default=DEFAULT_EULADIR, help='Directory containing EULA data')
     build_parser.add_argument('out',  help='Directory to write the result')
 
     # parse and check
@@ -139,6 +143,9 @@ def build(args):
     supportstatus_fn = os.path.join(directory, 'supportstatus.txt')
     if os.path.isfile(supportstatus_fn):
         parse_supportstatus(supportstatus_fn)
+
+    if args.euladir and os.path.isdir(args.euladir):
+        parse_eulas(args.euladir)
 
     pool = Pool()
     note(f"scanning: {reposdir}")
@@ -224,6 +231,17 @@ def parse_supportstatus(filename):
         for line in file.readlines():
             a = line.strip().split(' ')
             supportstatus_override[a[0]] = a[1]
+
+
+def parse_eulas(euladir):
+    note(f"reading eula data from {euladir}")
+    for dirpath, dirs, files in os.walk(euladir):
+        for filename in files:
+            if filename.startswith('.'):
+                continue
+            pkgname = filename.removesuffix('.en')
+            with open(os.path.join(dirpath, filename), encoding="utf-8") as f:
+                eulas[pkgname] = f.read()
 
 
 def get_product_dir(yml, flavor, release):
@@ -721,6 +739,11 @@ def create_susedata_xml(rpmdir, yml):
                 for duitem in dudata:
                     ET.SubElement(dirselement, 'dir', {'name': duitem[0], 'size': str(duitem[1]), 'count': str(duitem[2])})
 
+        # add eula
+        eula = eulas.get(name)
+        if eula:
+            ET.SubElement(package, 'eula').text = eula
+
         # get summary/description/category of the package
         summary = pkg.find(f'{ns}summary').text
         description = pkg.find(f'{ns}description').text
@@ -732,7 +755,8 @@ def create_susedata_xml(rpmdir, yml):
             isummary = i18ntrans[lang].gettext(summary)
             idescription = i18ntrans[lang].gettext(description)
             icategory = i18ntrans[lang].gettext(category) if category is not None else None
-            if isummary == summary and idescription == description and icategory == category:
+            ieula = eulas.get(name + '.' + lang, default=eula) if eula is not None else None
+            if isummary == summary and idescription == description and icategory == category and ieula == eula:
                 continue
             if lang not in susedatas:
                 susedatas[lang] = ET.Element('susedata')
@@ -746,6 +770,8 @@ def create_susedata_xml(rpmdir, yml):
                 ET.SubElement(ipackage, 'description', {'lang': lang}).text = idescription
             if icategory != category:
                 ET.SubElement(ipackage, 'category', {'lang': lang}).text = icategory
+            if ieula != eula:
+                ET.SubElement(ipackage, 'eula', {'lang': lang}).text = ieula
 
     # write all susedata files
     for lang, susedata in sorted(susedatas.items()):
