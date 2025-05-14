@@ -148,7 +148,7 @@ def build(args):
         parse_eulas(args.euladir)
 
     pool = Pool()
-    note(f"scanning: {reposdir}")
+    note(f"Scanning: {reposdir}")
     pool.scan(reposdir)
 
     # clean up blacklisted packages
@@ -234,7 +234,7 @@ def parse_supportstatus(filename):
 
 
 def parse_eulas(euladir):
-    note(f"reading eula data from {euladir}")
+    note(f"Reading eula data from {euladir}")
     for dirpath, dirs, files in os.walk(euladir):
         for filename in files:
             if filename.startswith('.'):
