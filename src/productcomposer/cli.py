@@ -177,14 +177,13 @@ def verify(args):
 
 
 def parse_yaml(filename, flavor):
-
     with open(filename, 'r') as file:
         yml = yaml.safe_load(file)
 
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1 and yml['product_compose_schema'] != 0.2:
-        die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
+    if str(yml['product_compose_schema']) not in ('0', '0.1', '0.2'):
+        die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
 
     if 'flavors' not in yml:
         yml['flavors'] = []
