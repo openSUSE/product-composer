@@ -336,7 +336,7 @@ def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     os.mkdir(tempdir)
     if not 'base_skip_packages' in yml['build_options']:
         args = ['cp', '-al', workdir, f"{tempdir}/install"]
-        run_helper(args, failmsg="Adding tree to agama image")
+        run_helper(args, failmsg="add tree to agama image")
     args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
     # mksusecd would take the volume_id, publisher, application_id, preparer from the agama iso
     args += ['--preparer', ISO_PREPARER]
@@ -345,13 +345,13 @@ def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
         args += ['--volume', yml['iso']['volume_id']]
     args += ['--application', application_id]
-    run_helper(args, failmsg="Adding tree to agama image", verbose=verbose)
+    run_helper(args, failmsg="add tree to agama image", verbose=verbose)
     # mksusecd already did a tagmedia call with a sha256 digest
     # cleanup directories
     shutil.rmtree(tempdir)
     shutil.rmtree(baseisodir)
     # just for the bootable image, signature is not yet applied, so ignore that error
-    run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="Verification of install.iso")
+    run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="verify install.iso")
     # creating .sha256 for iso file
     create_sha256_for(workdir + '.install.iso')
 
@@ -411,7 +411,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         args = ['gpg', '--no-keyring', '--no-default-keyring', '--with-colons',
               '--import-options', 'show-only', '--import', '--fingerprint']
         out = run_helper(args, stdin=open(f'{maindir}/{file}', 'rb'),
-                         failmsg="Finger printing of gpg file")
+                         failmsg="get fingerprint of gpg file")
         for line in out.splitlines():
             if line.startswith("fpr:"):
                 content = f"{file}?fpr={line.split(':')[9]}"
@@ -495,7 +495,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
         licensefilename = '/license-' + yml['name'] + '.tar'
     if os.path.exists(maindir + licensefilename + '.gz'):
         run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
-                   failmsg="Uncompress of license.tar.gz failed")
+                   failmsg="uncompress license.tar.gz")
     if os.path.exists(maindir + licensefilename):
         note("Setup .license directory")
         licensedir = maindir + ".license"
