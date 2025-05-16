@@ -267,7 +267,7 @@ def build(args):
                 name = pkgentry.get('name')
                 epoch = pkgentry.get('epoch')
                 version = pkgentry.get('version')
-                pool.remove_rpms(None, name, '=', epoch, version, release=None)
+                pool.remove_rpms(None, name, '=', epoch, version, None)
 
     if args.clean and os.path.exists(args.out):
         shutil.rmtree(args.out)
@@ -377,7 +377,7 @@ def parse_eulas(euladir):
 
 
 def get_product_dir(yml, flavor, release):
-    name: str = f'{yml["name"]}-{yml["version"]}'
+    name = f'{yml["name"]}-{yml["version"]}'
     if 'product_directory_name' in yml:
         # manual override
         name = yml['product_directory_name']
