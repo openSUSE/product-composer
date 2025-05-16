@@ -344,7 +344,7 @@ def parse_yaml(filename, flavor):
                 yml['build_options'].append(option)
 
         if 'iso' in f:
-            if not 'iso' in yml:
+            if 'iso' not in yml:
                 yml['iso'] = {}
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if tag in f['iso']:
@@ -427,12 +427,13 @@ def create_sha256_for(filename):
 
 def create_iso(outdir, yml, pool, flavor, workdir, application_id):
     verbose = True if verbose_level > 0 else False
+    isoconf = yml['iso']
     args = ['/usr/bin/mkisofs', '-quiet', '-p', ISO_PREPARER]
     args += ['-r', '-pad', '-f', '-J', '-joliet-long']
-    if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
-        args += ['-publisher', yml['iso']['publisher']]
-    if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
-        args += ['-V', yml['iso']['volume_id']]
+    if 'publisher' in isoconf and isoconf['publisher'] is not None:
+        args += ['-publisher', isoconf['publisher']]
+    if 'volume_id' in isoconf and isoconf['volume_id'] is not None:
+        args += ['-V', isoconf['volume_id']]
     args += ['-A', application_id]
     args += ['-o', workdir + '.iso', workdir]
     run_helper(args, cwd=outdir, failmsg="create iso file", verbose=verbose)
@@ -444,7 +445,8 @@ def create_iso(outdir, yml, pool, flavor, workdir, application_id):
 
 def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     verbose = True if verbose_level > 0 else False
-    base = yml['iso']['base']
+    isoconf = yml['iso']
+    base = isoconf['base']
     if verbose:
         note(f"Looking for baseiso-{base} rpm on {arch}")
     agama = pool.lookup_rpm(arch, f"baseiso-{base}")
@@ -466,16 +468,16 @@ def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     # create new iso
     tempdir = f"{outdir}/mksusecd"
     os.mkdir(tempdir)
-    if not 'base_skip_packages' in yml['build_options']:
+    if 'base_skip_packages' not in yml['build_options']:
         args = ['cp', '-al', workdir, f"{tempdir}/install"]
         run_helper(args, failmsg="add tree to agama image")
     args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
     # mksusecd would take the volume_id, publisher, application_id, preparer from the agama iso
     args += ['--preparer', ISO_PREPARER]
-    if 'publisher' in yml['iso'] and yml['iso']['publisher'] is not None:
-        args += ['--vendor', yml['iso']['publisher']]
-    if 'volume_id' in yml['iso'] and yml['iso']['volume_id'] is not None:
-        args += ['--volume', yml['iso']['volume_id']]
+    if 'publisher' in isoconf and isoconf['publisher'] is not None:
+        args += ['--vendor', isoconf['publisher']]
+    if 'volume_id' in isoconf and isoconf['volume_id'] is not None:
+        args += ['--volume', isoconf['volume_id']]
     args += ['--application', application_id]
     run_helper(args, failmsg="add tree to agama image", verbose=verbose)
     # mksusecd already did a tagmedia call with a sha256 digest
@@ -617,7 +619,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
            args.append(find_primary(maindir + subdir))
            if debugdir:
                args.append(find_primary(debugdir + subdir))
-           run_helper(args, fatal=(not 'ignore_errors' in yml['installcheck']), failmsg="run installcheck validation")
+           run_helper(args, fatal=('ignore_errors' not in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
@@ -1043,7 +1045,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
 
         os.unlink(rpmdir + '/updateinfo.xml')
 
-    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+    if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages for updateinfo')
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
@@ -1104,7 +1106,7 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
                 continue
             unpack_one_meta_rpm(rpmdir, rpm, medium)
 
-    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+    if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing meta packages')
 
 
@@ -1239,7 +1241,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
                 if drpm:
                     link_entry_into_dir(drpm, debugdir, add_slsa=add_slsa)
 
-    if missing_package and not 'ignore_missing_packages' in yml['build_options']:
+    if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages')
 
 
