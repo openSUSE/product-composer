@@ -46,7 +46,7 @@ verbose_level = 0
 
 
 def main(argv=None) -> int:
-    """ Execute the application CLI.
+    """Execute the application CLI.
 
     :param argv: argument list to parse (sys.argv by default)
     :return: exit status
@@ -65,7 +65,7 @@ def main(argv=None) -> int:
     build_parser.set_defaults(func=build)
 
     # Generic options
-    for cmd_parser in [verify_parser, build_parser]:
+    for cmd_parser in (verify_parser, build_parser):
         cmd_parser.add_argument('-f', '--flavor', help='Build a given flavor')
         cmd_parser.add_argument('-v', '--verbose', action='store_true',  help='Enable verbose output')
         cmd_parser.add_argument('--reposdir', action='store',  help='Take packages from this directory')
@@ -154,7 +154,7 @@ def build(args):
     for u in sorted(pool.lookup_all_updateinfos()):
         for update in u.root.findall('update'):
             if not update.find('blocked_in_product'):
-                 continue
+                continue
 
             parent = update.findall('pkglist')[0].findall('collection')[0]
             for pkgentry in parent.findall('package'):
@@ -176,14 +176,13 @@ def verify(args):
 
 
 def parse_yaml(filename, flavor):
-
     with open(filename, 'r') as file:
         yml = yaml.safe_load(file)
 
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if yml['product_compose_schema'] != 0 and yml['product_compose_schema'] != 0.1 and yml['product_compose_schema'] != 0.2:
-        die(f"Unsupported product composer schema: {yml['product_compose_schema']}")
+    if str(yml['product_compose_schema']) not in ('0', '0.1', '0.2'):
+        die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
 
     if 'flavors' not in yml:
         yml['flavors'] = []
@@ -193,12 +192,22 @@ def parse_yaml(filename, flavor):
 
     if flavor:
         if flavor not in yml['flavors']:
-            die("Flavor not found: " + flavor)
+            die('Flavor not found: ' + flavor)
         f = yml['flavors'][flavor]
         # overwrite global values from flavor overwrites
-        for tag in ['architectures', 'name', 'summary', 'version', 'update', 'edition',
-                    'product-type', 'product_directory_name',
-                    'source', 'debug', 'repodata']:
+        for tag in (
+            'architectures',
+            'name',
+            'summary',
+            'version',
+            'update',
+            'edition',
+            'product-type',
+            'product_directory_name',
+            'source',
+            'debug',
+            'repodata',
+        ):
             if tag in f:
                 yml[tag] = f[tag]
 
@@ -210,12 +219,12 @@ def parse_yaml(filename, flavor):
         if 'iso' in f:
             if not 'iso' in yml:
                 yml['iso'] = {}
-            for tag in ['volume_id', 'publisher', 'tree', 'base']:
+            for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if tag in f['iso']:
                     yml['iso'][tag] = f['iso'][tag]
 
     if 'architectures' not in yml or not yml['architectures']:
-        die("No architecture defined. Maybe wrong flavor?")
+        die('No architecture defined. Maybe wrong flavor?')
 
     if 'installcheck' in yml and yml['installcheck'] is None:
         yml['installcheck'] = []
@@ -244,19 +253,19 @@ def parse_eulas(euladir):
 
 
 def get_product_dir(yml, flavor, release):
-    name = yml['name'] + "-" + str(yml['version'])
+    name: str = f'{yml["name"]}-{yml["version"]}'
     if 'product_directory_name' in yml:
         # manual override
         name = yml['product_directory_name']
-    if flavor and not 'hide_flavor_in_product_directory_name' in yml['build_options']:
-        name += "-" + flavor
+    if flavor and 'hide_flavor_in_product_directory_name' not in yml['build_options']:
+        name += f'-{flavor}'
     if yml['architectures']:
         visible_archs = yml['architectures']
         if 'local' in visible_archs:
             visible_archs.remove('local')
         name += "-" + "-".join(visible_archs)
     if release:
-        name += "-Build" + str(release)
+        name += f'-Build{release}'
     if '/' in name:
         die("Illegal product name")
     return name
@@ -264,7 +273,7 @@ def get_product_dir(yml, flavor, release):
 
 def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None, verbose=False):
     if verbose:
-        note("Calling {args}")
+        note(f'Calling {args}')
     if stdout is None:
         stdout = subprocess.PIPE
     if stdin is None:
@@ -354,6 +363,7 @@ def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
     # creating .sha256 for iso file
     create_sha256_for(workdir + '.install.iso')
 
+
 def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -362,7 +372,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
     if not os.path.exists(maindir):
         os.mkdir(maindir)
 
-    workdirectories = [ maindir ]
+    workdirectories = [maindir]
     debugdir = sourcedir = None
     if "source" in yml:
         if yml['source'] == 'split':
@@ -613,16 +623,20 @@ def create_checksums_file(maindir):
             for root, dirnames, filenames in os.walk(maindir + '/' + subdir):
                 for name in filenames:
                     relname = os.path.relpath(root + '/' + name, maindir)
-                    run_helper([chksums_tool, relname], cwd=maindir, stdout=chksums_file)
+                    run_helper(
+                        [chksums_tool, relname], cwd=maindir, stdout=chksums_file
+                    )
+
 
 # create a fake package entry from an updateinfo package spec
 
 
 def create_updateinfo_package(pkgentry):
     entry = Package()
-    for tag in 'name', 'epoch', 'version', 'release', 'arch':
+    for tag in ('name', 'epoch', 'version', 'release', 'arch'):
         setattr(entry, tag, pkgentry.get(tag))
     return entry
+
 
 def generate_du_data(pkg, maxdepth):
     seen = set()
@@ -660,6 +674,7 @@ def generate_du_data(pkg, maxdepth):
     for dir, size in sorted(dudata_size.items()):
         dudata.append((dir, size, dudata_count[dir]))
     return dudata
+
 
 # Get supported translations based on installed packages
 def get_package_translation_languages():
@@ -841,7 +856,11 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                             die("shutting down due to block_updates_under_embargo flag")
 
                 # clean internal attributes
-                for internal_attributes in ['supportstatus', 'superseded_by', 'embargo_date']:
+                for internal_attributes in (
+                    'supportstatus',
+                    'superseded_by',
+                    'embargo_date',
+                ):
                     pkgentry.attrib.pop(internal_attributes, None)
 
                 # check if we have files for the entry
@@ -997,6 +1016,7 @@ def create_package_set_all(setname, pool, arch):
 
     return pkgset
 
+
 def create_package_set(yml, arch, flavor, setname, pool=None):
     if 'packagesets' not in yml:
         pkgset = create_package_set_compat(yml, arch, flavor, setname)
@@ -1033,7 +1053,7 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
                 if oname == name or oname not in pkgsets:
                     die(f'package set {oname} does not exist')
                 if pkgsets[oname] is None:
-                    pkgsets[oname] = PkgSet(oname)      # instantiate
+                    pkgsets[oname] = PkgSet(oname)  # instantiate
                 if setop == 'add':
                     pkgset.add(pkgsets[oname])
                 elif setop == 'sub':
@@ -1046,7 +1066,7 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
     if setname not in pkgsets:
         die(f'package set {setname} is not defined')
     if pkgsets[setname] is None:
-        pkgsets[setname] = PkgSet(setname)      # instantiate
+        pkgsets[setname] = PkgSet(setname)  # instantiate
     return pkgsets[setname]
 
 
@@ -1071,7 +1091,6 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, debugdir=None, sourcedir=
                 parent = update.findall('pkglist')[0].findall('collection')[0]
                 for pkgentry in parent.findall('package'):
                     referenced_update_rpms[pkgentry.get('src')] = 1
-
 
     main_pkgset = create_package_set(yml, arch, flavor, 'main', pool=pool)
 
@@ -1172,7 +1191,16 @@ def write_report_file(directory, outfile):
             continue
         binary = ET.SubElement(root, 'binary')
         binary.text = 'obs://' + entry.origin
-        for tag in 'name', 'epoch', 'version', 'release', 'arch', 'buildtime', 'disturl', 'license':
+        for tag in (
+            'name',
+            'epoch',
+            'version',
+            'release',
+            'arch',
+            'buildtime',
+            'disturl',
+            'license',
+        ):
             val = getattr(entry, tag, None)
             if val is None or val == '':
                 continue
