@@ -12,6 +12,7 @@ dependencies = [
     "zstandard",
     "pydantic<2",
     "pyyaml",
+    "schema",
 ]
 dynamic = ["version", "readme"]
 
