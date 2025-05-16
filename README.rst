@@ -5,7 +5,8 @@ This is the successor of product-builder. A tool to create rpm product
 repositories inside of Open Build Service based on a larger pool
 of packages.
 
-It is starting as small as possible, just enough for ALP products atm.
+It is used by any SLFO based product during product creation and
+also during maintenance time.
 
 Currently it supports:
  - processing based on a list of rpm package names
@@ -13,9 +14,8 @@ Currently it supports:
  - it can either just take a single rpm of a given name or all of them
  - it can post process updateinfo data
  - post processing like rpm meta data generation
-
-Not yet implemented:
- - create bootable iso files
+ - modify pre-generated installer images to put a package set for 
+   off-line installation on it.
 
 Development
 ===========
