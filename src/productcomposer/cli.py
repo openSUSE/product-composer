@@ -237,6 +237,9 @@ def build(args):
         for option in arg:
             yml['build_options'].append(option)
 
+    if 'architectures' not in yml or not yml['architectures']:
+        die(f'No architecture defined for flavor {flavor}')
+
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -275,7 +278,15 @@ def build(args):
 
 
 def verify(args):
-    parse_yaml(args.filename, args.flavor)
+    yml = parse_yaml(args.filename, args.flavor)
+    if args.flavor == None and 'flavors' in yml:
+        for flavor in yml['flavors']:
+            yml = parse_yaml(args.filename, flavor)
+            if 'architectures' not in yml or not yml['architectures']:
+                die(f'No architecture defined for flavor {flavor}')
+    elif 'architectures' not in yml or not yml['architectures']:
+        die('No architecture defined and no flavor.')
+
 
 
 def parse_yaml(filename, flavor):
@@ -295,9 +306,9 @@ def parse_yaml(filename, flavor):
 
     try:
         compose_schema.validate(yml)
-        note("Configuration is valid.")
+        note(f"Configuration is valid for flavor: {flavor}")
     except SchemaError as se:
-        warn("YAML syntax is invalid")
+        warn(f"YAML syntax is invalid for flavor: {flavor}")
         raise se
 
     if 'flavors' not in yml:
@@ -338,9 +349,6 @@ def parse_yaml(filename, flavor):
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if tag in f['iso']:
                     yml['iso'][tag] = f['iso'][tag]
-
-    if 'architectures' not in yml or not yml['architectures']:
-        die('No architecture defined. Maybe wrong flavor?')
 
     if 'installcheck' in yml and yml['installcheck'] is None:
         yml['installcheck'] = []
