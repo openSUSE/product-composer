@@ -301,7 +301,7 @@ def parse_yaml(filename, flavor):
 
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if yml['product_compose_schema'] not in ('0', '0.1', '0.2'):
+    if yml['product_compose_schema'] not in ('0.1', '0.2'):
         die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
 
     try:
@@ -1108,30 +1108,6 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
         die('Abort due to missing meta packages')
 
 
-def create_package_set_compat(yml, arch, flavor, setname):
-    if setname == 'main':
-        oldname = 'packages'
-    elif setname == 'unpack':
-        oldname = 'unpack_packages'
-    else:
-        return None
-    if oldname not in yml:
-        return PkgSet(setname) if setname == 'unpack' else None
-    pkgset = PkgSet(setname)
-    for entry in list(yml[oldname]):
-        if type(entry) == dict:
-            if 'flavors' in entry:
-                if flavor is None or flavor not in entry['flavors']:
-                    continue
-            if 'architectures' in entry:
-                if arch not in entry['architectures']:
-                    continue
-            pkgset.add_specs(entry['packages'])
-        else:
-            pkgset.add_specs([str(entry)])
-    return pkgset
-
-
 def create_package_set_all(setname, pool, arch):
     if pool is None:
         die('need a package pool to create the __all__ package set')
@@ -1142,12 +1118,6 @@ def create_package_set_all(setname, pool, arch):
 
 
 def create_package_set(yml, arch, flavor, setname, pool=None):
-    if 'packagesets' not in yml:
-        pkgset = create_package_set_compat(yml, arch, flavor, setname)
-        if pkgset is None:
-            die(f'package set {setname} is not defined')
-        return pkgset
-
     pkgsets = {}
     for entry in list(yml['packagesets']):
         name = entry['name'] if 'name' in entry else 'main'
