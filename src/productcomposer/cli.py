@@ -12,6 +12,7 @@ from datetime import datetime
 from argparse import ArgumentParser
 from xml.etree import ElementTree as ET
 
+from schema import Schema, And, Or, Optional, SchemaError
 import yaml
 
 from .core.logger import logger
@@ -44,6 +45,108 @@ supportstatus_override = {}
 # debug aka verbose
 verbose_level = 0
 
+compose_schema_iso = Schema({
+    Optional('publisher'): str,
+    Optional('volume_id'): str,
+    Optional('tree'): str,
+    Optional('base'): str,
+})
+compose_schema_packageset = Schema({
+    Optional('name'): str,
+    Optional('supportstatus'): str,
+    Optional('flavors'): [str],
+    Optional('architectures'): [str],
+    Optional('add'): [str],
+    Optional('sub'): [str],
+    Optional('intersect'): [str],
+    Optional('packages'): Or(None, [str]),
+})
+compose_schema_scc_cpe = Schema({
+    'cpe': str,
+    Optional('online'): bool,
+})
+compose_schema_scc = Schema({
+    Optional('description'): str,
+    Optional('family'): str,
+    Optional('product-class'): str,
+    Optional('free'): bool,
+    Optional('predecessors'): [compose_schema_scc_cpe],
+    Optional('shortname'): str,
+    Optional('base-products'): [compose_schema_scc_cpe],
+    Optional('root-products'): [compose_schema_scc_cpe],
+    Optional('recommended-for'): [compose_schema_scc_cpe],
+    Optional('migration-extra-for'): [compose_schema_scc_cpe],
+})
+compose_schema_build_option = Schema(
+    Or(
+        'add_slsa_provenance',
+        'base_skip_packages',
+        'block_updates_under_embargo',
+        'hide_flavor_in_product_directory_name',
+        'ignore_missing_packages',
+        'skip_updateinfos',
+        'take_all_available_versions',
+        'updateinfo_packages_only',
+    )
+)
+compose_schema_source_and_debug = Schema(
+    Or(
+        'drop',
+        'include',
+        'split',
+    )
+)
+compose_schema_repodata = Schema(
+    Or(
+        'all',
+        'split',
+    )
+)
+compose_schema_flavor = Schema({
+    Optional('architectures'): [str],
+    Optional('name'): str,
+    Optional('version'): str,
+    Optional('update'): str,
+    Optional('edition'): str,
+    Optional('product-type'): str,
+    Optional('product_directory_name'): str,
+    Optional('repodata'): compose_schema_repodata,
+    Optional('summary'): str,
+    Optional('debug'): compose_schema_source_and_debug,
+    Optional('source'): compose_schema_source_and_debug,
+    Optional('build_options'): Or(None, [compose_schema_build_option]),
+    Optional('scc'): compose_schema_scc,
+    Optional('iso'): compose_schema_iso,
+})
+
+compose_schema = Schema({
+    'product_compose_schema': str,
+    'vendor': str,
+    'name': str,
+    'version': str,
+    Optional('update'): str,
+    'product-type': str,
+    'summary': str,
+    Optional('bcntsynctag'): str,
+    Optional('milestone'): str,
+    Optional('scc'): compose_schema_scc,
+    Optional('iso'): compose_schema_iso,
+    Optional('installcheck'): Or(None, ['ignore_errors']),
+    Optional('build_options'): Or(None, [compose_schema_build_option]),
+    Optional('architectures'): [str],
+
+    Optional('product_directory_name'): str,
+    Optional('set_updateinfo_from'): str,
+    Optional('set_updateinfo_id_prefix'): str,
+    Optional('block_updates_under_embargo'): str,
+    Optional('debug'): compose_schema_source_and_debug,
+    Optional('source'): compose_schema_source_and_debug,
+    Optional('repodata'): compose_schema_repodata,
+
+    Optional('flavors'): {str: compose_schema_flavor},
+    Optional('packagesets'): [compose_schema_packageset],
+    Optional('unpack'): [str],
+})
 
 def main(argv=None) -> int:
     """Execute the application CLI.
@@ -134,6 +237,9 @@ def build(args):
         for option in arg:
             yml['build_options'].append(option)
 
+    if 'architectures' not in yml or not yml['architectures']:
+        die(f'No architecture defined for flavor {flavor}')
+
     directory = os.getcwd()
     if args.filename.startswith('/'):
         directory = os.path.dirname(args.filename)
@@ -172,17 +278,38 @@ def build(args):
 
 
 def verify(args):
-    parse_yaml(args.filename, args.flavor)
+    yml = parse_yaml(args.filename, args.flavor)
+    if args.flavor == None and 'flavors' in yml:
+        for flavor in yml['flavors']:
+            yml = parse_yaml(args.filename, flavor)
+            if 'architectures' not in yml or not yml['architectures']:
+                die(f'No architecture defined for flavor {flavor}')
+    elif 'architectures' not in yml or not yml['architectures']:
+        die('No architecture defined and no flavor.')
+
 
 
 def parse_yaml(filename, flavor):
     with open(filename, 'r') as file:
         yml = yaml.safe_load(file)
 
+    # we may not allow this in future anymore, but for now convert these from float to str
+    if 'product_compose_schema' in yml:
+        yml['product_compose_schema'] = str(yml['product_compose_schema'])
+    if 'version' in yml:
+        yml['version'] = str(yml['version'])
+
     if 'product_compose_schema' not in yml:
         die('missing product composer schema')
-    if str(yml['product_compose_schema']) not in ('0', '0.1', '0.2'):
+    if yml['product_compose_schema'] not in ('0.1', '0.2'):
         die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
+
+    try:
+        compose_schema.validate(yml)
+        note(f"Configuration is valid for flavor: {flavor}")
+    except SchemaError as se:
+        warn(f"YAML syntax is invalid for flavor: {flavor}")
+        raise se
 
     if 'flavors' not in yml:
         yml['flavors'] = []
@@ -222,9 +349,6 @@ def parse_yaml(filename, flavor):
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if tag in f['iso']:
                     yml['iso'][tag] = f['iso'][tag]
-
-    if 'architectures' not in yml or not yml['architectures']:
-        die('No architecture defined. Maybe wrong flavor?')
 
     if 'installcheck' in yml and yml['installcheck'] is None:
         yml['installcheck'] = []
@@ -984,30 +1108,6 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
         die('Abort due to missing meta packages')
 
 
-def create_package_set_compat(yml, arch, flavor, setname):
-    if setname == 'main':
-        oldname = 'packages'
-    elif setname == 'unpack':
-        oldname = 'unpack_packages'
-    else:
-        return None
-    if oldname not in yml:
-        return PkgSet(setname) if setname == 'unpack' else None
-    pkgset = PkgSet(setname)
-    for entry in list(yml[oldname]):
-        if type(entry) == dict:
-            if 'flavors' in entry:
-                if flavor is None or flavor not in entry['flavors']:
-                    continue
-            if 'architectures' in entry:
-                if arch not in entry['architectures']:
-                    continue
-            pkgset.add_specs(entry['packages'])
-        else:
-            pkgset.add_specs([str(entry)])
-    return pkgset
-
-
 def create_package_set_all(setname, pool, arch):
     if pool is None:
         die('need a package pool to create the __all__ package set')
@@ -1018,12 +1118,6 @@ def create_package_set_all(setname, pool, arch):
 
 
 def create_package_set(yml, arch, flavor, setname, pool=None):
-    if 'packagesets' not in yml:
-        pkgset = create_package_set_compat(yml, arch, flavor, setname)
-        if pkgset is None:
-            die(f'package set {setname} is not defined')
-        return pkgset
-
     pkgsets = {}
     for entry in list(yml['packagesets']):
         name = entry['name'] if 'name' in entry else 'main'
