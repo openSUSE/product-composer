@@ -51,11 +51,11 @@ class PkgSet:
             if name not in otherbyname:
                 pkgs.append(sel)
                 continue
-            for osel in otherbyname[name]:
+            for other_sel in otherbyname[name]:
                 if sel is not None:
-                    sel = sel.sub(osel)
+                    sel = sel.sub(other_sel)
             if sel is not None:
-                pkgs.append(p)
+                pkgs.append(sel)
         self.pkgs = pkgs
         self.byname = None
 

@@ -57,7 +57,7 @@ class Pool:
     def lookup_all_updateinfos(self):
         return self.updateinfos.values()
 
-    def remove_rpms(self, arch, name, epoch=None, version=None, release=None):
+    def remove_rpms(self, arch, name, op=None, epoch=None, version=None, release=None):
         if name not in self.rpms:
             return
         self.rpms[name] = [rpm for rpm in self.rpms[name] if not rpm.matches(arch, name, op, epoch, version, release)]
