@@ -1,0 +1,6 @@
+product_compose_schema: 0.2
+
+vendor: openSUSE
+name: Backports
+version: 16
+summary: openSUSE Backports
