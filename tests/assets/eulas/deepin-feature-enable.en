@@ -1,0 +1,21 @@
+WARNING: Deepin Dbus and policykit security issues
+
+The deepin-feature-enable will help you to enable all feature of deepin-api and
+deepin-daemon. 
+
+For Ensuring your openSUSE is in security, We disable all the dbus and policykit
+features for deepin-api and deepin-daemon, as well as the deepin-file-manager.
+The SUSE security team thinks these dbus and policykit features are not secure.
+But it leads to Deepin Desktop can not works fine, some features are invalid. If
+you don't care about portential security issues, Please click "I agree" to can
+enable Dbus and policykit feature for deepin-api and deepin-daemon. If you don't
+know what are you doing, please click "I disagree" to exit this tool and read
+https://en.opensuse.org/Portal:Deepin carefully. Then you can manually run
+deepin-api-dbus-installer, deepin-api-polkit-installer,
+deepin-daemon-dbus-installer and deepin-daemon-polkit-installer with root to
+enable these feature.
+
+The deepin-feature-enable doesn't enable Dbus and policykit features for
+deepin-file-manager. If you need them, please install deepin-file-dbus and
+deepin-file-polkit. Then run deepin-file-dbus-installer and 
+deepin-file-polkit-installer.

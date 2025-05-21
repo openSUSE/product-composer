@@ -1,0 +1,5 @@
+vendor: openSUSE
+name: Backports
+version: 16
+product-type: base
+summary: openSUSE Backports
