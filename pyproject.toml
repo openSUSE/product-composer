@@ -5,7 +5,9 @@ description = "OBS product image creator"
 authors = [
     { name = "Adrian Schröter", email = "adrian@suse.de" },
 ]
-license = {file = "LICENSE"}
+license = "GPL-2.0-or-later"
+license-files = ["COPYING"]
+
 requires-python = ">=3.11"
 dependencies = [
     "rpm",
@@ -30,7 +32,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
