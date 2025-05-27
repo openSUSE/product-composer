@@ -5,6 +5,7 @@ from ..utils.loggerutils import (die, warn, note)
 from ..utils.report import add_entry_to_report
 from ..utils.runhelper import run_helper
 
+
 def create_package_set_all(setname, pool, arch):
     if pool is None:
         die('need a package pool to create the __all__ package set')
@@ -32,8 +33,9 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
         pkgsets[name] = pkgset
         if 'supportstatus' in entry:
             pkgset.supportstatus = entry['supportstatus']
-        if entry.get('override_supportstatus'):
-            pkgset.override_supportstatus = True
+            if pkgset.supportstatus.startswith('='):
+                pkgset.override_supportstatus = True
+                pkgset.supportstatus = pkgset.supportstatus[1:]
         if 'packages' in entry and entry['packages']:
             pkgset.add_specs(entry['packages'])
         for setop in 'add', 'sub', 'intersect':
@@ -60,6 +62,7 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
     if pkgsets[setname] is None:
         pkgsets[setname] = PkgSet(setname)  # instantiate
     return pkgsets[setname]
+
 
 def link_file_into_dir(source, directory, name=None):
     if not os.path.exists(directory):

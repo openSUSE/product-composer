@@ -21,7 +21,6 @@ class compose_schema_packageset(BaseModel):
     add: Optional[list[str]] = None
     sub: Optional[list[str]] = None
     intersect: Optional[list[str]] = None
-    override_supportstatus: Optional[bool] = None
     packages: Optional[list[str]] = None
 
 
