@@ -102,6 +102,17 @@ set lists.
 Lists all package names to be added. This is just the rpm
 name, not the file name.
 
+==== supportstatus
+
+Define support status level for the packages listed in
+packages. Valid support levels are l3, l2, unsupported.
+However these are handled as strings.
+
+==== override_supportstatus
+
+A boolean to overwrite any supportstatus from other
+packagesets listed behind the add tag.
+
 === Details
 
 ==== name

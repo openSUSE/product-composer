@@ -10,6 +10,7 @@ compose_schema_iso = Schema({
 compose_schema_packageset = Schema({
     Optional('name'): str,
     Optional('supportstatus'): str,
+    Optional('override_supportstatus'): bool,
     Optional('flavors'): [str],
     Optional('architectures'): [str],
     Optional('add'): [str],
