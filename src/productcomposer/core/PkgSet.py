@@ -11,6 +11,7 @@ class PkgSet:
         self.pkgs = []
         self.byname = None
         self.supportstatus = None
+        self.override_supportstatus = False
 
     def _create_byname(self):
         byname = {}
@@ -36,7 +37,7 @@ class PkgSet:
         s1 = set(self)
         for sel in other.pkgs:
             if sel not in s1:
-                if self.supportstatus is not None and sel.supportstatus is None:
+                if self.override_supportstatus or (self.supportstatus is not None and sel.supportstatus is None):
                     sel = sel.copy()
                     sel.supportstatus = self.supportstatus
                 self.pkgs.append(sel)

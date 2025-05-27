@@ -32,6 +32,8 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
         pkgsets[name] = pkgset
         if 'supportstatus' in entry:
             pkgset.supportstatus = entry['supportstatus']
+        if entry.get('override_supportstatus'):
+            pkgset.override_supportstatus = True
         if 'packages' in entry and entry['packages']:
             pkgset.add_specs(entry['packages'])
         for setop in 'add', 'sub', 'intersect':
