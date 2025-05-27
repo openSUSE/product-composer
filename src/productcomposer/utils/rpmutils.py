@@ -1,7 +1,8 @@
 import os
 import shutil
+
 from ..core.PkgSet import PkgSet
-from ..utils.loggerutils import (die, warn, note)
+from ..utils.loggerutils import die, note, warn
 from ..utils.report import add_entry_to_report
 from ..utils.runhelper import run_helper
 
@@ -13,6 +14,7 @@ def create_package_set_all(setname, pool, arch):
     pkgset.add_specs([n for n in pool.names(arch) if not (n.endswith('-debuginfo') or n.endswith('-debugsource'))])
 
     return pkgset
+
 
 def create_package_set(yml, arch, flavor, setname, pool=None):
     pkgsets = {}
@@ -137,8 +139,11 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 parent = update.findall('pkglist')[0].findall('collection')[0]
                 for pkgentry in parent.findall('package'):
                     referenced_update_rpms[pkgentry.get('src')] = 1
+    main_pkgset_name = 'main'
+    if 'flavors' in yml and flavor in yml['flavors']:
+        main_pkgset_name = yml['flavors'][flavor].get('packageset', 'main')
 
-    main_pkgset = create_package_set(yml, arch, flavor, 'main', pool=pool)
+    main_pkgset = create_package_set(yml, arch, flavor, main_pkgset_name, pool=pool)
 
     missing_package = None
     for sel in main_pkgset:
