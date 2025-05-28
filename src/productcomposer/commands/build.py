@@ -74,7 +74,7 @@ class BuildCommand:
             parse_supportstatus(supportstatus_fn)
 
         if args.euladir and os.path.isdir(args.euladir):
-            parse_eulas(args.euladir)
+            parse_eulas(args.euladir, eulas)
 
         pool = Pool()
         note(f"Scanning: {reposdir}")
