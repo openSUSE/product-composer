@@ -1,47 +1,46 @@
 """Schema definition for productcompose files"""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from typing import Literal
 from typing import Optional
 
 
 class compose_schema_iso(BaseModel):
-    publisher: Optional[str]
-    volume_id: Optional[str]
-    tree: Optional[str]
-    base: Optional[str]
+    publisher: Optional[str] = None
+    volume_id: Optional[str] = None
+    tree: Optional[str] = None
+    base: Optional[str] = None
 
 
 class compose_schema_packageset(BaseModel):
-    name: Optional[str]
-    supportstatus: Optional[str]
-    flavors: Optional[list[str]]
-    architectures: Optional[list[str]]
-    add: Optional[list[str]]
-    sub: Optional[list[str]]
-    intersect: Optional[list[str]]
-    supportstatus: Optional[str]
-    override_supportstatus: Optional[bool]
-    packages: Optional[list[str]]
+    name: Optional[str] = None
+    supportstatus: Optional[str] = None
+    flavors: Optional[list[str]] = None
+    architectures: Optional[list[str]] = None
+    add: Optional[list[str]] = None
+    sub: Optional[list[str]] = None
+    intersect: Optional[list[str]] = None
+    override_supportstatus: Optional[bool] = None
+    packages: Optional[list[str]] = None
 
 
 class compose_schema_scc_cpe(BaseModel):
     cpe: str
-    online: Optional[bool]
+    online: Optional[bool] = None
 
 
 class compose_schema_scc(BaseModel):
-    description: Optional[str]
-    family: Optional[str]
-    product_class: Optional[str]
-    free: Optional[bool]
-    predecessors: Optional[compose_schema_scc_cpe]
-    shortname: Optional[str]
-    base_products: Optional[list[compose_schema_scc_cpe]]
-    root_products: Optional[list[compose_schema_scc_cpe]]
-    recommended_for: Optional[list[compose_schema_scc_cpe]]
-    migration_extra_for: Optional[list[compose_schema_scc_cpe]]
+    description: Optional[str] = None
+    family: Optional[str] = None
+    product_class: Optional[str] = Field(default=None, alias='product-class')
+    free: Optional[bool] = None
+    predecessors: Optional[compose_schema_scc_cpe] = None
+    shortname: Optional[str] = None
+    base_products: Optional[list[compose_schema_scc_cpe]] = None
+    root_products: Optional[list[compose_schema_scc_cpe]] = None
+    recommended_for: Optional[list[compose_schema_scc_cpe]] = None
+    migration_extra_for: Optional[list[compose_schema_scc_cpe]] = None
 
 
 compose_schema_build_option = Literal[
@@ -60,48 +59,48 @@ compose_schema_repodata = Literal['all', 'split']
 
 
 class compose_schema_flavor(BaseModel):
-    architectures: Optional[list[str]]
-    name: Optional[str]
-    version: Optional[str]
-    update: Optional[str]
-    edition: Optional[str]
-    product_type: Optional[str]
-    product_directory_name: Optional[str]
-    packageset: Optional[str]
-    repodata: Optional[compose_schema_repodata]
-    summary: Optional[str]
-    debug: Optional[compose_schema_source_and_debug]
-    source: Optional[compose_schema_source_and_debug]
-    build_options: Optional[list[compose_schema_build_option]]
-    scc: Optional[compose_schema_scc]
-    iso: Optional[compose_schema_iso]
+    architectures: Optional[list[str]] = None
+    name: Optional[str] = None
+    version: Optional[str] = None
+    update: Optional[str] = None
+    edition: Optional[str] = None
+    product_type: Optional[str] = Field(default=None, alias='product-type')
+    product_directory_name: Optional[str] = None
+    packageset: Optional[str] = None
+    repodata: Optional[compose_schema_repodata] = None
+    summary: Optional[str] = None
+    debug: Optional[compose_schema_source_and_debug] = None
+    source: Optional[compose_schema_source_and_debug] = None
+    build_options: Optional[list[compose_schema_build_option]] = None
+    scc: Optional[compose_schema_scc] = None
+    iso: Optional[compose_schema_iso] = None
 
 
 class ComposeSchema(BaseModel):
-    product_compose_schema: str
+    product_compose_schema: str | float
     vendor: str
     name: str
     version: str
-    update: Optional[str]
-    product_type: Optional[str]
+    update: Optional[str] = None
+    product_type: Optional[str] = None
     summary: str
-    bcntsynctag: Optional[str]
-    milestone: Optional[str]
+    bcntsynctag: Optional[str] = None
+    milestone: Optional[str] = None
     scc: compose_schema_scc
     iso: compose_schema_iso
     installcheck: Optional[list[Literal['ignore_errors']]] | None
-    build_options: Optional[list[compose_schema_build_option]]
-    architectures: Optional[list[str]]
+    build_options: Optional[list[compose_schema_build_option]] = None
+    architectures: Optional[list[str]] = None
 
-    product_directory_name: Optional[str]
-    set_updateinfo_from: Optional[str]
-    set_updateinfo_id_prefix: Optional[str]
-    block_updates_under_embargo: Optional[str]
+    product_directory_name: Optional[str] = None
+    set_updateinfo_from: Optional[str] = None
+    set_updateinfo_id_prefix: Optional[str] = None
+    block_updates_under_embargo: Optional[str] = None
 
-    debug: Optional[compose_schema_source_and_debug]
-    source: Optional[compose_schema_source_and_debug]
-    repodata: Optional[compose_schema_repodata]
+    debug: Optional[compose_schema_source_and_debug] = None
+    source: Optional[compose_schema_source_and_debug] = None
+    repodata: Optional[compose_schema_repodata] = None
 
-    flavors: Optional[compose_schema_flavor]
-    packagesets: Optional[list[compose_schema_packageset]]
-    unpack: Optional[list[str]]
+    flavors: Optional[compose_schema_flavor] = None
+    packagesets: Optional[list[compose_schema_packageset]] = None
+    unpack: Optional[list[str]] = None

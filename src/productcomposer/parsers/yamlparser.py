@@ -25,7 +25,6 @@ def parse_yaml(filename, flavor):
         ComposeSchema(**yml)
         note(f"Configuration is valid for flavor: {flavor}")
     except pydantic.ValidationError as se:
-        import pdb; pdb.set_trace()
         warn(f"YAML syntax is invalid for flavor: {flavor}")
         raise se
 
