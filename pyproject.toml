@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 dependencies = [
     "rpm",
     "zstandard",
-    "pydantic<2",
+    "pydantic",
     "pyyaml",
 ]
 dynamic = ["version", "readme"]
