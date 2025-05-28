@@ -8,6 +8,7 @@ from ..utils.runcreaterepo import run_createrepo
 from ..createartifacts.createmediadir import create_media_dir
 from ..createartifacts.createchecksumfile import create_checksums_file
 from ..createartifacts.createsusedataxml import create_susedata_xml
+from ..createartifacts.createappstream import create_appstream
 from ..createartifacts.createupdateinfoxml import create_updateinfo_xml
 from ..createartifacts.createagamaiso import create_agama_iso
 from ..createartifacts.createiso import create_iso
@@ -131,6 +132,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
 
     for repodatadir in repodatadirectories:
         if os.path.exists(f"{repodatadir}/repodata"):
+            create_appstream(repodatadir)
             create_susedata_xml(repodatadir, yml, supporstatus, eulas)
 
     if 'installcheck' in yml:
