@@ -1,7 +1,10 @@
 import yaml
-from schema import Schema, And, Or, Optional, SchemaError
+import pydantic
+
 from ..utils.loggerutils import (die, warn, note)
-from ..validators.composeschema import (compose_schema)
+from ..validators.composeschema import ComposeSchema
+
+
 
 def parse_yaml(filename, flavor):
     with open(filename, 'r') as file:
@@ -19,9 +22,10 @@ def parse_yaml(filename, flavor):
         die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
 
     try:
-        compose_schema.validate(yml)
+        ComposeSchema(**yml)
         note(f"Configuration is valid for flavor: {flavor}")
-    except SchemaError as se:
+    except pydantic.ValidationError as se:
+        import pdb; pdb.set_trace()
         warn(f"YAML syntax is invalid for flavor: {flavor}")
         raise se
 
