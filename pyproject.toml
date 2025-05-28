@@ -5,8 +5,7 @@ description = "OBS product image creator"
 authors = [
     { name = "Adrian Schröter", email = "adrian@suse.de" },
 ]
-license = "GPL-2.0-or-later"
-license-files = ["COPYING"]
+license = {text = "GPL-2.0-or-later"}
 
 requires-python = ">=3.11"
 dependencies = [
