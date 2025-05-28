@@ -1,105 +1,105 @@
+"""Schema definition for productcompose files"""
 
-from schema import Schema, And, Or, Optional, SchemaError
+from pydantic import BaseModel
 
-compose_schema_iso = Schema({
-    Optional('publisher'): str,
-    Optional('volume_id'): str,
-    Optional('tree'): str,
-    Optional('base'): str,
-})
-compose_schema_packageset = Schema({
-    Optional('name'): str,
-    Optional('supportstatus'): str,
-    Optional('flavors'): [str],
-    Optional('architectures'): [str],
-    Optional('add'): [str],
-    Optional('sub'): [str],
-    Optional('intersect'): [str],
-    Optional('packages'): Or(None, [str]),
-})
-compose_schema_scc_cpe = Schema({
-    'cpe': str,
-    Optional('online'): bool,
-})
-compose_schema_scc = Schema({
-    Optional('description'): str,
-    Optional('family'): str,
-    Optional('product-class'): str,
-    Optional('free'): bool,
-    Optional('predecessors'): [compose_schema_scc_cpe],
-    Optional('shortname'): str,
-    Optional('base-products'): [compose_schema_scc_cpe],
-    Optional('root-products'): [compose_schema_scc_cpe],
-    Optional('recommended-for'): [compose_schema_scc_cpe],
-    Optional('migration-extra-for'): [compose_schema_scc_cpe],
-})
-compose_schema_build_option = Schema(
-    Or(
-        'add_slsa_provenance',
-        'base_skip_packages',
-        'block_updates_under_embargo',
-        'hide_flavor_in_product_directory_name',
-        'ignore_missing_packages',
-        'skip_updateinfos',
-        'take_all_available_versions',
-        'updateinfo_packages_only',
-    )
-)
-compose_schema_source_and_debug = Schema(
-    Or(
-        'drop',
-        'include',
-        'split',
-    )
-)
-compose_schema_repodata = Schema(
-    Or(
-        'all',
-        'split',
-    )
-)
-compose_schema_flavor = Schema({
-    Optional('architectures'): [str],
-    Optional('name'): str,
-    Optional('version'): str,
-    Optional('update'): str,
-    Optional('edition'): str,
-    Optional('product-type'): str,
-    Optional('product_directory_name'): str,
-    Optional('repodata'): compose_schema_repodata,
-    Optional('summary'): str,
-    Optional('debug'): compose_schema_source_and_debug,
-    Optional('source'): compose_schema_source_and_debug,
-    Optional('build_options'): Or(None, [compose_schema_build_option]),
-    Optional('scc'): compose_schema_scc,
-    Optional('iso'): compose_schema_iso,
-})
+from typing import Literal
+from typing import Optional
 
-compose_schema = Schema({
-    'product_compose_schema': str,
-    'vendor': str,
-    'name': str,
-    'version': str,
-    Optional('update'): str,
-    'product-type': str,
-    'summary': str,
-    Optional('bcntsynctag'): str,
-    Optional('milestone'): str,
-    Optional('scc'): compose_schema_scc,
-    Optional('iso'): compose_schema_iso,
-    Optional('installcheck'): Or(None, ['ignore_errors']),
-    Optional('build_options'): Or(None, [compose_schema_build_option]),
-    Optional('architectures'): [str],
 
-    Optional('product_directory_name'): str,
-    Optional('set_updateinfo_from'): str,
-    Optional('set_updateinfo_id_prefix'): str,
-    Optional('block_updates_under_embargo'): str,
-    Optional('debug'): compose_schema_source_and_debug,
-    Optional('source'): compose_schema_source_and_debug,
-    Optional('repodata'): compose_schema_repodata,
+class compose_schema_iso(BaseModel):
+    publisher: Optional[str]
+    volume_id: Optional[str]
+    tree: Optional[str]
+    base: Optional[str]
 
-    Optional('flavors'): {str: compose_schema_flavor},
-    Optional('packagesets'): [compose_schema_packageset],
-    Optional('unpack'): [str],
-})
+
+class compose_schema_packageset(BaseModel):
+    name: Optional[str]
+    supportstatus: Optional[str]
+    flavors: Optional[list[str]]
+    architectures: Optional[list[str]]
+    add: Optional[list[str]]
+    sub: Optional[list[str]]
+    intersect: Optional[list[str]]
+    packages: Optional[list[str]]
+
+
+class compose_schema_scc_cpe(BaseModel):
+    cpe: str
+    online: Optional[bool]
+
+
+class compose_schema_scc(BaseModel):
+    description: Optional[str]
+    family: Optional[str]
+    product_class: Optional[str]
+    free: Optional[bool]
+    predecessors: Optional[compose_schema_scc_cpe]
+    shortname: Optional[str]
+    base_products: Optional[list[compose_schema_scc_cpe]]
+    root_products: Optional[list[compose_schema_scc_cpe]]
+    recommended_for: Optional[list[compose_schema_scc_cpe]]
+    migration_extra_for: Optional[list[compose_schema_scc_cpe]]
+
+
+compose_schema_build_option = Literal[
+    'add_slsa_provenance',
+    'base_skip_packages',
+    'block_updates_under_embargo',
+    'hide_flavor_in_product_directory_name',
+    'ignore_missing_packages',
+    'skip_updateinfos',
+    'take_all_available_versions',
+    'updateinfo_packages_only',
+]
+
+compose_schema_source_and_debug = Literal['drop', 'include', 'split']
+compose_schema_repodata = Literal['all', 'split']
+
+
+class compose_schema_flavor(BaseModel):
+    architectures: Optional[list[str]]
+    name: Optional[str]
+    version: Optional[str]
+    update: Optional[str]
+    edition: Optional[str]
+    product_type: Optional[str]
+    product_directory_name: Optional[str]
+    packageset: Optional[str]
+    repodata: Optional[compose_schema_repodata]
+    summary: Optional[str]
+    debug: Optional[compose_schema_source_and_debug]
+    source: Optional[compose_schema_source_and_debug]
+    build_options: Optional[list[compose_schema_build_option]]
+    scc: Optional[compose_schema_scc]
+    iso: Optional[compose_schema_iso]
+
+
+class ComposeSchema(BaseModel):
+    product_compose_schema: str
+    vendor: str
+    name: str
+    version: str
+    update: Optional[str]
+    product_type: Optional[str]
+    summary: str
+    bcntsynctag: Optional[str]
+    milestone: Optional[str]
+    scc: compose_schema_scc
+    iso: compose_schema_iso
+    installcheck: Optional[list[Literal['ignore_errors']]] | None
+    build_options: Optional[list[compose_schema_build_option]]
+    architectures: Optional[list[str]]
+
+    product_directory_name: Optional[str]
+    set_updateinfo_from: Optional[str]
+    set_updateinfo_id_prefix: Optional[str]
+    block_updates_under_embargo: Optional[str]
+
+    debug: Optional[compose_schema_source_and_debug]
+    source: Optional[compose_schema_source_and_debug]
+    repodata: Optional[compose_schema_repodata]
+
+    flavors: Optional[compose_schema_flavor]
+    packagesets: Optional[list[compose_schema_packageset]]
+    unpack: Optional[list[str]]
