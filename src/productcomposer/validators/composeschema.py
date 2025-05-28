@@ -70,7 +70,8 @@ class compose_schema_flavor(BaseModel):
     edition: Optional[str] = None
     product_type: Optional[str] = Field(default=None, alias='product-type')
     product_directory_name: Optional[str] = None
-    packageset: Optional[str] = None
+    content: Optional[list[str]] = ['main']
+    unpack: Optional[list[str]] = []
     repodata: Optional[compose_schema_repodata] = None
     summary: Optional[str] = None
     debug: Optional[compose_schema_source_and_debug] = None
@@ -106,5 +107,7 @@ class ComposeSchema(BaseModel):
     repodata: Optional[compose_schema_repodata] = None
 
     flavors: Optional[compose_schema_flavor] = None
+    content: Optional[list[str]] = ['main']
+    unpack: Optional[list[str]] = []
+
     packagesets: Optional[list[compose_schema_packageset]] = None
-    unpack: Optional[list[str]] = None

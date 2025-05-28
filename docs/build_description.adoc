@@ -39,9 +39,16 @@ to enable the build.
 Enables iso file generation and requires configuration of
 iso9660 headers.
 
+=== content
+
+content defines the packagesets to be used as entry
+point for the medium.
+
+The default is just to use the "main" packageset.
+
 === unpack
 
-unpack defines the packageset to be used for extracting
+unpack defines the packagesets to be used for extracting
 the content of the rpm packages directly on the medium.
 
 These rpm packages need to provide these files below
@@ -53,7 +60,8 @@ but not on source or debug media.
 
 === packagesets
 
-The packages list lists rpm names to be put on the medium.
+The packagesets definitions. A packageset lists rpm names
+to be put on the medium.
 
 There is usually one master list and in addition there
 can be addional optional lists.

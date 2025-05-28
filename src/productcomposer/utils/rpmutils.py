@@ -139,11 +139,17 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 parent = update.findall('pkglist')[0].findall('collection')[0]
                 for pkgentry in parent.findall('package'):
                     referenced_update_rpms[pkgentry.get('src')] = 1
-    main_pkgset_name = 'main'
-    if 'flavors' in yml and flavor in yml['flavors']:
-        main_pkgset_name = yml['flavors'][flavor].get('packageset', 'main')
 
-    main_pkgset = create_package_set(yml, arch, flavor, main_pkgset_name, pool=pool)
+    ### This needs to be kept in sync with src/productcomposer/createartifacts/createupdateinfoxml.py
+    ### or factored out
+    main_pkgsets = ['main']
+    if 'flavors' in yml and flavor in yml['flavors']:
+        main_pkgsets = yml['flavors'][flavor].get('content', main_pkgsets)
+
+    main_pkgset = PkgSet(None)
+    for pkgset_name in main_pkgsets:
+       main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
+    ###
 
     missing_package = None
     for sel in main_pkgset:

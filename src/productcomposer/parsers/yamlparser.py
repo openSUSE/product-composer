@@ -51,6 +51,8 @@ def parse_yaml(filename, flavor):
             'source',
             'debug',
             'repodata',
+            'content',
+            'unpack',
         ):
             if tag in f:
                 yml[tag] = f[tag]
@@ -67,8 +69,13 @@ def parse_yaml(filename, flavor):
                 if tag in f['iso']:
                     yml['iso'][tag] = f['iso'][tag]
 
-    if 'installcheck' in yml and yml['installcheck'] is None:
-        yml['installcheck'] = []
+    for tag in (
+            'installcheck',
+            'unpack',
+            'content'
+    ):
+        if tag in yml and yml[tag] is None:
+            yml[tag] = []
 
     # FIXME: validate strings, eg. right set of chars
 
