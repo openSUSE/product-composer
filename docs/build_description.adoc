@@ -58,7 +58,7 @@ The packages list lists rpm names to be put on the medium.
 There is usually one master list and in addition there
 can be addional optional lists.
 
-The additional lists can be filtered by flavors and/or 
+The additional lists can be filtered by flavors and/or
 architectures.
 
 The packageset requires at least a packages definition,
@@ -106,12 +106,10 @@ name, not the file name.
 
 Define support status level for the packages listed in
 packages. Valid support levels are l3, l2, unsupported.
-However these are handled as strings.
+However these are handled as strings. If the string starts
+with a "=", it overrides any previously set support status
+from inherited package sets.
 
-==== override_supportstatus
-
-A boolean to overwrite any supportstatus from other
-packagesets listed behind the add tag.
 
 === Details
 
@@ -195,7 +193,7 @@ still listed in the build log.
 ===== hide_flavor_in_product_directory_name
 
 The flavor name is by default part of the directory
-name of the build result. This can be disabled, 
+name of the build result. This can be disabled,
 when each flavor has a different arch list. Otherwise
 conflicts can happen.
 
@@ -247,7 +245,7 @@ Can be set to "drop" for creating only the iso files.
 
 Can be used to copy the result into a pre generated iso file.
 product-composer itself is not creating bootable iso images,
-aka installer images. But it can used for example to use iso 
+aka installer images. But it can used for example to use iso
 images with the agama-installer where it copies the main tree
 inside.
 
@@ -352,7 +350,7 @@ This default setting may get specified per flavor.
 
 Write architecture specific repository meta data into the architecture
 specific sub directories. This way a client needs to process less
-data. The disadvantage is that different URL's need to be handled 
+data. The disadvantage is that different URL's need to be handled
 per architecture.
 
   repodata: split

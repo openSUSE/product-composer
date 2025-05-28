@@ -13,6 +13,11 @@ class compose_schema_iso(BaseModel):
     base: Optional[str] = None
 
 
+_compose_schema_supportstatus = Literal[
+    'l3', 'l2', 'acc', 'unsupported', '=l3', '=l2', '=acc', '=unsupported'
+]
+
+
 class compose_schema_packageset(BaseModel):
     name: Optional[str] = None
     supportstatus: Optional[str] = None
@@ -21,7 +26,6 @@ class compose_schema_packageset(BaseModel):
     add: Optional[list[str]] = None
     sub: Optional[list[str]] = None
     intersect: Optional[list[str]] = None
-    override_supportstatus: Optional[bool] = None
     packages: Optional[list[str]] = None
 
 
