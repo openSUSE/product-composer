@@ -1,0 +1,3 @@
+bluez-firmwarel2
+dejavu-fontsl2
+google-opensans-fontsl2
