@@ -1,5 +1,6 @@
 import os
 import shutil
+
 from . import register
 from ..parsers.yamlparser import parse_yaml
 from ..parsers.supportstatusparser import parse_supportstatus
@@ -9,7 +10,7 @@ from ..createartifacts.createtree import create_tree
 from ..core.Pool import Pool
 
 # hashed via file name
-tree_report = {}        
+tree_report = {}
 # global db for eulas
 eulas = {}
 # global db for supportstatus
@@ -21,19 +22,16 @@ supportstatus_override = {}
 class BuildCommand:
     def run(self, args):
         result = self.build(args)
-    
+
     def get_product_dir(self, yml, flavor, release):
         name = f'{yml["name"]}-{yml["version"]}'
-        if 'product_directory_name' in yml:
+        if yml['product_directory_name']:
             # manual override
             name = yml['product_directory_name']
         if flavor and 'hide_flavor_in_product_directory_name' not in yml['build_options']:
             name += f'-{flavor}'
         if yml['architectures']:
-            visible_archs = yml['architectures']
-            if 'local' in visible_archs:
-                visible_archs.remove('local')
-            name += "-" + "-".join(visible_archs)
+            name += "-" + "-".join([a for a in yml['architectures'] if a != 'local'])
         if release:
             name += f'-Build{release}'
         if '/' in name:
@@ -61,7 +59,7 @@ class BuildCommand:
             for option in arg:
                 yml['build_options'].append(option)
 
-        if 'architectures' not in yml or not yml['architectures']:
+        if not yml['architectures']:
             die(f'No architecture defined for flavor {flavor}')
 
         directory = os.getcwd()

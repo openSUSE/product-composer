@@ -16,7 +16,7 @@ from ..utils.report import (write_report_file)
 from ..utils.repomdutils import find_primary
 from ..wrappers import ModifyrepoWrapper
 
-def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, supporstatus, supportstatus_override, eulas, vcs=None, disturl=None):
+def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, supporstatus, supportstatus_override, eulas, vcs=None, disturl=None):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -27,25 +27,31 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
     workdirectories = [maindir]
     debugdir = sourcedir = None
 
-    if "source" in yml:
-        if yml['source'] == 'split':
-            sourcedir = outdir + '/' + product_base_dir + '-Source'
-            os.mkdir(sourcedir)
-            workdirectories.append(sourcedir)
-        elif yml['source'] == 'include':
-            sourcedir = maindir
-        elif yml['source'] != 'drop':
-            die("Bad source option, must be either 'include', 'split' or 'drop'")
+    if yml['source']:
+        match yml['source']:
+            case 'split':
+                sourcedir = outdir + '/' + product_base_dir + '-Source'
+                os.mkdir(sourcedir)
+                workdirectories.append(sourcedir)
+            case 'include':
+                sourcedir = maindir
+            case 'drop':
+                pass
+            case _:
+                die("Bad source option, must be either 'include', 'split' or 'drop'")
 
-    if "debug" in yml:
-        if yml['debug'] == 'split':
-            debugdir = outdir + '/' + product_base_dir + '-Debug'
-            os.mkdir(debugdir)
-            workdirectories.append(debugdir)
-        elif yml['debug'] == 'include':
-            debugdir = maindir
-        elif yml['debug'] != 'drop':
-            die("Bad debug option, must be either 'include', 'split' or 'drop'")
+    if yml['debug']:
+        match yml['debug']:
+            case 'split':
+                debugdir = outdir + '/' + product_base_dir + '-Debug'
+                os.mkdir(debugdir)
+                workdirectories.append(debugdir)
+            case 'include':
+                debugdir = maindir
+            case 'drop':
+                pass
+            case _:
+                die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
     for arch in yml['architectures']:
         note(f"Linking rpms for {arch}")
@@ -90,7 +96,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
         run_createrepo(sourcedir, yml, content=["source"], repos=repos)
 
     repodatadirectories = workdirectories.copy()
-    if 'repodata' in yml:
+    if yml['repodata']:
         if yml['repodata'] != 'all':
             repodatadirectories = []
         for workdir in workdirectories:
@@ -135,12 +141,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
             create_appstream(repodatadir)
             create_susedata_xml(repodatadir, yml, supporstatus, eulas)
 
-    if 'installcheck' in yml:
+    if yml['installcheck']:
        for arch in yml['architectures']:
            note(f"Run installcheck for {arch}")
            args = ['installcheck', arch, '--withsrc']
            subdir = ""
-           if 'repodata' in yml:
+           if yml['repodata']:
                subdir = f"/{arch}"
            if not os.path.exists(maindir + subdir):
                warn(f"expected path is missing, no rpm files matched? ({maindir}{subdir})")
@@ -154,7 +160,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if yml.get('iso', {}).get('tree') != 'drop':
+    if yml['iso'].get('tree', None) != 'drop':
       licensefilename = '/license.tar'
       if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
           licensefilename = '/license-' + yml['name'] + '.tar'
@@ -204,15 +210,15 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
         # Other medias/workdirs would then be generated as usual, as
         # presumably you wouldn't need a bootable iso for source and
         # debuginfo packages.
-        if workdir == maindir and 'base' in yml.get('iso', {}):
+        if workdir == maindir and yml['iso']['base']:
             agama_arch = yml['architectures'][0]
             note(f"Export main tree into agama iso file for {agama_arch}")
-            create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, agama_arch)
-        elif 'iso' in yml:
-            create_iso(outdir, yml, pool, flavor, workdir, application_id);
+            create_agama_iso(outdir, yml['iso'], pool, workdir, application_id, agama_arch)
+        elif yml['iso']:
+            create_iso(outdir, yml['iso'], workdir, application_id);
 
         # cleanup
-        if yml.get('iso', {}).get('tree') == 'drop':
+        if yml['iso']['tree'] == 'drop':
             shutil.rmtree(workdir)
 
     # create SBOM data
@@ -249,7 +255,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor,  tree_report, suppo
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
     # cleanup main repodata if wanted and existing
-    if 'repodata' in yml and yml['repodata'] != 'all':
+    if yml['repodata'] and yml['repodata'] != 'all':
         for workdir in workdirectories:
             repodatadir = workdir + "/repodata"
             if os.path.exists(repodatadir):

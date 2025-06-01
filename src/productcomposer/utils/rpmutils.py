@@ -20,28 +20,24 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
     pkgsets = {}
     for entry in list(yml['packagesets']):
         name = entry['name'] if 'name' in entry else 'main'
-        if name in pkgsets and pkgsets[name] is not None:
+        if name in pkgsets and pkgsets.get(name, None):
             die(f'package set {name} is already defined')
         pkgsets[name] = None
-        if 'flavors' in entry:
-            if flavor is None or entry['flavors'] is None:
-                continue
-            if flavor not in entry['flavors']:
-                continue
-        if 'architectures' in entry:
-            if arch not in entry['architectures']:
-                continue
+        if flavor and entry['flavors'] and flavor not in entry['flavors']:
+            continue
+        if entry['architectures'] and arch not in entry['architectures']:
+            continue
         pkgset = PkgSet(name)
         pkgsets[name] = pkgset
-        if 'supportstatus' in entry:
+        if entry['supportstatus']:
             pkgset.supportstatus = entry['supportstatus']
             if pkgset.supportstatus.startswith('='):
                 pkgset.override_supportstatus = True
                 pkgset.supportstatus = pkgset.supportstatus[1:]
-        if 'packages' in entry and entry['packages']:
+        if entry['packages']:
             pkgset.add_specs(entry['packages'])
         for setop in 'add', 'sub', 'intersect':
-            if setop not in entry:
+            if entry.get(setop, None) is None:
                 continue
             for oname in entry[setop]:
                 if oname == '__all__' and oname not in pkgsets:
@@ -50,14 +46,15 @@ def create_package_set(yml, arch, flavor, setname, pool=None):
                     die(f'package set {oname} does not exist')
                 if pkgsets[oname] is None:
                     pkgsets[oname] = PkgSet(oname)  # instantiate
-                if setop == 'add':
-                    pkgset.add(pkgsets[oname])
-                elif setop == 'sub':
-                    pkgset.sub(pkgsets[oname])
-                elif setop == 'intersect':
-                    pkgset.intersect(pkgsets[oname])
-                else:
-                    die(f"unsupported package set operation '{setop}'")
+                match setop:
+                    case 'add':
+                        pkgset.add(pkgsets[oname])
+                    case 'sub':
+                        pkgset.sub(pkgsets[oname])
+                    case 'intersect':
+                        pkgset.intersect(pkgsets[oname])
+                    case _:
+                        die(f"unsupported package set operation '{setop}'")
 
     if setname not in pkgsets:
         die(f'package set {setname} is not defined')
@@ -142,12 +139,8 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
 
     ### This needs to be kept in sync with src/productcomposer/createartifacts/createupdateinfoxml.py
     ### or factored out
-    main_pkgsets = ['main']
-    if 'flavors' in yml and flavor in yml['flavors']:
-        main_pkgsets = yml['flavors'][flavor].get('content', main_pkgsets)
-
     main_pkgset = PkgSet(None)
-    for pkgset_name in main_pkgsets:
+    for pkgset_name in yml['content']:
        main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
     ###
 
@@ -189,8 +182,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 if srpm:
                     link_entry_into_dir(tree_report, srpm, sourcedir, add_slsa=add_slsa)
                 else:
-                    details = f"         required by  {rpm}"
-                    warn(f"source rpm package {srcrpm} not found", details=details)
+                    warn(f"source rpm package {srcrpm} not found", details=f"         required by  {rpm}")
                     missing_package = True
 
             if debugdir:
