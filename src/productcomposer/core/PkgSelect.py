@@ -148,8 +148,7 @@ class PkgSelect:
     def __hash__(self):
         if self.op:
             return hash((self.name, self.op, self.epoch, self.version, self.release))
-        else:
-            return hash(self.name)
+        return hash(self.name)
 
     def __eq__(self, other):
         if self.name != other.name:
