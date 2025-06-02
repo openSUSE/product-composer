@@ -3,7 +3,7 @@ import os
 OPENSUSE_APPSTREAM_PROCESS = '/usr/bin/openSUSE-appstream-process'
 
 # Create the main susedata.xml with translations, support, and disk usage information
-def create_appstream(rpmdir)
+def create_appstream(rpmdir):
     if not os.path.exists(OPENSUSE_APPSTREAM_PROCESS):
         return
 

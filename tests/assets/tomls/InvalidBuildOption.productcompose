@@ -1,0 +1,10 @@
+product_compose_schema: 0.2
+
+vendor: openSUSE
+name: Backports
+version: 16
+product-type: base
+summary: openSUSE Backports
+
+build_options:
+- invalid_build_option
