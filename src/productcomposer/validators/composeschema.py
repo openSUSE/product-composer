@@ -91,8 +91,8 @@ class ComposeSchema(BaseModel):
     summary: str
     bcntsynctag: Optional[str] = None
     milestone: Optional[str] = None
-    scc: compose_schema_scc
-    iso: compose_schema_iso
+    scc: Optional[compose_schema_scc] = None
+    iso: Optional[compose_schema_iso] = None
     installcheck: Optional[list[Literal['ignore_errors']]] | None
     build_options: Optional[list[compose_schema_build_option]] = None
     architectures: Optional[list[str]] = None
