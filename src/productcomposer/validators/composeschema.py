@@ -80,7 +80,7 @@ class compose_schema(BaseModel):
     iso: Optional[compose_schema_iso] = None
 
 class ComposeSchema(compose_schema, BaseModel):
-    product_compose_schema: Literal['0.1', '0.2'] = '0.2'
+    product_compose_schema: Literal['0.1', '0.2']
     vendor: str
     bcntsynctag: Optional[str] = None
     milestone: Optional[str] = None
