@@ -19,7 +19,7 @@ _compose_schema_supportstatus = Literal[
 
 
 class compose_schema_packageset(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = "main"
     supportstatus: Optional[str] = None
     flavors: Optional[list[str]] = None
     architectures: Optional[list[str]] = None
@@ -38,8 +38,8 @@ class compose_schema_scc(BaseModel):
     description: Optional[str] = None
     family: Optional[str] = None
     product_class: Optional[str] = Field(default=None, alias='product-class')
-    free: Optional[bool] = None
-    predecessors: Optional[compose_schema_scc_cpe] = None
+    free: Optional[bool] = False
+    predecessors: Optional[list[compose_schema_scc_cpe]] = None
     shortname: Optional[str] = None
     base_products: Optional[list[compose_schema_scc_cpe]] = None
     root_products: Optional[list[compose_schema_scc_cpe]] = None
@@ -61,13 +61,12 @@ compose_schema_build_option = Literal[
 compose_schema_source_and_debug = Literal['drop', 'include', 'split']
 compose_schema_repodata = Literal['all', 'split']
 
-
-class compose_schema_flavor(BaseModel):
-    architectures: Optional[list[str]] = None
+class compose_schema(BaseModel):
+    architectures: Optional[list[str]] = []
     name: Optional[str] = None
     version: Optional[str] = None
-    update: Optional[str] = None
     edition: Optional[str] = None
+    update: Optional[str] = None
     product_type: Optional[str] = Field(default=None, alias='product-type')
     product_directory_name: Optional[str] = None
     content: Optional[list[str]] = ['main']
@@ -76,38 +75,20 @@ class compose_schema_flavor(BaseModel):
     summary: Optional[str] = None
     debug: Optional[compose_schema_source_and_debug] = None
     source: Optional[compose_schema_source_and_debug] = None
-    build_options: Optional[list[compose_schema_build_option]] = None
+    build_options: Optional[list[compose_schema_build_option]] = []
     scc: Optional[compose_schema_scc] = None
     iso: Optional[compose_schema_iso] = None
 
-
-class ComposeSchema(BaseModel):
-    product_compose_schema: str | float
+class ComposeSchema(compose_schema, BaseModel):
+    product_compose_schema: Literal['0.1', '0.2'] = '0.2'
     vendor: str
-    name: str
-    version: str
-    update: Optional[str] = None
-    product_type: Optional[str] = None
-    summary: str
     bcntsynctag: Optional[str] = None
     milestone: Optional[str] = None
-    scc: Optional[compose_schema_scc] = None
-    iso: Optional[compose_schema_iso] = None
-    installcheck: Optional[list[Literal['ignore_errors']]] | None
-    build_options: Optional[list[compose_schema_build_option]] = None
-    architectures: Optional[list[str]] = None
+    installcheck: Optional[list[Literal['ignore_errors']]] | None = None
 
-    product_directory_name: Optional[str] = None
     set_updateinfo_from: Optional[str] = None
     set_updateinfo_id_prefix: Optional[str] = None
     block_updates_under_embargo: Optional[str] = None
 
-    debug: Optional[compose_schema_source_and_debug] = None
-    source: Optional[compose_schema_source_and_debug] = None
-    repodata: Optional[compose_schema_repodata] = None
-
-    flavors: Optional[compose_schema_flavor] = None
-    content: Optional[list[str]] = ['main']
-    unpack: Optional[list[str]] = []
-
+    flavors: Optional[dict[str, compose_schema]] = {}
     packagesets: Optional[list[compose_schema_packageset]] = None

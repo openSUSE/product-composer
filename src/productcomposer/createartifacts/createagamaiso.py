@@ -6,9 +6,8 @@ from ..utils.runhelper import run_helper
 from ..utils.cryptoutils import create_sha256_for
 from ..config import (verbose_level, ISO_PREPARER)
 
-def create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, arch):
+def create_agama_iso(outdir, isoconf, pool, workdir, application_id, arch):
     verbose = True if verbose_level > 0 else False
-    isoconf = yml['iso']
     base = isoconf['base']
     if verbose:
         note(f"Looking for baseiso-{base} rpm on {arch}")

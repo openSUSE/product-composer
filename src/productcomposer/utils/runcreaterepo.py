@@ -4,22 +4,21 @@ from ..wrappers import CreaterepoWrapper
 from ..utils.loggerutils import (die, warn, note)
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
-    product_type = '/o'
-    if 'product-type' in yml:
-        if yml['product-type'] == 'base':
+    match yml['product_type']:
+        case 'base' | None:
             product_type = '/o'
-        elif yml['product-type'] in ['module', 'extension']:
+        case 'module' | 'extension':
             product_type = '/a'
-        else:
+        case _:
             die('Undefined product-type')
     cr = CreaterepoWrapper(directory=".")
     cr.distro = f"{yml.get('summary', yml['name'])} {yml['version']}"
     cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
-    if 'update' in yml:
+    if yml['update']:
         cr.cpeid = cr.cpeid + f":{yml['update']}"
-        if 'edition' in yml:
+        if yml['edition']:
             cr.cpeid = cr.cpeid + f":{yml['edition']}"
-    elif 'edition' in yml:
+    elif yml['edition']:
         cr.cpeid = cr.cpeid + f"::{yml['edition']}"
     cr.repos = repos
     # cr.split = True
@@ -30,7 +29,7 @@ def run_createrepo(rpmdir, yml, content=[], repos=[]):
     # we need it in any case at least temporarly
     cr.run_cmd(cwd=rpmdir, stdout=subprocess.PIPE)
     # multiple arch specific meta data set
-    if 'repodata' in yml:
+    if yml['repodata']:
         cr.complete_arch_list = yml['architectures']
         for arch in yml['architectures']:
             if os.path.isdir(f"{rpmdir}/{arch}"):

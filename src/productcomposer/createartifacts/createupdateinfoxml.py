@@ -27,12 +27,8 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
 
     ### This needs to be kept in sync with src/productcomposer/utils/rpmutils.py
     ### or factored out
-    main_pkgsets = ['main']
-    if 'flavors' in yml and flavor in yml['flavors']:
-        main_pkgsets = yml['flavors'][flavor].get('content', main_pkgsets)
-
     main_pkgset = PkgSet(None)
-    for pkgset_name in main_pkgsets:
+    for pkgset_name in yml['content']:
         for arch in yml['architectures']:
             main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
 

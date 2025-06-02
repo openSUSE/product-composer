@@ -12,14 +12,16 @@ supportstatus_override = {}
 @register("verify")
 class VerifyCommand:
     def run(self, args):
-        result = self.verify(args)
-
-    def verify(self, args):
         yml = parse_yaml(args.filename, args.flavor)
-        if args.flavor == None and 'flavors' in yml:
+        if args.flavor == None:
             for flavor in yml['flavors']:
                 yml = parse_yaml(args.filename, flavor)
-                if 'architectures' not in yml or not yml['architectures']:
+                if not yml['architectures']:
                     die(f'No architecture defined for flavor {flavor}')
-        elif 'architectures' not in yml or not yml['architectures']:
+                if yml['content']:
+                    for pkgsetname in yml['content']:
+                        if pkgsetname not in (x['name'] for x in yml['packagesets']):
+                            die(f'package set {pkgsetname} not defined for flavor {flavor}')
+            return
+        if not yml['architectures']:
             die('No architecture defined and no flavor.')

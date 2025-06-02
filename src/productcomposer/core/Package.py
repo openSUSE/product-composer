@@ -103,7 +103,7 @@ class Package:
         if name is not None and self.name != name:
             return False
         if arch is not None and self.arch != arch:
-            if arch == 'src' or arch == 'nosrc' or self.arch != 'noarch':
+            if arch in ('src', 'nosrc') or self.arch != 'noarch':
                 return False
         if op is None:
             return True
@@ -147,7 +147,7 @@ class Package:
                 filesize = 0
             dirs[dirname].append((basename, filesize, cookie))
         return dirs
-            
-            
+
+
 
 # vim: sw=4 et

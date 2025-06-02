@@ -1,3 +1,4 @@
+from typing import Dict
 import yaml
 import pydantic
 
@@ -6,37 +7,28 @@ from ..validators.composeschema import ComposeSchema
 
 
 
-def parse_yaml(filename, flavor):
+def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
     with open(filename, 'r') as file:
-        yml = yaml.safe_load(file)
+        _yml = yaml.safe_load(file)
 
     # we may not allow this in future anymore, but for now convert these from float to str
-    if 'product_compose_schema' in yml:
-        yml['product_compose_schema'] = str(yml['product_compose_schema'])
-    if 'version' in yml:
-        yml['version'] = str(yml['version'])
-
-    if 'product_compose_schema' not in yml:
-        die('missing product composer schema')
-    if yml['product_compose_schema'] not in ('0.1', '0.2'):
-        die(f'Unsupported product composer schema: {yml["product_compose_schema"]}')
+    for a in ('product_compose_schema', 'version'):
+        if a in _yml:
+            _yml[a] = str(_yml[a])
 
     try:
-        ComposeSchema(**yml)
+        model = ComposeSchema(**_yml)
         note(f"Configuration is valid for flavor: {flavor}")
     except pydantic.ValidationError as se:
-        warn(f"YAML syntax is invalid for flavor: {flavor}")
+        warn(f"Configuration is invalid for flavor: {flavor}")
         raise se
 
-    if 'flavors' not in yml:
-        yml['flavors'] = []
-
-    if 'build_options' not in yml or yml['build_options'] is None:
-        yml['build_options'] = []
+    # Use the pydantic validated/converted representation
+    yml: Dict[str, Any] = model.dict()
 
     if flavor:
         if flavor not in yml['flavors']:
-            die('Flavor not found: ' + flavor)
+            die(f'Flavor not found: {flavor}')
         f = yml['flavors'][flavor]
         # overwrite global values from flavor overwrites
         for tag in (
@@ -46,7 +38,7 @@ def parse_yaml(filename, flavor):
             'version',
             'update',
             'edition',
-            'product-type',
+            'product_type',
             'product_directory_name',
             'source',
             'debug',
@@ -54,19 +46,17 @@ def parse_yaml(filename, flavor):
             'content',
             'unpack',
         ):
-            if tag in f:
+            if f.get(tag, None):
                 yml[tag] = f[tag]
 
-        # Add additional build_options instead of replacing global defined set.
+        # Merge build_options instead of replacing global defined set
         if 'build_options' in f:
             for option in f['build_options']:
                 yml['build_options'].append(option)
 
-        if 'iso' in f:
-            if 'iso' not in yml:
-                yml['iso'] = {}
+        if f['iso']:
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
-                if tag in f['iso']:
+                if f['iso'].get(tag, None):
                     yml['iso'][tag] = f['iso'][tag]
 
     for tag in (
@@ -76,7 +66,5 @@ def parse_yaml(filename, flavor):
     ):
         if tag in yml and yml[tag] is None:
             yml[tag] = []
-
-    # FIXME: validate strings, eg. right set of chars
 
     return yml

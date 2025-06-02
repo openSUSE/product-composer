@@ -53,7 +53,6 @@ class _AttrDict(dict):
         :param value: new value for key
         """
         self[key] = value
-        return
 
 
 class TomlConfig(_AttrDict):
@@ -70,7 +69,6 @@ class TomlConfig(_AttrDict):
         super().__init__()
         if paths:
             self.load(paths, root, params)
-        return
 
     def load(self, paths, root=None, params=None):
         """ Load data from configuration files.
@@ -104,7 +102,6 @@ class TomlConfig(_AttrDict):
                 self.setdefault(root, {}).update(data)
             else:
                 self.update(data)
-        return
 
 
 config = TomlConfig()
