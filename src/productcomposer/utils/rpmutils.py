@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 
 from ..core.PkgSet import PkgSet
@@ -12,55 +13,89 @@ def create_package_set_all(setname, pool, arch):
         die('need a package pool to create the __all__ package set')
     pkgset = PkgSet(setname)
     pkgset.add_specs([n for n in pool.names(arch) if not (n.endswith('-debuginfo') or n.endswith('-debugsource'))])
-
     return pkgset
 
-
-def create_package_set(yml, arch, flavor, setname, pool=None):
-    pkgsets = {}
+def filter_pkgsets(yml, arch, flavor):
+    pkgsets_raw = {}
     for entry in list(yml['packagesets']):
         name = entry['name'] if 'name' in entry else 'main'
-        if name in pkgsets and pkgsets.get(name, None):
-            die(f'package set {name} is already defined')
-        pkgsets[name] = None
+        if name not in pkgsets_raw:
+            pkgsets_raw[name] = None    # mark as known
         if flavor and entry['flavors'] and flavor not in entry['flavors']:
             continue
         if entry['architectures'] and arch not in entry['architectures']:
             continue
-        pkgset = PkgSet(name)
-        pkgsets[name] = pkgset
-        if entry['supportstatus']:
-            pkgset.supportstatus = entry['supportstatus']
-            if pkgset.supportstatus.startswith('='):
-                pkgset.override_supportstatus = True
-                pkgset.supportstatus = pkgset.supportstatus[1:]
-        if entry['packages']:
-            pkgset.add_specs(entry['packages'])
-        for setop in 'add', 'sub', 'intersect':
-            if entry.get(setop, None) is None:
-                continue
-            for oname in entry[setop]:
-                if oname == '__all__' and oname not in pkgsets:
-                    pkgsets[oname] = create_package_set_all(oname, pool, arch)
-                if oname == name or oname not in pkgsets:
-                    die(f'package set {oname} does not exist')
-                if pkgsets[oname] is None:
-                    pkgsets[oname] = PkgSet(oname)  # instantiate
-                match setop:
-                    case 'add':
-                        pkgset.add(pkgsets[oname])
-                    case 'sub':
-                        pkgset.sub(pkgsets[oname])
-                    case 'intersect':
-                        pkgset.intersect(pkgsets[oname])
-                    case _:
-                        die(f"unsupported package set operation '{setop}'")
+        if pkgsets_raw.get(name):
+            die(f'package set {name} is already defined')
+        pkgsets_raw[name] = entry
+    return pkgsets_raw
+    
+def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_rawcache, pool=None):
+    if flavor is None:
+        flavor = ''
 
-    if setname not in pkgsets:
-        die(f'package set {setname} is not defined')
-    if pkgsets[setname] is None:
-        pkgsets[setname] = PkgSet(setname)  # instantiate
-    return pkgsets[setname]
+    # process arch/flavor overwrites
+    m = re.fullmatch(r'(\S+)(?:\s+architecture=(\S+))?(?:\s+flavor=(\S*))?(?:\s+architecture=(\S+))?\s*', setname)
+    if m:
+        setname = m[1]
+        arch = m[4] or m[2] or arch
+        flavor = m[3] or flavor
+
+    if setname == '__all__':
+        setkey = f"{setname}/{arch}"
+        if not pkgsetcache.get(setkey):
+            pkgsetcache[setkey] = create_package_set_all(setname, pool, arch)
+        return pkgsetcache[setkey]
+
+    setkey = f"{setname}/{arch}/{flavor}"
+    if setkey in pkgsetcache:
+        if not pkgsetcache[setkey]:
+            die(f"cyclic definition of package set '{setname}'")
+        return pkgsetcache[setkey]
+    pkgsetcache[setkey] = None  # mark as in progress for cycle detection
+
+    rawcachekey = f"{arch}/{flavor}"
+    pkgsets_raw = pkgsets_rawcache.get(rawcachekey)
+    if not pkgsets_raw:
+        pkgsets_raw = filter_pkgsets(yml, arch, flavor)
+        pkgsets_rawcache[rawcachekey] = pkgsets_raw
+
+    if setname not in pkgsets_raw:
+        die(f'package set {setname} does not exist')
+
+    pkgset = PkgSet(setname)
+
+    entry = pkgsets_raw.get(setname)
+    if not entry:
+        pkgsetcache[setkey] = pkgset
+        return pkgset    # return empty package set if there is no matching flavor/arch
+
+    if entry['supportstatus']:
+        pkgset.supportstatus = entry['supportstatus']
+        if pkgset.supportstatus.startswith('='):
+            pkgset.override_supportstatus = True
+            pkgset.supportstatus = pkgset.supportstatus[1:]
+    if entry['packages']:
+        pkgset.add_specs(entry['packages'])
+    for setop in 'add', 'sub', 'intersect':
+        if entry.get(setop) is None:
+            continue
+        for oname in entry[setop]:
+            opkgset = create_package_set_cached(yml, arch, flavor, oname, pkgsetcache, pkgsets_rawcache, pool=pool)
+            match setop:
+                case 'add':
+                    pkgset.add(opkgset)
+                case 'sub':
+                    pkgset.sub(opkgset)
+                case 'intersect':
+                    pkgset.intersect(opkgset)
+                case _:
+                    die(f"unsupported package set operation '{setop}'")
+    pkgsetcache[setkey] = pkgset
+    return pkgset
+
+def create_package_set(yml, arch, flavor, setname, pool=None):
+    return create_package_set_cached(yml, arch, flavor, setname, {}, {}, pool=pool)
 
 
 def link_file_into_dir(source, directory, name=None):
