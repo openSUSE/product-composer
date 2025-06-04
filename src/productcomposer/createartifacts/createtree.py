@@ -210,16 +210,17 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         # Other medias/workdirs would then be generated as usual, as
         # presumably you wouldn't need a bootable iso for source and
         # debuginfo packages.
-        if workdir == maindir and yml['iso']['base']:
-            agama_arch = yml['architectures'][0]
-            note(f"Export main tree into agama iso file for {agama_arch}")
-            create_agama_iso(outdir, yml['iso'], pool, workdir, application_id, agama_arch)
-        elif yml['iso']:
-            create_iso(outdir, yml['iso'], workdir, application_id);
+        if yml['iso']:
+           if workdir == maindir and yml['iso']['base']:
+               agama_arch = yml['architectures'][0]
+               note(f"Export main tree into agama iso file for {agama_arch}")
+               create_agama_iso(outdir, yml['iso'], pool, workdir, application_id, agama_arch)
+           else:
+               create_iso(outdir, yml['iso'], workdir, application_id);
 
-        # cleanup
-        if yml['iso']['tree'] == 'drop':
-            shutil.rmtree(workdir)
+           # cleanup
+           if yml['iso']['tree'] == 'drop':
+               shutil.rmtree(workdir)
 
     # create SBOM data
     generate_sbom_call = None
