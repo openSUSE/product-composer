@@ -6,7 +6,7 @@ from ..utils.runhelper import run_helper
 from ..utils.cryptoutils import create_sha256_for
 from ..config import (verbose_level, ISO_PREPARER)
 
-def create_agama_iso(outdir, isoconf, pool, workdir, application_id, arch):
+def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_id, arch):
     verbose = True if verbose_level > 0 else False
     base = isoconf['base']
     if verbose:
@@ -30,7 +30,7 @@ def create_agama_iso(outdir, isoconf, pool, workdir, application_id, arch):
     # create new iso
     tempdir = f"{outdir}/mksusecd"
     os.mkdir(tempdir)
-    if 'base_skip_packages' not in yml['build_options']:
+    if 'base_skip_packages' not in build_options:
         args = ['cp', '-al', workdir, f"{tempdir}/install"]
         run_helper(args, failmsg="add tree to agama image")
     args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
