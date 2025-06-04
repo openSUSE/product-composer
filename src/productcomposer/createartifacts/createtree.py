@@ -160,7 +160,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if yml['iso'].get('tree', None) != 'drop':
+    if yml['iso'] and yml['iso'].get('tree', None) != 'drop':
       licensefilename = '/license.tar'
       if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
           licensefilename = '/license-' + yml['name'] + '.tar'
