@@ -1,6 +1,8 @@
 from ..parsers.yamlparser import parse_yaml
 from . import register
 from ..utils.loggerutils import (die, note)
+from ..utils.rpmutils import (create_package_set)
+from ..core.Pool import Pool
 
 # global db for eulas
 eulas = {}
@@ -12,16 +14,26 @@ supportstatus_override = {}
 @register("verify")
 class VerifyCommand:
     def run(self, args):
-        yml = parse_yaml(args.filename, args.flavor)
+        result = self.verify(args)
+
+    def verify_flavor(self, filename, flavor):
+        yml = parse_yaml(filename, flavor)
+        if 'architectures' not in yml or not yml['architectures']:
+            if flavor:
+                die(f'No architecture defined for flavor {flavor}')
+            else:
+                die('No architecture defined and no flavor.')
+        # check package sets
+        for arch in yml['architectures']:
+            pool = Pool()
+            for pkgset_name in yml['content']:
+                create_package_set(yml, arch, flavor, pkgset_name, pool=pool)
+            for pkgset_name in yml['unpack']:
+                create_package_set(yml, arch, flavor, pkgset_name, pool=pool)
+        return yml.get('flavors')
+        
+    def verify(self, args):
+        flavors = self.verify_flavor(args.filename, args.flavor)
         if args.flavor == None:
-            for flavor in yml['flavors']:
-                yml = parse_yaml(args.filename, flavor)
-                if not yml['architectures']:
-                    die(f'No architecture defined for flavor {flavor}')
-                if yml['content']:
-                    for pkgsetname in yml['content']:
-                        if pkgsetname not in (x['name'] for x in yml['packagesets']):
-                            die(f'package set {pkgsetname} not defined for flavor {flavor}')
-            return
-        if not yml['architectures']:
-            die('No architecture defined and no flavor.')
+            for flavor in flavors:
+                self.verify_flavor(args.filename, flavor)
