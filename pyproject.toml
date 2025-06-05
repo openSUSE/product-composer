@@ -33,9 +33,18 @@ dev = [
 requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools_scm]
+version_file = "src/productcomposer/__version__.py"
+
 [tool.setuptools.dynamic]
 version = {attr = "productcomposer.__version__"}
 readme = {file = ["README.rst"], content-type = "text/x-rst"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = [
+    "tests",
+]

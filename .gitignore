@@ -1,5 +1,6 @@
 .venv
 examples/repos
 src/productcomposer.egg-info
+src/productcomposer/__version__.py
 output
 __pycache__
