@@ -3,6 +3,7 @@ name: 'tests'
 on:
   pull_request:
     branches: ['main']
+  push:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -10,7 +11,7 @@ concurrency:
 
 jobs:
   unit:
-    name: "basic"
+    name: ci run
     runs-on: 'ubuntu-latest'
     container: 'registry.suse.com/bci/python:3.11'
 
@@ -20,6 +21,10 @@ jobs:
             zypper -n install python311-pydantic python311-pytest python311-setuptools python311-rpm python311-PyYAML
 
       - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          pytest -v
 
       - name: 'Run basic example verification'
         run: |

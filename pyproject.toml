@@ -38,4 +38,10 @@ version = {attr = "productcomposer.__version__"}
 readme = {file = ["README.rst"], content-type = "text/x-rst"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = [
+    "tests",
+]

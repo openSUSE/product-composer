@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from ..utils.loggerutils import note
 
 def parse_eulas(euladir, eulas):

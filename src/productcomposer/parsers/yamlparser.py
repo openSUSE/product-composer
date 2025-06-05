@@ -3,7 +3,7 @@ import yaml
 import pydantic
 
 from ..utils.loggerutils import (die, warn, note)
-from ..validators.composeschema import ComposeSchema
+from ..verifiers.composeschema import ComposeSchema
 
 
 
@@ -18,10 +18,11 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
 
     try:
         model = ComposeSchema(**_yml)
-        note(f"Configuration is valid for flavor: {flavor}")
     except pydantic.ValidationError as se:
-        warn(f"Configuration is invalid for flavor: {flavor}")
-        raise se
+        if flavor:
+            die(f"Failed to verify configuration for flavor {flavor}\n{se}")
+        else:
+            die(f"Failed to verify configuration\n{se}")
 
     # Use the pydantic validated/converted representation
     yml: Dict[str, Any] = model.dict()
