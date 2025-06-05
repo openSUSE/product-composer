@@ -1,6 +1,12 @@
 product-composer
 ================
 
+|Tests|
+
+.. |Tests| image:: https://github.com/openSUSE/product-composer/actions/workflows/tests.yaml/badge.svg?branch=main
+   :target: https://github.com/openSUSE/product-composer/actions/workflows/tests.yaml
+
+
 This is the successor of product-builder. A tool to create rpm product
 repositories inside of Open Build Service based on a larger pool
 of packages.
