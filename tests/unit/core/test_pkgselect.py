@@ -2,26 +2,49 @@ import pytest
 from productcomposer.core.PkgSelect import PkgSelect
 from productcomposer.core.Package import Package
 from productcomposer.parsers.yamlparser import parse_yaml
+from unittest.mock import patch
 
 def test_pkgselect_matchespkg():
-    location = "./tests/assets/tomls/leap16dvd.productcompose"
-    yaml = parse_yaml(location, "leap_dvd5_x86_64")
-    pkgs = []
-    for pkgset in list(yaml['packagesets']):
-        if 'packages' in pkgset and pkgset['packages']:
-            for pkg in pkgset['packages']:
-                pkgsel = PkgSelect(pkg)
-                pkgs.append(pkgsel)
-    
-    location = "./tests/assets/rpms/bash-5.2.37-20.1.x86_64.rpm"
-    bash_pkg = Package(location)
+    with patch.object(Package, '_read_rpm_header') as mock_read_header:
+        mock_read_header.return_value = {
+            'name': b'bash',
+            'epoch': None,
+            'version': b'5.2.37',
+            'release': b'20.1',
+            'arch': b'x86_64',
+            'sourcerpm': b'bash-5.2.37-20.1.src.rpm',
+            'buildtime': 1745180828,
+            'disturl': b'obs://build.opensuse.org/openSUSE:Factory/standard/1fb106ca40a944ee9f172e627e3ef9a7-bash',
+            'license': b'GPL-3.0-or-later',
+            'filesizes': [],
+            'filemodes': [],
+            'filedevices': [],
+            'fileinodes': [],
+            'dirindexes': [],
+            'basenames': [],
+            'dirnames': [],
+            'nosource': 0,
+            'nopatch': 0,
+        }
 
-    cnt = 0
-    for pkg in pkgs:
-        if pkg.matchespkg("x86_64", bash_pkg):
-            cnt+=1
-    
-    assert cnt == 2
+        location = "./tests/assets/yamls/leap16dvd.productcompose"
+        yaml = parse_yaml(location, "leap_dvd5_x86_64")
+        pkgs = []
+        for pkgset in list(yaml['packagesets']):
+            if 'packages' in pkgset and pkgset['packages']:
+                for pkg in pkgset['packages']:
+                    pkgsel = PkgSelect(pkg)
+                    pkgs.append(pkgsel)
+        
+        location = "./bash-5.2.37-20.1.x86_64.rpm"
+        bash_pkg = Package(location)
+
+        cnt = 0
+        for pkg in pkgs:
+            if pkg.matchespkg("x86_64", bash_pkg):
+                cnt+=1
+        
+        assert cnt == 2
 
 def test_pkgselect_sub():
     # Versions accepted by self, but not accepted by other

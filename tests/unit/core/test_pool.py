@@ -1,11 +1,28 @@
 import pytest
 from productcomposer.core.Pool import Pool
+from productcomposer.core.Package import Package
+from unittest.mock import patch
+from repo156_meta import rpm_metadata
 
 #todo: lookup_all_updateinfos not tested
 # drpm files not managed
 # no error if scanning wrong repo path
 
+def fake_read_rpm_header_factory(location):
+    def fake_read_rpm_header(self, rpm_ts=None):
+        for meta in rpm_metadata:
+             if meta['path'] == location:
+                return meta
+        return []
+
+    return fake_read_rpm_header
+
+def make_rpm_side_effect(location, rpm_ts=None):
+    with patch.object(Package, '_read_rpm_header', new=fake_read_rpm_header_factory(location)):
+                return Package(location, rpm_ts=rpm_ts)
+        
 def test_pool_scan_ok():
+    with patch.object(Pool, 'make_rpm', side_effect=make_rpm_side_effect):        
         pool = Pool()
         reposdir = "./tests/assets/rpms/15.6_oss"
         pool.scan(reposdir)

@@ -25,7 +25,7 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
             die(f"Failed to verify configuration\n{se}")
 
     # Use the pydantic validated/converted representation
-    yml: Dict[str, Any] = model.dict()
+    yml: Dict[str, Any] = model.model_dump()
 
     if flavor:
         if flavor not in yml['flavors']:
