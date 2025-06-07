@@ -28,6 +28,7 @@ jobs:
       - name: Run tests
         run: |
           pwd
+          ls -la
           pytest -v -s
 
       - name: Run basic example verification
