@@ -7,7 +7,7 @@ def test_updateinfo_ok():
     found = False
     for update in ui.root.findall('update'):
         update_id = update.find('id')
-        if update_id is not None and update_id.text == "openSUSE-SLE-15.6-2025-594":
+        if update_id is not None and update_id.text == "openSUSE-2024-153":
             found = True
     assert found
 
