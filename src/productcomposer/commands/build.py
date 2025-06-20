@@ -69,7 +69,7 @@ class BuildCommand:
 
         supportstatus_fn = os.path.join(directory, 'supportstatus.txt')
         if os.path.isfile(supportstatus_fn):
-            parse_supportstatus(supportstatus_fn)
+            parse_supportstatus(supportstatus_fn, supportstatus_override)
 
         if args.euladir and os.path.isdir(args.euladir):
             parse_eulas(args.euladir, eulas)
