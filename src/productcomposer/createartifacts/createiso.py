@@ -1,5 +1,4 @@
 
-from ..utils.loggerutils import (note,die)
 from ..utils.runhelper import run_helper
 from ..config import (verbose_level, ISO_PREPARER)
 from ..utils.cryptoutils import create_sha256_for
@@ -16,7 +15,7 @@ def create_iso(outdir, isoconf, workdir, application_id):
     args += ['-o', workdir + '.iso', workdir]
     run_helper(args, cwd=outdir, failmsg="create iso file", verbose=verbose)
     # simple tag media call ... we may add options for pading or triggering media check later
-    args = ['tagmedia' , '--digest' , 'sha256', workdir + '.iso']
+    args = ['tagmedia', '--digest', 'sha256', workdir + '.iso']
     run_helper(args, cwd=outdir, failmsg="tagmedia iso file", verbose=verbose)
     # creating .sha256 for iso file
     create_sha256_for(workdir + ".iso")

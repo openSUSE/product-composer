@@ -21,7 +21,7 @@ supportstatus_override = {}
 @register("build")
 class BuildCommand:
     def run(self, args):
-        result = self.build(args)
+        self.build(args)
 
     def get_product_dir(self, yml, flavor, release):
         name = f'{yml["name"]}-{yml["version"]}'

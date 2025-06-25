@@ -142,52 +142,51 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             create_susedata_xml(repodatadir, yml, supporstatus, eulas)
 
     if yml['installcheck']:
-       for arch in yml['architectures']:
-           note(f"Run installcheck for {arch}")
-           args = ['installcheck', arch, '--withsrc']
-           subdir = ""
-           if yml['repodata']:
-               subdir = f"/{arch}"
-           if not os.path.exists(maindir + subdir):
-               warn(f"expected path is missing, no rpm files matched? ({maindir}{subdir})")
-               continue
-           args.append(find_primary(maindir + subdir))
-           if debugdir:
-               args.append(find_primary(debugdir + subdir))
-           run_helper(args, fatal=('ignore_errors' not in yml['installcheck']), failmsg="run installcheck validation")
+        for arch in yml['architectures']:
+            note(f"Run installcheck for {arch}")
+            args = ['installcheck', arch, '--withsrc']
+            subdir = ""
+            if yml['repodata']:
+                subdir = f"/{arch}"
+            if not os.path.exists(maindir + subdir):
+                warn(f"expected path is missing, no rpm files matched? ({maindir}{subdir})")
+                continue
+            args.append(find_primary(maindir + subdir))
+            if debugdir:
+                args.append(find_primary(debugdir + subdir))
+            run_helper(args, fatal=('ignore_errors' not in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     if yml['iso'] and yml['iso'].get('tree', None) != 'drop':
-      licensefilename = '/license.tar'
-      if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
-          licensefilename = '/license-' + yml['name'] + '.tar'
-      if os.path.exists(maindir + licensefilename + '.gz'):
-          run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
-                     failmsg="uncompress license.tar.gz")
-      if os.path.exists(maindir + licensefilename):
-          note("Setup .license directory")
-          licensedir = maindir + ".license"
-          if not os.path.exists(licensedir):
-              os.mkdir(licensedir)
-          args = ['tar', 'xf', maindir + licensefilename, '-C', licensedir]
-          output = run_helper(args, failmsg="extract license tar ball")
-          if not os.path.exists(licensedir + "/license.txt"):
-              die("No license.txt extracted", details=output)
+        licensefilename = '/license.tar'
+        if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
+            licensefilename = '/license-' + yml['name'] + '.tar'
+        if os.path.exists(maindir + licensefilename + '.gz'):
+            run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
+                       failmsg="uncompress license.tar.gz")
+        if os.path.exists(maindir + licensefilename):
+            note("Setup .license directory")
+            licensedir = maindir + ".license"
+            if not os.path.exists(licensedir):
+                os.mkdir(licensedir)
+            args = ['tar', 'xf', maindir + licensefilename, '-C', licensedir]
+            output = run_helper(args, failmsg="extract license tar ball")
+            if not os.path.exists(licensedir + "/license.txt"):
+                die("No license.txt extracted", details=output)
 
-          mr = ModifyrepoWrapper(
-              file=maindir + licensefilename,
-              directory=os.path.join(maindir, "repodata"),
-          )
-          mr.run_cmd()
-          os.unlink(maindir + licensefilename)
-          # meta package may bring a second file or expanded symlink, so we need clean up
-          if os.path.exists(maindir + '/license.tar'):
-              os.unlink(maindir + '/license.tar')
-          if os.path.exists(maindir + '/license.tar.gz'):
-              os.unlink(maindir + '/license.tar.gz')
+            mr = ModifyrepoWrapper(
+                file=maindir + licensefilename,
+                directory=os.path.join(maindir, "repodata"))
+            mr.run_cmd()
+            os.unlink(maindir + licensefilename)
+            # meta package may bring a second file or expanded symlink, so we need clean up
+            if os.path.exists(maindir + '/license.tar'):
+                os.unlink(maindir + '/license.tar')
+            if os.path.exists(maindir + '/license.tar.gz'):
+                os.unlink(maindir + '/license.tar.gz')
 
     for repodatadir in repodatadirectories:
         # detached signature
@@ -211,16 +210,16 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         # presumably you wouldn't need a bootable iso for source and
         # debuginfo packages.
         if yml['iso']:
-           if workdir == maindir and yml['iso']['base']:
-               agama_arch = yml['architectures'][0]
-               note(f"Export main tree into agama iso file for {agama_arch}")
-               create_agama_iso(outdir, yml['iso'], yml['build_options'], pool, workdir, application_id, agama_arch)
-           else:
-               create_iso(outdir, yml['iso'], workdir, application_id);
+            if workdir == maindir and yml['iso']['base']:
+                agama_arch = yml['architectures'][0]
+                note(f"Export main tree into agama iso file for {agama_arch}")
+                create_agama_iso(outdir, yml['iso'], yml['build_options'], pool, workdir, application_id, agama_arch)
+            else:
+                create_iso(outdir, yml['iso'], workdir, application_id)
 
-           # cleanup
-           if yml['iso']['tree'] == 'drop':
-               shutil.rmtree(workdir)
+            # cleanup
+            if yml['iso']['tree'] == 'drop':
+                shutil.rmtree(workdir)
 
     # create SBOM data
     generate_sbom_call = None

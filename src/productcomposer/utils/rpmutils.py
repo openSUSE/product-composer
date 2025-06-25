@@ -29,7 +29,7 @@ def filter_pkgsets(yml, arch, flavor):
             die(f'package set {name} is already defined')
         pkgsets_raw[name] = entry
     return pkgsets_raw
-    
+
 def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_rawcache, pool=None):
     if flavor is None:
         flavor = ''
@@ -176,7 +176,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     ### or factored out
     main_pkgset = PkgSet(None)
     for pkgset_name in yml['content']:
-       main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
+        main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
     ###
 
     missing_package = None

@@ -1,7 +1,7 @@
 import os
 import subprocess
 from ..wrappers import CreaterepoWrapper
-from ..utils.loggerutils import (die, warn, note)
+from ..utils.loggerutils import die
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
     match yml['product_type']:

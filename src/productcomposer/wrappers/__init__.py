@@ -1,2 +1,2 @@
-from .createrepo import CreaterepoWrapper
-from .modifyrepo import ModifyrepoWrapper
+from .createrepo import CreaterepoWrapper  # noqa: F401
+from .modifyrepo import ModifyrepoWrapper  # noqa: F401

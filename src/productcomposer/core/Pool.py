@@ -24,7 +24,7 @@ class Pool:
         if origin is not None:
             pkg.origin = origin
         name = pkg.name
-        if not name in self.rpms:
+        if name not in self.rpms:
             self.rpms[name] = []
         self.rpms[name].append(pkg)
 
