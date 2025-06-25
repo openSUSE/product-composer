@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from xml.etree import ElementTree as ET
 from ..utils.rpmutils import create_package_set
-from ..utils.loggerutils import (note,warn,die)
+from ..utils.loggerutils import (note, warn, die)
 from ..core.PkgSet import PkgSet
 from ..core.Package import Package
 from ..wrappers import ModifyrepoWrapper

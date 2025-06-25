@@ -7,4 +7,4 @@ def parse_supportstatus(filename, supportstatus_override):
             if len(a) == 2:
                 supportstatus_override[a[0]] = a[1]
             else:
-                warn(f'wrong supportstatus line')
+                warn(f'wrong supportstatus line: {line}')

@@ -1,7 +1,7 @@
 import os
 import shutil
 import glob
-from ..utils.loggerutils import (note,die)
+from ..utils.loggerutils import (note, die)
 from ..utils.runhelper import run_helper
 from ..utils.cryptoutils import create_sha256_for
 from ..config import (verbose_level, ISO_PREPARER)

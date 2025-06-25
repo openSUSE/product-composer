@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-            zypper -n install python311-pydantic python311-pytest python311-setuptools python311-rpm python311-PyYAML python311-build
+            zypper -n install python311-pydantic python311-pytest python311-setuptools python311-rpm python311-PyYAML python311-build python311-pyflakes python311-flake8
 
       - uses: actions/checkout@v4
 

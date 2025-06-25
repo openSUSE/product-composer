@@ -140,7 +140,7 @@ class Package:
                 dirname = dirname.decode('utf-8')
             if dirname != '' and not dirname.endswith('/'):
                 dirname += '/'
-            if not dirname in dirs:
+            if dirname not in dirs:
                 dirs[dirname] = []
             cookie = f"{filedev}/{fileino}"
             if (filemode & 0o170000) != 0o100000:
