@@ -161,7 +161,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     referenced_update_rpms = None
     if 'updateinfo_packages_only' in yml['build_options']:
         if not pool.updateinfos:
-            die("filtering for updates enabled, but no updateinfo found")
+            warn("filtering for updates enabled, but no updateinfo found")
         if singlemode:
             die("filtering for updates enabled, but take_all_available_versions is not set")
 
