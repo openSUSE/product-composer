@@ -47,6 +47,7 @@ def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_
     shutil.rmtree(tempdir)
     shutil.rmtree(baseisodir)
     # just for the bootable image, signature is not yet applied, so ignore that error
+    # FIXME: fatal=False due to unknown reported El Torrito error on s390x atm.
     run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="verify install.iso")
     # creating .sha256 for iso file
     create_sha256_for(workdir + '.install.iso')
