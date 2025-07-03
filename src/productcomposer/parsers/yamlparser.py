@@ -59,8 +59,6 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
         if f['iso']:
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if f['iso'].get(tag, None):
-                    if not yml['iso']:
-                        yml['iso'] = {}
                     yml['iso'][tag] = f['iso'][tag]
 
     for tag in (

@@ -77,7 +77,7 @@ class compose_schema(BaseModel):
     source: Optional[compose_schema_source_and_debug] = None
     build_options: Optional[list[compose_schema_build_option]] = []
     scc: Optional[compose_schema_scc] = None
-    iso: Optional[compose_schema_iso] = None
+    iso: Optional[compose_schema_iso] = {}
 
 class ComposeSchema(compose_schema, BaseModel):
     product_compose_schema: Literal['0.1', '0.2']
