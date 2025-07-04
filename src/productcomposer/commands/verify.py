@@ -20,7 +20,8 @@ class VerifyCommand:
     def verify_flavor(self, filename, flavor):
         yml = parse_yaml(filename, flavor)
         if not flavor and not yml['architectures']:
-            die('No architecture defined and no flavor.')
+            # no default build defined, skipping
+            return yml.get('flavors')
         if not yml['architectures']:
             die(f'No architecture defined for flavor {flavor}')
 
