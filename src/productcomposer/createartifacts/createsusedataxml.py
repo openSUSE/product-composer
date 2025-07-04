@@ -54,7 +54,8 @@ def generate_du_data(pkg, maxdepth):
                 break
     dudata = []
     for dir, size in sorted(dudata_size.items()):
-        dudata.append((dir, size, dudata_count[dir]))
+        kilobyte = size / 1024
+        dudata.append((dir, kilobyte, dudata_count[dir]))
     return dudata
 
 # Create the main susedata.xml with translations, support, and disk usage information
