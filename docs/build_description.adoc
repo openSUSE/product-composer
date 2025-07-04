@@ -129,6 +129,10 @@ The product name.
 
 The product version
 
+==== version_from_package
+
+A package name which will be used to determine the product version
+
 ==== update
 
 Optional update level string for CPE

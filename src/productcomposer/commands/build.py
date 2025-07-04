@@ -94,6 +94,13 @@ class BuildCommand:
         if args.clean and os.path.exists(args.out):
             shutil.rmtree(args.out)
 
+        if yml['version_from_package'] is not None:
+            # determine version
+            rpm = pool.lookup_rpm(yml['architectures'][0], yml['version_from_package'])
+            if rpm is None:
+                die(f"Unable to find {yml['version_from_package']} package, can not set the product version")
+            yml['version'] = str(rpm.version)
+
         product_base_dir = self.get_product_dir(yml, flavor, args.release)
 
         create_tree(args.out, product_base_dir, yml, pool, flavor, tree_report, supportstatus, supportstatus_override, eulas, args.vcs, args.disturl)

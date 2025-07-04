@@ -38,6 +38,7 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
             'name',
             'summary',
             'version',
+            'version_from_package',
             'update',
             'edition',
             'product_type',
