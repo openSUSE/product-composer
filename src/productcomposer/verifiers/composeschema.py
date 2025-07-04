@@ -40,6 +40,7 @@ class compose_schema_scc(BaseModel):
     product_class: Optional[str] = Field(default=None, alias='product-class')
     free: Optional[bool] = False
     predecessors: Optional[list[compose_schema_scc_cpe]] = None
+    product_name_prefix: Optional[str] = Field(default=None, alias='product-name-prefix') # default is SLE-Product- in scc converter
     shortname: Optional[str] = None
     base_products: Optional[list[compose_schema_scc_cpe]] = None
     root_products: Optional[list[compose_schema_scc_cpe]] = None
