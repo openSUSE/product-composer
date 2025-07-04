@@ -65,6 +65,7 @@ class compose_schema(BaseModel):
     architectures: Optional[list[str]] = []
     name: Optional[str] = None
     version: Optional[str] = None
+    version_from_package: Optional[str] = None
     edition: Optional[str] = None
     update: Optional[str] = None
     product_type: Optional[str] = Field(default=None, alias='product-type')

@@ -33,7 +33,10 @@ def generate_du_data(pkg, maxdepth):
                 if cookie in seen:
                     next
                 seen.add(cookie)
-            size += filesize
+            # we need to report it in kilobyte.
+            # Always adding one kilobyte to be on the safe side
+            # and also to compensate for block size to some degree (depends on the filesystem)
+            size += (filesize // 1024) + 1
             count += 1
         if dir == '':
             dir = '/usr/src/packages/'
@@ -54,8 +57,7 @@ def generate_du_data(pkg, maxdepth):
                 break
     dudata = []
     for dir, size in sorted(dudata_size.items()):
-        kilobyte = size / 1024
-        dudata.append((dir, kilobyte, dudata_count[dir]))
+        dudata.append((dir, size, dudata_count[dir]))
     return dudata
 
 # Create the main susedata.xml with translations, support, and disk usage information
