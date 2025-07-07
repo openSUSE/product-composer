@@ -4,7 +4,7 @@ import yaml
 import pydantic
 
 from ..utils.loggerutils import die
-from ..verifiers.composeschema import ComposeSchema
+from ..verifiers.composeschema import ComposeSchema, compose_schema_iso
 
 
 
@@ -58,10 +58,10 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
                 yml['build_options'].append(option)
 
         if f['iso']:
+            if not yml['iso']:
+                yml['iso'] = compose_schema_iso().dict()
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
-                if f['iso'].get(tag, None):
-                    if not yml['iso']:
-                        yml['iso'] = {}
+                if f['iso'].get(tag):
                     yml['iso'][tag] = f['iso'][tag]
 
     for tag in (
