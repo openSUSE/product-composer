@@ -7,10 +7,10 @@ def create_iso(outdir, isoconf, workdir, application_id):
     verbose = True if verbose_level > 0 else False
     args = ['/usr/bin/mkisofs', '-quiet', '-p', ISO_PREPARER]
     args += ['-r', '-pad', '-f', '-J', '-joliet-long']
-    if isoconf.publisher:
-        args += ['-publisher', isoconf.publisher]
-    if isoconf.volume_id:
-        args += ['-V', isoconf.volume_id]
+    if isoconf['publisher']:
+        args += ['-publisher', isoconf['publisher']]
+    if isoconf['volume_id']:
+        args += ['-V', isoconf['volume_id']]
     args += ['-A', application_id]
     args += ['-o', workdir + '.iso', workdir]
     run_helper(args, cwd=outdir, failmsg="create iso file", verbose=verbose)

@@ -160,7 +160,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if yml['iso'] and yml['iso'].tree != 'drop':
+    if yml['iso'] and yml['iso'].get('tree', None) != 'drop':
         licensefilename = '/license.tar'
         if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
             licensefilename = '/license-' + yml['name'] + '.tar'
@@ -210,7 +210,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         # presumably you wouldn't need a bootable iso for source and
         # debuginfo packages.
         if yml['iso']:
-            if workdir == maindir and yml['iso'].base:
+            if workdir == maindir and yml['iso']['base']:
                 agama_arch = yml['architectures'][0]
                 note(f"Export main tree into agama iso file for {agama_arch}")
                 create_agama_iso(outdir, yml['iso'], yml['build_options'], pool, workdir, application_id, agama_arch)
@@ -218,7 +218,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                 create_iso(outdir, yml['iso'], workdir, application_id)
 
             # cleanup
-            if yml['iso'].tree == 'drop':
+            if yml['iso']['tree'] == 'drop':
                 shutil.rmtree(workdir)
 
     # create SBOM data

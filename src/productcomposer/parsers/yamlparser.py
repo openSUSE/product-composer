@@ -5,7 +5,7 @@ import pydantic
 
 from ..utils.loggerutils import die
 from ..verifiers.composeschema import ComposeSchema
-from ..verifiers.composeschema import compose_schema_iso
+
 
 
 def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
@@ -61,8 +61,8 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
             for tag in ('volume_id', 'publisher', 'tree', 'base'):
                 if f['iso'].get(tag, None):
                     if not yml['iso']:
-                        yml['iso'] = compose_schema_iso()
-                    exec("yml['iso']." + tag + " = f['iso'][tag]")
+                        yml['iso'] = {}
+                    yml['iso'][tag] = f['iso'][tag]
 
     for tag in (
             'installcheck',

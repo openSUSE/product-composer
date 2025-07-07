@@ -8,7 +8,7 @@ from ..config import (verbose_level, ISO_PREPARER)
 
 def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_id, arch):
     verbose = True if verbose_level > 0 else False
-    base = isoconf.base
+    base = isoconf['base']
     if verbose:
         note(f"Looking for baseiso-{base} rpm on {arch}")
     agama = pool.lookup_rpm(arch, f"baseiso-{base}")
@@ -36,10 +36,10 @@ def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_
     args = ['mksusecd', agamaiso, tempdir, '--create', workdir + '.install.iso']
     # mksusecd would take the volume_id, publisher, application_id, preparer from the agama iso
     args += ['--preparer', ISO_PREPARER]
-    if isoconf.publisher:
-        args += ['--vendor', isoconf.publisher]
-    if isoconf.volume_id:
-        args += ['--volume', isoconf.volume_id]
+    if 'publisher' in isoconf and isoconf['publisher'] is not None:
+        args += ['--vendor', isoconf['publisher']]
+    if 'volume_id' in isoconf and isoconf['volume_id'] is not None:
+        args += ['--volume', isoconf['volume_id']]
     args += ['--application', application_id]
     run_helper(args, failmsg="add tree to agama image", verbose=verbose)
     # mksusecd already did a tagmedia call with a sha256 digest
