@@ -48,6 +48,8 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
             'repodata',
             'content',
             'unpack',
+            'set_updateinfo_from',
+            'set_updateinfo_id_prefix',
         ):
             if f.get(tag, None):
                 yml[tag] = f[tag]
