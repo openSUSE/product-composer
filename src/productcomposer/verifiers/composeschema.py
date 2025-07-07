@@ -89,7 +89,7 @@ class ComposeSchema(compose_schema, BaseModel):
     installcheck: Optional[list[Literal['ignore_errors']]] | None = None
 
     set_updateinfo_from: Optional[str] = None
-    set_updateinfo_id_prefix: Optional[str] = None
+    set_updateinfo_id_prefix: Optional[str] = ""
     block_updates_under_embargo: Optional[str] = None
 
     flavors: Optional[dict[str, compose_schema]] = {}

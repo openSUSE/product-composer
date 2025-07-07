@@ -51,7 +51,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                 update.set('from', yml['set_updateinfo_from'])
 
             id_node = update.find('id')
-            if 'set_updateinfo_id_prefix' in yml:
+            if len(yml['set_updateinfo_id_prefix']) > 0:
                 # avoid double application of same prefix
                 id_text = re.sub(r'^'+yml['set_updateinfo_id_prefix'], '', id_node.text)
                 id_node.text = yml['set_updateinfo_id_prefix'] + id_text
