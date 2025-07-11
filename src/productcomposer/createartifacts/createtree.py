@@ -160,33 +160,32 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
-    if yml['iso'] and yml['iso'].get('tree', None) != 'drop':
-        licensefilename = '/license.tar'
-        if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
-            licensefilename = '/license-' + yml['name'] + '.tar'
-        if os.path.exists(maindir + licensefilename + '.gz'):
-            run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
-                       failmsg="uncompress license.tar.gz")
-        if os.path.exists(maindir + licensefilename):
-            note("Setup .license directory")
-            licensedir = maindir + ".license"
-            if not os.path.exists(licensedir):
-                os.mkdir(licensedir)
-            args = ['tar', 'xf', maindir + licensefilename, '-C', licensedir]
-            output = run_helper(args, failmsg="extract license tar ball")
-            if not os.path.exists(licensedir + "/license.txt"):
-                die("No license.txt extracted", details=output)
+    licensefilename = '/license.tar'
+    if os.path.exists(maindir + '/license-' + yml['name'] + '.tar') or os.path.exists(maindir + '/license-' + yml['name'] + '.tar.gz'):
+        licensefilename = '/license-' + yml['name'] + '.tar'
+    if os.path.exists(maindir + licensefilename + '.gz'):
+        run_helper(['gzip', '-d', maindir + licensefilename + '.gz'],
+                   failmsg="uncompress license.tar.gz")
+    if os.path.exists(maindir + licensefilename):
+        note("Setup .license directory")
+        licensedir = maindir + ".license"
+        if not os.path.exists(licensedir):
+            os.mkdir(licensedir)
+        args = ['tar', 'xf', maindir + licensefilename, '-C', licensedir]
+        output = run_helper(args, failmsg="extract license tar ball")
+        if not os.path.exists(licensedir + "/license.txt"):
+            die("No license.txt extracted", details=output)
 
-            mr = ModifyrepoWrapper(
-                file=maindir + licensefilename,
-                directory=os.path.join(maindir, "repodata"))
-            mr.run_cmd()
-            os.unlink(maindir + licensefilename)
-            # meta package may bring a second file or expanded symlink, so we need clean up
-            if os.path.exists(maindir + '/license.tar'):
-                os.unlink(maindir + '/license.tar')
-            if os.path.exists(maindir + '/license.tar.gz'):
-                os.unlink(maindir + '/license.tar.gz')
+        mr = ModifyrepoWrapper(
+            file=maindir + licensefilename,
+            directory=os.path.join(maindir, "repodata"))
+        mr.run_cmd()
+        os.unlink(maindir + licensefilename)
+        # meta package may bring a second file or expanded symlink, so we need clean up
+        if os.path.exists(maindir + '/license.tar'):
+            os.unlink(maindir + '/license.tar')
+        if os.path.exists(maindir + '/license.tar.gz'):
+            os.unlink(maindir + '/license.tar.gz')
 
     for repodatadir in repodatadirectories:
         # detached signature
