@@ -221,10 +221,18 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                     missing_package = True
 
             if debugdir:
+                # the debug source package
                 drpm = pool.lookup_rpm(arch, srcrpm.name + "-debugsource", '=', None, srcrpm.version, srcrpm.release)
                 if drpm:
                     link_entry_into_dir(tree_report, drpm, debugdir, add_slsa=add_slsa)
 
+                # the debuginfo based on the src.rpm name
+                # Since the dwz implementation we may have them without actually having the main package.
+                drpm = pool.lookup_rpm(arch, srcrpm.name + "-debuginfo", '=', None, srcrpm.version, srcrpm.release)
+                if drpm:
+                    link_entry_into_dir(tree_report, drpm, debugdir, add_slsa=add_slsa)
+
+                # the normal debuginfo package for a package which we have on the medium.
                 drpm = pool.lookup_rpm(arch, rpm.name + "-debuginfo", '=', rpm.epoch, rpm.version, rpm.release)
                 if drpm:
                     link_entry_into_dir(tree_report, drpm, debugdir, add_slsa=add_slsa)
