@@ -1,4 +1,3 @@
-import pytest
 from productcomposer.parsers.eulasparser import parse_eulas
 
 

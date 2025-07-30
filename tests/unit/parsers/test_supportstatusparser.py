@@ -1,4 +1,3 @@
-import pytest
 from productcomposer.parsers.supportstatusparser import parse_supportstatus
 
 
