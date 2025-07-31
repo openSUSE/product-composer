@@ -298,7 +298,7 @@ to drop all debug packages or
 
   debug: split
 
-to create a seperate medium mwith -Debug suffix.
+to create a seperate medium with -Debug suffix.
 
 Missing debug packages will always be ignored.
 
