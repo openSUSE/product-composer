@@ -131,7 +131,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     mediavendor = yml['vendor'] + ' - ' + product_base_dir
     mediaident = product_base_dir
     # FIXME: calculate from product provides
-    mediaproducts = [yml['vendor'] + '-' + yml['name'] + ' ' + str(yml['version']) + '-1']
+    mediaproducts = [yml['name'] + ' ' + str(yml['version']) + '-1']
     create_media_dir(maindir, mediavendor, mediaident, mediaproducts)
 
     create_checksums_file(maindir)
