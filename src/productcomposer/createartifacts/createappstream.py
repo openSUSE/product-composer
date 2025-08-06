@@ -23,9 +23,11 @@ def create_appstream(rpmdir):
     if not os.path.exists(main_file):
        return
 
+    # compression type is part of the AppStream spec
     mr = ModifyrepoWrapper(
         file=main_file,
         mdtype='appdata',
+        compress_type='gz',
         directory=os.path.join(rpmdir, "repodata"),
     )
     mr.run_cmd()
@@ -36,10 +38,22 @@ def create_appstream(rpmdir):
         mr = ModifyrepoWrapper(
             file=icon_file,
             mdtype='appdata-icons',
+            compress_type='gz',
             directory=os.path.join(rpmdir, "repodata"),
         )
         mr.run_cmd()
         os.unlink(icon_file)
+
+    screenshots_file = f'{rpmdir}/appdata-screenshots.tar'
+    if os.path.exists(screenshots_file):
+        mr = ModifyrepoWrapper(
+            file=screenshots_file,
+            mdtype='appdata-screenshots',
+            compress=False,
+            directory=os.path.join(rpmdir, "repodata"),
+        )
+        mr.run_cmd()
+        os.unlink(screenshots_file)
 
     ignore_file = f'{rpmdir}/appdata-ignore.xml.gz'
     if os.path.exists(ignore_file):
