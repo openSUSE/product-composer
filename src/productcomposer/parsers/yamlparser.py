@@ -62,7 +62,7 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
         if f['iso']:
             if not yml['iso']:
                 yml['iso'] = compose_schema_iso().dict()
-            for tag in ('volume_id', 'publisher', 'tree', 'base'):
+            for tag in ('volume_id', 'publisher', 'tree', 'base', 'joliet'):
                 if f['iso'].get(tag):
                     yml['iso'][tag] = f['iso'][tag]
 
