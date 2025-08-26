@@ -11,6 +11,7 @@ class compose_schema_iso(BaseModel):
     volume_id: Optional[str] = None
     tree: Optional[str] = None
     base: Optional[str] = None
+    joliet: Optional[bool] = True
 
 
 _compose_schema_supportstatus = Literal[

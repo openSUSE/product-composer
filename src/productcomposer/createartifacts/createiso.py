@@ -6,7 +6,9 @@ from ..utils.cryptoutils import create_sha256_for
 def create_iso(outdir, isoconf, workdir, application_id):
     verbose = True if verbose_level > 0 else False
     args = ['/usr/bin/mkisofs', '-quiet', '-p', ISO_PREPARER]
-    args += ['-r', '-pad', '-f', '-J', '-joliet-long']
+    args += ['-r', '-pad', '-f']
+    if isoconf['joliet']:
+        args += ['-J', '-joliet-long']
     if isoconf['publisher']:
         args += ['-publisher', isoconf['publisher']]
     if isoconf['volume_id']:
