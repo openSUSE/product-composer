@@ -16,9 +16,9 @@ def run_helper(args, cwd=None, fatal=True, stdout=None, stdin=None, failmsg=None
 
     if popen.returncode:
         if failmsg:
-            msg="Failed to " + failmsg
+            msg = "Failed to " + failmsg
         else:
-            msg="Failed to run " + args[0]
+            msg = "Failed to run " + args[0]
         if fatal:
             die(msg, details=output)
         else:

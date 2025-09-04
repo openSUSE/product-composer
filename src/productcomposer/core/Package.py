@@ -124,7 +124,7 @@ class Package:
             return None
         dirs = {}
         filedevs = h['filedevices']
-        fileinos= h['fileinodes']
+        fileinos = h['fileinodes']
         filesizes = h['filesizes']
         filemodes = h['filemodes']
         dirnames = h['dirnames']
