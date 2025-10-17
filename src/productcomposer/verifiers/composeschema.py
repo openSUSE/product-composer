@@ -50,6 +50,7 @@ class compose_schema_scc(BaseModel):
 
 
 compose_schema_build_option = Literal[
+    'abort_on_empty_updateinfo',
     'add_slsa_provenance',
     'base_skip_packages',
     'block_updates_under_embargo',
@@ -58,6 +59,7 @@ compose_schema_build_option = Literal[
     'skip_updateinfos',
     'take_all_available_versions',
     'updateinfo_packages_only',
+    'OBS_unordered_product_repos',
 ]
 
 compose_schema_source_and_debug = Literal['drop', 'include', 'split']
