@@ -15,4 +15,5 @@ def _load_all_commands():
     for _, module_name, _ in pkgutil.iter_modules(package.__path__):
         importlib.import_module(f"{__name__}.{module_name}")
 
+
 _load_all_commands()

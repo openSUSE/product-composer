@@ -13,7 +13,7 @@ __all__ = "main",
 def main(argv=None) -> int:
     parser = cliparser.build_parser()
     args = parser.parse_args()
-    
+
     filename = args.filename
     if not filename:
         # No subcommand was specified.
@@ -22,8 +22,9 @@ def main(argv=None) -> int:
         die(None)
 
     dispatch(args)
-    
+
     return 0
+
 
 if __name__ == "__main__":
     try:
