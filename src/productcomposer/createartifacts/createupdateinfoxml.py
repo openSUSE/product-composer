@@ -17,7 +17,7 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 # Add updateinfo.xml to metadata
-def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
+def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsubdir=None):
     if not pool.updateinfos:
         return
 
@@ -36,6 +36,14 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
     ###
 
     uitemp = None
+
+    archlist = yml['architectures']
+    subarchpath = ""
+    if archsubdir:
+        archlist = [ archsubdir, "noarch" ]
+        subarchpath = archsubdir + "/"
+
+    updateinfo_file = os.path.join(rpmdir, subarchpath, "updateinfo.xml")
 
     for u in sorted(pool.lookup_all_updateinfos()):
         note("Add updateinfo " + u.location)
@@ -58,6 +66,9 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
 
             for pkgentry in parent.findall('package'):
                 src = pkgentry.get('src')
+                if archsubdir:
+                    src = "../" + pkgentry.get('src')
+                    pkgentry.set('src', src)
 
                 # check for embargo date
                 embargo = pkgentry.get('embargo_date')
@@ -81,7 +92,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                     pkgentry.attrib.pop(internal_attributes, None)
 
                 # check if we have files for the entry
-                if os.path.exists(rpmdir + '/' + src):
+                if os.path.exists(rpmdir + '/' + subarchpath + src):
                     needed = True
                     continue
                 if debugdir and os.path.exists(debugdir + '/' + src):
@@ -101,12 +112,12 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                     parent.remove(pkgentry)
                     continue
                 # ignore unwanted architectures
-                if pkgarch != 'noarch' and pkgarch not in yml['architectures']:
+                if pkgarch != 'noarch' and pkgarch not in archlist:
                     parent.remove(pkgentry)
                     continue
 
                 # check if we should have this package
-                if name in main_pkgset_names:
+                if name in main_pkgset_names and not archsubdir:
                     updatepkg = create_updateinfo_package(pkgentry)
                     if main_pkgset.matchespkg(None, updatepkg):
                         warn(f"package {updatepkg} not found")
@@ -120,7 +131,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
                 continue
 
             if not uitemp:
-                uitemp = open(rpmdir + '/updateinfo.xml', 'x')
+                uitemp = open(updateinfo_file, 'x')
                 uitemp.write("<updates>\n  ")
             uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
 
@@ -129,12 +140,12 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir):
         uitemp.close()
 
         mr = ModifyrepoWrapper(
-                file=os.path.join(rpmdir, "updateinfo.xml"),
-                directory=os.path.join(rpmdir, "repodata"),
+                file=updateinfo_file,
+                directory=os.path.join(rpmdir, subarchpath, "repodata"),
                 )
         mr.run_cmd()
 
-        os.unlink(rpmdir + '/updateinfo.xml')
+        os.unlink(updateinfo_file)
 
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages for updateinfo')

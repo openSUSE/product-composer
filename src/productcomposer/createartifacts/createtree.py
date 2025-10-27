@@ -157,7 +157,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             run_helper(args, fatal=('ignore_errors' not in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
-        create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
+        if yml['repodata']:
+            if yml['repodata'] == 'all':
+                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
+            for arch in yml['architectures']:
+                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir, arch)
+        else:
+            create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
 
     # Add License File and create extra .license directory
     licensefilename = '/license.tar'
