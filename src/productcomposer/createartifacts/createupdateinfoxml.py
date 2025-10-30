@@ -132,22 +132,50 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                 continue
 
             update_id = update.find('id').text
-            if export_updates[id]:
+            if update_id in export_updates:
                 # entry exist already, we need to merge it
-                export_collection = export_updates[id].findall('pkglist')[0].findall('collection')[0]
-                for c in update.findall('pkglist')[0].findall('collection')[0]:
-                    for pkgentry in c.findall('package'):
-                        export_collection.add('package', pkgentry)
+                export_collection = export_updates[update_id].findall('pkglist')[0].findall('collection')[0]
+                collection = update.findall('pkglist')[0].findall('collection')[0]
+                # same entry id, compare allmost all elements
+                for element in update:
+                    if element.tag == 'pkglist':
+                        # we merged it before
+                        continue
+                    if element.tag == 'issued':
+                        # we accept a difference here
+                        continue
+                    # compare element effective result only
+                    if ET.tostring(element) != ET.tostring(export_updates[update_id].find(element.tag)):
+                        die(f"Error: updateinfos {update_id} differ in element {element.tag}")
 
+                if len(update) != len(export_updates[update_id]):
+                    die(f"Error: updateinfos {update_id} has different amount of elements")
+
+                for pkgentry in collection.findall('package'):
+                    for existing_entry in export_collection.findall('package'):
+                        if existing_entry.get('name') != pkgentry.get('name'):
+                            continue
+                        if existing_entry.get('epoch') != pkgentry.get('epoch'):
+                            continue
+                        if existing_entry.get('version') != pkgentry.get('version'):
+                            continue
+                        if existing_entry.get('release') != pkgentry.get('release'):
+                            continue
+                        if existing_entry.get('arch') != pkgentry.get('arch'):
+                            continue
+                        break # same entry exists, so break for skipping the else part
+                    else:
+                        # add the pkgentry to existing element
+                        export_collection.append(pkgentry)
             else:
-                export_updates[id] = update
+                # new entry
+                export_updates[update_id] = update
 
-    if len(export_updates) > 0:
+    if export_updates:
         uitemp = open(updateinfo_file, 'x')
         uitemp.write("<updates>\n  ")
         for update in export_updates:
-            uitemp.write("    ")
-            uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
+            uitemp.write(ET.tostring(export_updates[update], encoding=ET_ENCODING))
         uitemp.write("</updates>\n")
         uitemp.close()
 
