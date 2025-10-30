@@ -133,9 +133,6 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
             update_id = update.find('id').text
             if update_id in export_updates:
-                # entry exist already, we need to merge it
-                export_collection = export_updates[update_id].findall('pkglist')[0].findall('collection')[0]
-                collection = update.findall('pkglist')[0].findall('collection')[0]
                 # same entry id, compare allmost all elements
                 for element in update:
                     if element.tag == 'pkglist':
@@ -149,8 +146,11 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                         die(f"Error: updateinfos {update_id} differ in element {element.tag}")
 
                 if len(update) != len(export_updates[update_id]):
-                    die(f"Error: updateinfos {update_id} has different amount of elements")
+                    die(f"Error: updateinfos {update_id} have different amount of elements")
 
+                # entry already exists, we need to merge it
+                export_collection = export_updates[update_id].findall('pkglist')[0].findall('collection')[0]
+                collection = update.findall('pkglist')[0].findall('collection')[0]
                 for pkgentry in collection.findall('package'):
                     for existing_entry in export_collection.findall('package'):
                         if existing_entry.get('name') != pkgentry.get('name'):
@@ -174,7 +174,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
     if export_updates:
         uitemp = open(updateinfo_file, 'x')
         uitemp.write("<updates>\n  ")
-        for update in export_updates:
+        for update in sorted(export_updates):
             uitemp.write(ET.tostring(export_updates[update], encoding=ET_ENCODING))
         uitemp.write("</updates>\n")
         uitemp.close()
