@@ -45,6 +45,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
     updateinfo_file = os.path.join(rpmdir, subarchpath, "updateinfo.xml")
 
+    export_updates = {}
     for u in sorted(pool.lookup_all_updateinfos()):
         note("Add updateinfo " + u.location)
         for update in u.root.findall('update'):
@@ -130,12 +131,23 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                     die(f'Stumbled over an updateinfo.xml where no rpm is used: {id_node.text}')
                 continue
 
-            if not uitemp:
-                uitemp = open(updateinfo_file, 'x')
-                uitemp.write("<updates>\n  ")
-            uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
+            update_id = update.find('id').text
+            if export_updates[id]:
+                # entry exist already, we need to merge it
+                export_collection = export_updates[id].findall('pkglist')[0].findall('collection')[0]
+                for c in update.findall('pkglist')[0].findall('collection')[0]:
+                    for pkgentry in c.findall('package'):
+                        export_collection.add('package', pkgentry)
 
-    if uitemp:
+            else:
+                export_updates[id] = update
+
+    if len(export_updates) > 0:
+        uitemp = open(updateinfo_file, 'x')
+        uitemp.write("<updates>\n  ")
+        for update in export_updates:
+            uitemp.write("    ")
+            uitemp.write(ET.tostring(update, encoding=ET_ENCODING))
         uitemp.write("</updates>\n")
         uitemp.close()
 
