@@ -73,6 +73,7 @@ class compose_schema(BaseModel):
     edition: Optional[str] = None
     update: Optional[str] = None
     product_type: Optional[str] = Field(default=None, alias='product-type')
+    cpe: Optional[str] = None
     product_directory_name: Optional[str] = None
     content: Optional[list[str]] = ['main']
     unpack: Optional[list[str]] = []

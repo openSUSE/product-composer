@@ -34,6 +34,7 @@ flavors:
     architectures: [aarch64]
     name: Backports
     product_directory_name: Backports-16
+    cpe: cpe:/o:opensuse:backports:16:16.0
   backports_ppc64le:
     architectures: [ppc64le]
     name: Backports
