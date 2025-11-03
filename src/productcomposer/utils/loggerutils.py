@@ -1,4 +1,7 @@
-def die(msg, details=None):
+from typing import NoReturn, Optional
+
+
+def die(msg: Optional[str], details: Optional[str]=None) -> NoReturn:
     if msg:
         print("ERROR: " + msg)
     if details:
@@ -6,7 +9,7 @@ def die(msg, details=None):
     raise SystemExit(1)
 
 
-def warn(msg, details=None):
+def warn(msg: str, details: Optional[str]=None) -> None:
     print("WARNING: " + msg)
     if details:
         print(details)

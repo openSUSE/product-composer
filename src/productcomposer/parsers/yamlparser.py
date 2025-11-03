@@ -8,7 +8,7 @@ from ..verifiers.composeschema import ComposeSchema, compose_schema_iso
 
 
 
-def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
+def parse_yaml(filename: str, flavor: str | None) -> Dict[str, Any]:
     with open(filename, 'r') as file:
         _yml = yaml.safe_load(file)
 
@@ -42,6 +42,7 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, any]:
             'update',
             'edition',
             'product_type',
+            'cpe',
             'product_directory_name',
             'source',
             'debug',
