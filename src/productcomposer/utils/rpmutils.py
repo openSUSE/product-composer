@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import urllib.parse
 
 from ..core.PkgSet import PkgSet
 from ..utils.loggerutils import die, note, warn
@@ -150,7 +151,7 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing meta packages')
 
-def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatus, supportstatus_override, debugdir=None, sourcedir=None):
+def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatus, supportstatus_override, debugdir=None, sourcedir=None, cpeid=None):
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
@@ -180,6 +181,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     ###
 
     missing_package = None
+    found_matching_cpeid = None
     for sel in main_pkgset:
         if singlemode:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
@@ -211,6 +213,15 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 warn(f"package {rpm} does not have a source rpm")
                 continue
 
+            if cpeid:
+                for provide in rpm.provides:
+                    if provide.startswith('product-cpeid() = '):
+                        cpeid_provided = urllib.parse.unquote_plus(provide.removeprefix('product-cpeid() = '))
+                        if cpeid != cpeid_provided:
+                            warn(f"rpm package {rpm} provides an additional cpeid: {cpeid_provided}")
+                        else:
+                            found_matching_cpeid = True
+
             if sourcedir:
                 # so we need to add also the src rpm
                 srpm = pool.lookup_rpm(srcrpm.arch, srcrpm.name, '=', None, srcrpm.version, srcrpm.release)
@@ -239,3 +250,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
 
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages')
+
+    if cpeid and not found_matching_cpeid:
+        die(f"Product release file with matching cpeid {cpeid} not found!")
+

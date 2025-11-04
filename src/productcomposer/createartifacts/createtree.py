@@ -5,6 +5,7 @@ from ..utils.runhelper import run_helper
 from ..utils.loggerutils import (die, warn, note)
 from ..utils.rpmutils import (link_rpms_to_tree, unpack_meta_rpms)
 from ..utils.runcreaterepo import run_createrepo
+from ..utils.cpeid import get_cpeid
 from ..createartifacts.createmediadir import create_media_dir
 from ..createartifacts.createchecksumfile import create_checksums_file
 from ..createartifacts.createsusedataxml import create_susedata_xml
@@ -55,7 +56,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
 
     for arch in yml['architectures']:
         note(f"Linking rpms for {arch}")
-        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir)
+        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir, get_cpeid(yml))
 
     for arch in yml['architectures']:
         note(f"Unpack rpms for {arch}")

@@ -2,24 +2,12 @@ import os
 import subprocess
 from ..wrappers import CreaterepoWrapper
 from ..utils.loggerutils import die
+from ..utils.cpeid import get_cpeid
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):
-    match yml['product_type']:
-        case 'base' | None:
-            product_type = '/o'
-        case 'module' | 'extension':
-            product_type = '/a'
-        case _:
-            die('Undefined product-type')
     cr = CreaterepoWrapper(directory=".")
     cr.distro = f"{yml.get('summary', yml['name'])} {yml['version']}"
-    cr.cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
-    if yml['update']:
-        cr.cpeid = cr.cpeid + f":{yml['update']}"
-        if yml['edition']:
-            cr.cpeid = cr.cpeid + f":{yml['edition']}"
-    elif yml['edition']:
-        cr.cpeid = cr.cpeid + f"::{yml['edition']}"
+    cr.cpeid = get_cpeid(yml)
     cr.repos = repos
     # cr.split = True
     # cr.baseurl = "media://"
