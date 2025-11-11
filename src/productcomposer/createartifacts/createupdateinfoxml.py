@@ -1,3 +1,4 @@
+import copy
 import os
 import re
 from datetime import datetime
@@ -50,7 +51,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
         note("Add updateinfo " + u.location)
         for update in u.root.findall('update'):
             needed = False
-            parent = update.findall('pkglist')[0].findall('collection')[0]
+            parent = copy.deepcopy(update.findall('pkglist')[0].findall('collection')[0])
 
             # drop OBS internal patchinforef element
             for pr in update.findall('patchinforef'):
