@@ -1,4 +1,3 @@
-import copy
 import os
 import re
 from datetime import datetime
@@ -51,7 +50,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
         note("Add updateinfo " + u.location)
         for update in u.root.findall('update'):
             needed = False
-            parent = copy.deepcopy(update.findall('pkglist')[0].findall('collection')[0])
+            parent = update.findall('pkglist')[0].findall('collection')[0]
 
             # drop OBS internal patchinforef element
             for pr in update.findall('patchinforef'):
@@ -69,7 +68,8 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
             for pkgentry in parent.findall('package'):
                 src = pkgentry.get('src')
                 if archsubdir:
-                    src = "../" + pkgentry.get('src')
+                    # former run might have prefixed already
+                    src = "../" + pkgentry.get('src').removeprefix("../")
                     pkgentry.set('src', src)
 
                 # check for embargo date
