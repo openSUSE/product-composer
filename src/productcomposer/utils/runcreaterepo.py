@@ -1,7 +1,6 @@
 import os
 import subprocess
 from ..wrappers import CreaterepoWrapper
-from ..utils.loggerutils import die
 from ..utils.cpeid import get_cpeid
 
 def run_createrepo(rpmdir, yml, content=[], repos=[]):

@@ -40,7 +40,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
     archlist = yml['architectures']
     subarchpath = ""
     if archsubdir:
-        archlist = [ archsubdir, "noarch" ]
+        archlist = [archsubdir, "noarch"]
         subarchpath = archsubdir + "/"
 
     updateinfo_file = os.path.join(rpmdir, subarchpath, "updateinfo.xml")
@@ -164,7 +164,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                             continue
                         if existing_entry.get('arch') != pkgentry.get('arch'):
                             continue
-                        break # same entry exists, so break for skipping the else part
+                        break    # same entry exists, so break for skipping the else part
                     else:
                         # add the pkgentry to existing element
                         export_collection.append(pkgentry)

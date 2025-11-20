@@ -1,3 +1,4 @@
+from ..utils.loggerutils import die
 
 def get_cpeid(yml):
     match yml['product_type']:
