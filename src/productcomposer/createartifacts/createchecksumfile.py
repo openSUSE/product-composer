@@ -1,6 +1,5 @@
 import os
 from ..utils.runhelper import run_helper
-from ..config import chksums_tool
 
 def create_checksums_file(maindir):
     # Legacy linuxrc expect SHA 256 checksums, so don't follow global default here

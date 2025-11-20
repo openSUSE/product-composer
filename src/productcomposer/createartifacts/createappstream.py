@@ -21,7 +21,7 @@ def create_appstream(rpmdir):
     # Did the process create files?
     main_file = f'{rpmdir}/appdata.xml.gz'
     if not os.path.exists(main_file):
-       return
+        return
 
     # compression type is part of the AppStream spec
     mr = ModifyrepoWrapper(

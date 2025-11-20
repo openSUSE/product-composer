@@ -62,7 +62,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
             id_node = update.find('id')
             if len(yml['set_updateinfo_id_prefix']) > 0:
                 # avoid double application of same prefix
-                id_text = re.sub(r'^'+yml['set_updateinfo_id_prefix'], '', id_node.text)
+                id_text = re.sub(r'^' + yml['set_updateinfo_id_prefix'], '', id_node.text)
                 id_node.text = yml['set_updateinfo_id_prefix'] + id_text
 
             for pkgentry in parent.findall('package'):
@@ -182,8 +182,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
         mr = ModifyrepoWrapper(
                 file=updateinfo_file,
-                directory=os.path.join(rpmdir, subarchpath, "repodata"),
-                )
+                directory=os.path.join(rpmdir, subarchpath, "repodata"))
         mr.run_cmd()
 
         os.unlink(updateinfo_file)
