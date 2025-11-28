@@ -83,17 +83,17 @@ class compose_schema(BaseModel):
     build_options: Optional[list[compose_schema_build_option]] = []
     scc: Optional[compose_schema_scc] = None
     iso: Optional[compose_schema_iso] = None
+    installcheck: Optional[list[Literal['ignore_errors']]] | None = None
+
+    set_updateinfo_from: Optional[str] = None
+    set_updateinfo_id_prefix: Optional[str] = ""
+    block_updates_under_embargo: Optional[str] = None
 
 class ComposeSchema(compose_schema, BaseModel):
     product_compose_schema: Literal['0.1', '0.2']
     vendor: str
     bcntsynctag: Optional[str] = None
     milestone: Optional[str] = None
-    installcheck: Optional[list[Literal['ignore_errors']]] | None = None
-
-    set_updateinfo_from: Optional[str] = None
-    set_updateinfo_id_prefix: Optional[str] = ""
-    block_updates_under_embargo: Optional[str] = None
 
     flavors: Optional[dict[str, compose_schema]] = {}
     packagesets: Optional[list[compose_schema_packageset]] = None
