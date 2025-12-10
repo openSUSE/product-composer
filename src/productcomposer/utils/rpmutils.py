@@ -253,6 +253,8 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages')
 
-    if cpeid and not found_matching_cpeid and not empty_medium:
+    if empty_medium:
+        warn("This medium is not providing any rpm. Only online installation is possible.")
+    elif cpeid and not found_matching_cpeid:
         die(f"Product release file with matching cpeid {cpeid} not found!")
 
