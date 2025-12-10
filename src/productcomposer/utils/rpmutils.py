@@ -219,7 +219,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 for provide in rpm.provides:
                     if provide.startswith('product-cpeid() = '):
                         cpeid_provided = urllib.parse.unquote_plus(provide.removeprefix('product-cpeid() = '))
-                        if cpeid != cpeid_provided:
+                        if cpeid.lower() != cpeid_provided.lower():
                             warn(f"rpm package {rpm} provides an additional cpeid: {cpeid_provided}")
                         else:
                             found_matching_cpeid = True
