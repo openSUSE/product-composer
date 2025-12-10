@@ -182,6 +182,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
 
     missing_package = None
     found_matching_cpeid = None
+    empty_medium = True
     for sel in main_pkgset:
         if singlemode:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
@@ -196,6 +197,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
             missing_package = True
             continue
 
+        empty_medium = False
         for rpm in rpms:
             if referenced_update_rpms is not None:
                 if (rpm.arch + '/' + rpm.canonfilename) not in referenced_update_rpms:
@@ -251,6 +253,6 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing packages')
 
-    if cpeid and not found_matching_cpeid:
+    if cpeid and not found_matching_cpeid and not empty_medium:
         die(f"Product release file with matching cpeid {cpeid} not found!")
 
