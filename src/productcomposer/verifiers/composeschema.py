@@ -56,6 +56,7 @@ compose_schema_build_option = Literal[
     'block_updates_under_embargo',
     'hide_flavor_in_product_directory_name',
     'ignore_missing_packages',
+    'no_product_provides',
     'skip_updateinfos',
     'take_all_available_versions',
     'updateinfo_packages_only',

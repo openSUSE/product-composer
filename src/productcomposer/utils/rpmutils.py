@@ -219,6 +219,8 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                 for provide in rpm.provides:
                     if provide.startswith('product-cpeid() = '):
                         cpeid_provided = urllib.parse.unquote_plus(provide.removeprefix('product-cpeid() = '))
+                        if 'no_product_provides' in yml['build_options']:
+                            die(f"no_product_provides option is set, but product {cpeid_provided} is provided by {rpm.canonfilename}")
                         if cpeid.lower() != cpeid_provided.lower():
                             warn(f"rpm package {rpm} provides an additional cpeid: {cpeid_provided}")
                         else:
@@ -255,6 +257,6 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
 
     if empty_medium:
         warn("This medium is not providing any rpm. Only online installation is possible.")
-    elif cpeid and not found_matching_cpeid:
+    elif cpeid and not found_matching_cpeid and 'no_product_provides' not in yml['build_options']:
         die(f"Product release file with matching cpeid {cpeid} not found!")
 

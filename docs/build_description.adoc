@@ -239,6 +239,19 @@ when using base iso images.
 Enabling this would result in a simply repacked base image, without
 any package copied there.
 
+===== no_product_provides
+
+Product composer is validating by default that a rpm package is providing
+the same product as well via a cpeid provider. It aborts when no
+matching providers is found.
+
+This option can be used to acknowledge that no product provider for the
+product is available. Also no other product must be provided then.
+
+Use with care as it breaks handling of such repositories with management
+solutions like Multi-Linux-Manager.
+
+
 ==== iso
 
 ===== publisher
