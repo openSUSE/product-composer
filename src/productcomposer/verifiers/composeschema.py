@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from typing import Literal
 from typing import Optional
+from typing import Union
 
 
 class compose_schema_iso(BaseModel):
@@ -28,6 +29,7 @@ class compose_schema_packageset(BaseModel):
     sub: Optional[list[str]] = None
     intersect: Optional[list[str]] = None
     packages: Optional[list[str]] = None
+    filters: Optional[list[str]] = None
 
 
 class compose_schema_scc_cpe(BaseModel):

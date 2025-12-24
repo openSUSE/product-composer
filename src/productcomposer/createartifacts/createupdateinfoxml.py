@@ -17,7 +17,7 @@ def create_updateinfo_package(pkgentry):
     return entry
 
 # Add updateinfo.xml to metadata
-def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsubdir=None):
+def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsubdir=None, cached_filters={}):
     if not pool.updateinfos:
         return
 
@@ -30,7 +30,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
     main_pkgset = PkgSet(None)
     for pkgset_name in yml['content']:
         for arch in yml['architectures']:
-            main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
+            main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool, cached_filters=cached_filters))
 
     main_pkgset_names = main_pkgset.names()
     ###
