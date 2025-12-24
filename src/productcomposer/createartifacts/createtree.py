@@ -16,6 +16,7 @@ from ..createartifacts.createiso import create_iso
 from ..utils.report import (write_report_file)
 from ..utils.repomdutils import find_primary
 from ..wrappers import ModifyrepoWrapper
+from ..core.Filter import DateFilter
 
 def get_filters(yml):
     if not yml['filters']:
@@ -24,8 +25,15 @@ def get_filters(yml):
     cached_filters = {}
     for package_filter in yml.get('filters', []):
         match package_filter['filter_type']:
+            case 'date':
+                new_filter = DateFilter(
+                    package_filter['filter_data'],
+                    enabled=package_filter['enabled']
+                )
             case _:
                 die(f"Filter type {package_filter['filter_type']} not supported")
+
+        cached_filters[package_filter['name']] = new_filter
 
     return cached_filters
 

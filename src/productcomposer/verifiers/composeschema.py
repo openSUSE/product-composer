@@ -6,6 +6,7 @@ from typing import Literal
 from typing import Optional
 from typing import Union
 
+from datetime import datetime
 
 class compose_schema_iso(BaseModel):
     publisher: Optional[str] = None
@@ -18,6 +19,13 @@ class compose_schema_iso(BaseModel):
 _compose_schema_supportstatus = Literal[
     'l3', 'l2', 'acc', 'unsupported', '=l3', '=l2', '=acc', '=unsupported'
 ]
+
+
+class compose_schema_filter_date(BaseModel):
+    name: str
+    filter_type: Literal['date']
+    filter_data: datetime
+    enabled: Optional[bool] = True
 
 
 class compose_schema_packageset(BaseModel):
@@ -100,3 +108,4 @@ class ComposeSchema(compose_schema, BaseModel):
 
     flavors: Optional[dict[str, compose_schema]] = {}
     packagesets: Optional[list[compose_schema_packageset]] = None
+    filters: Optional[list[Union[compose_schema_filter_date]]] = None
