@@ -1,14 +1,9 @@
 from ..utils.loggerutils import die
 
 def get_cpeid(yml):
-    match yml['product_type']:
-        case 'base' | None:
-            product_type = '/o'
-        case 'module' | 'extension':
-            product_type = '/a'
-        case _:
-            die('Undefined product-type')
-    cpeid = f"cpe:{product_type}:{yml['vendor']}:{yml['name']}:{yml['version']}"
+    if yml['product_type'] not in ('base', 'module', 'extension', None):
+        die('Undefined product-type')
+    cpeid = f"cpe:/o:{yml['vendor']}:{yml['name']}:{yml['version']}"
     if yml['update']:
         cpeid = cpeid + f":{yml['update']}"
         if yml['edition']:
