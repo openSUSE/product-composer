@@ -12,6 +12,7 @@ class PkgSet:
         self.byname = None
         self.supportstatus = None
         self.override_supportstatus = False
+        self.filters = frozenset()
 
     def _create_byname(self):
         byname = {}
@@ -29,7 +30,7 @@ class PkgSet:
 
     def add_specs(self, specs):
         for spec in specs:
-            sel = PkgSelect(spec, supportstatus=self.supportstatus)
+            sel = PkgSelect(spec, supportstatus=self.supportstatus, filters=self.filters)
             self.pkgs.append(sel)
         self.byname = None
 

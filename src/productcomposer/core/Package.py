@@ -99,12 +99,15 @@ class Package:
         srcpkg.arch = match.group(4)
         return srcpkg
 
-    def matches(self, arch, name, op, epoch, version, release):
+    def matches(self, arch, name, op, epoch, version, release, filters=frozenset()):
         if name is not None and self.name != name:
             return False
         if arch is not None and self.arch != arch:
             if arch in ('src', 'nosrc') or self.arch != 'noarch':
                 return False
+        if False in [package_filter.filter_matches(self) for package_filter in filters]:
+            # If at least one filter fails, ensure we don't match
+            return False
         if op is None:
             return True
         # special case a missing release or epoch in the match as labelCompare

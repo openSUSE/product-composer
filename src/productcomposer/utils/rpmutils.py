@@ -31,7 +31,7 @@ def filter_pkgsets(yml, arch, flavor):
         pkgsets_raw[name] = entry
     return pkgsets_raw
 
-def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_rawcache, pool=None):
+def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_rawcache, pool=None, cached_filters={}):
     if flavor is None:
         flavor = ''
 
@@ -71,6 +71,9 @@ def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_r
         pkgsetcache[setkey] = pkgset
         return pkgset    # return empty package set if there is no matching flavor/arch
 
+    if entry['filters']:
+        pkgset.filters = frozenset((cached_filters[name] for name in entry['filters']))
+
     if entry['supportstatus']:
         pkgset.supportstatus = entry['supportstatus']
         if pkgset.supportstatus.startswith('='):
@@ -82,7 +85,7 @@ def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_r
         if entry.get(setop) is None:
             continue
         for oname in entry[setop]:
-            opkgset = create_package_set_cached(yml, arch, flavor, oname, pkgsetcache, pkgsets_rawcache, pool=pool)
+            opkgset = create_package_set_cached(yml, arch, flavor, oname, pkgsetcache, pkgsets_rawcache, pool=pool, cached_filters=cached_filters)
             match setop:
                 case 'add':
                     pkgset.add(opkgset)
@@ -95,8 +98,8 @@ def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_r
     pkgsetcache[setkey] = pkgset
     return pkgset
 
-def create_package_set(yml, arch, flavor, setname, pool=None):
-    return create_package_set_cached(yml, arch, flavor, setname, {}, {}, pool=pool)
+def create_package_set(yml, arch, flavor, setname, pool=None, cached_filters={}):
+    return create_package_set_cached(yml, arch, flavor, setname, {}, {}, pool=pool, cached_filters=cached_filters)
 
 
 def link_file_into_dir(source, directory, name=None):
@@ -151,7 +154,7 @@ def unpack_meta_rpms(rpmdir, yml, pool, arch, flavor, medium):
     if missing_package and 'ignore_missing_packages' not in yml['build_options']:
         die('Abort due to missing meta packages')
 
-def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatus, supportstatus_override, debugdir=None, sourcedir=None, cpeid=None):
+def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatus, supportstatus_override, debugdir=None, sourcedir=None, cpeid=None, cached_filters={}):
     singlemode = True
     if 'take_all_available_versions' in yml['build_options']:
         singlemode = False
@@ -177,7 +180,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     ### or factored out
     main_pkgset = PkgSet(None)
     for pkgset_name in yml['content']:
-        main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
+        main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool, cached_filters=cached_filters))
     ###
 
     missing_package = None
@@ -185,10 +188,10 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     empty_medium = True
     for sel in main_pkgset:
         if singlemode:
-            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
+            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release, filters=sel.filters)
             rpms = [rpm] if rpm else []
         else:
-            rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
+            rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release, filters=sel.filters)
 
         if not rpms:
             if referenced_update_rpms is not None:

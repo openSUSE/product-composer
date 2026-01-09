@@ -10,14 +10,16 @@ from ..wrappers import ModifyrepoWrapper
 from ..config import ET_ENCODING
 
 # create a fake package entry from an updateinfo package spec
-def create_updateinfo_package(pkgentry):
+def create_updateinfo_package(pkgentry, issued_date=None):
     entry = Package()
     for tag in ('name', 'epoch', 'version', 'release', 'arch'):
         setattr(entry, tag, pkgentry.get(tag))
+    if issued_date is not None:
+        setattr(entry, 'buildtime', issued_date)
     return entry
 
 # Add updateinfo.xml to metadata
-def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsubdir=None):
+def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsubdir=None, cached_filters={}):
     if not pool.updateinfos:
         return
 
@@ -30,7 +32,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
     main_pkgset = PkgSet(None)
     for pkgset_name in yml['content']:
         for arch in yml['architectures']:
-            main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool))
+            main_pkgset.add(create_package_set(yml, arch, flavor, pkgset_name, pool=pool, cached_filters=cached_filters))
 
     main_pkgset_names = main_pkgset.names()
     ###
@@ -51,6 +53,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
         for update in u.root.findall('update'):
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
+            issued_date = int(update.find('issued').get("date"))
 
             # drop OBS internal patchinforef element
             for pr in update.findall('patchinforef'):
@@ -120,7 +123,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
                 # check if we should have this package
                 if name in main_pkgset_names and not archsubdir:
-                    updatepkg = create_updateinfo_package(pkgentry)
+                    updatepkg = create_updateinfo_package(pkgentry, issued_date=issued_date)
                     if main_pkgset.matchespkg(None, updatepkg):
                         warn(f"package {updatepkg} not found")
                         missing_package = True

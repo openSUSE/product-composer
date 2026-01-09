@@ -16,6 +16,26 @@ from ..createartifacts.createiso import create_iso
 from ..utils.report import (write_report_file)
 from ..utils.repomdutils import find_primary
 from ..wrappers import ModifyrepoWrapper
+from ..core.Filter import DateFilter
+
+def get_filters(yml):
+    if not yml['filters']:
+        return {}
+
+    cached_filters = {}
+    for package_filter in yml.get('filters', []):
+        match package_filter['filter_type']:
+            case 'date':
+                new_filter = DateFilter(
+                    package_filter['filter_data'],
+                    enabled=package_filter['enabled']
+                )
+            case _:
+                die(f"Filter type {package_filter['filter_type']} not supported")
+
+        cached_filters[package_filter['name']] = new_filter
+
+    return cached_filters
 
 def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, supporstatus, supportstatus_override, eulas, vcs=None, disturl=None):
     if not os.path.exists(outdir):
@@ -54,9 +74,11 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             case _:
                 die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
+    cached_filters = get_filters(yml)
+
     for arch in yml['architectures']:
         note(f"Linking rpms for {arch}")
-        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir, get_cpeid(yml))
+        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir, get_cpeid(yml), cached_filters=cached_filters)
 
     for arch in yml['architectures']:
         note(f"Unpack rpms for {arch}")
@@ -160,11 +182,11 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     if 'skip_updateinfos' not in yml['build_options']:
         if yml['repodata']:
             if yml['repodata'] == 'all':
-                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
+                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir, cached_filters=cached_filters)
             for arch in yml['architectures']:
-                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir, arch)
+                create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir, arch, cached_filters=cached_filters)
         else:
-            create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
+            create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir, cached_filters=cached_filters)
 
     # Add License File and create extra .license directory
     licensefilename = '/license.tar'

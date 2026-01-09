@@ -4,7 +4,9 @@ from pydantic import BaseModel, Field
 
 from typing import Literal
 from typing import Optional
+from typing import Union
 
+from datetime import datetime
 
 class compose_schema_iso(BaseModel):
     publisher: Optional[str] = None
@@ -19,6 +21,13 @@ _compose_schema_supportstatus = Literal[
 ]
 
 
+class compose_schema_filter_date(BaseModel):
+    name: str
+    filter_type: Literal['date']
+    filter_data: datetime
+    enabled: Optional[bool] = True
+
+
 class compose_schema_packageset(BaseModel):
     name: Optional[str] = "main"
     supportstatus: Optional[str] = None
@@ -28,6 +37,7 @@ class compose_schema_packageset(BaseModel):
     sub: Optional[list[str]] = None
     intersect: Optional[list[str]] = None
     packages: Optional[list[str]] = None
+    filters: Optional[list[str]] = None
 
 
 class compose_schema_scc_cpe(BaseModel):
@@ -98,3 +108,4 @@ class ComposeSchema(compose_schema, BaseModel):
 
     flavors: Optional[dict[str, compose_schema]] = {}
     packagesets: Optional[list[compose_schema_packageset]] = None
+    filters: Optional[list[Union[compose_schema_filter_date]]] = None

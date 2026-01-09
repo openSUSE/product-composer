@@ -58,6 +58,25 @@ These rpm packages need to provide these files below
 Currently it gets only extracted to the first/main medium,
 but not on source or debug media.
 
+=== filters
+
+Filters allow to filter out packages following specific
+conditions.
+
+The only supported filter right now is `date`, which
+drops every package built after the specified date.
+
+As an example:
+
+ filters:
+ - name: qu_cutoff
+   filter_type: date
+   filter_data: 2025-11-30 17:00
+   enabled: yes
+
+Do note that for filters to be useful, they need to be
+added to the individual packagesets.
+
 === packagesets
 
 The packagesets definitions. A packageset lists rpm names
@@ -118,6 +137,21 @@ However these are handled as strings. If the string starts
 with a "=", it overrides any previously set support status
 from inherited package sets.
 
+==== filters
+
+The filter names to use. As an example:
+
+ packagesets:
+ - name: test
+   filters:
+    - qu_cutoff
+   packages:
+    - [...]
+
+The specified filters must be specified in the filters section in the
+root of the description.
+
+If at least one filter doesn't match, the package is dropped.
 
 === Details
 
