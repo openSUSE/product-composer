@@ -11,4 +11,4 @@ def get_cpeid(yml):
     elif yml['edition']:
         cpeid = cpeid + f"::{yml['edition']}"
 
-    return cpeid
+    return cpeid.lower()

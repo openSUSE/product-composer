@@ -221,7 +221,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
                         cpeid_provided = urllib.parse.unquote_plus(provide.removeprefix('product-cpeid() = '))
                         if 'no_product_provides' in yml['build_options']:
                             die(f"no_product_provides option is set, but product {cpeid_provided} is provided by {rpm.canonfilename}")
-                        if cpeid.lower() != cpeid_provided.lower():
+                        if cpeid != cpeid_provided:
                             warn(f"rpm package {rpm} provides an additional cpeid: {cpeid_provided}")
                         else:
                             found_matching_cpeid = True
