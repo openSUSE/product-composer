@@ -56,7 +56,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
 
     for arch in yml['architectures']:
         note(f"Linking rpms for {arch}")
-        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir, get_cpeid(yml))
+        required_cpeid = get_cpeid(yml)
+        if arch == "i686" and "i586" in yml['architectures']:
+            # handle the special case for legacy x86 builds where some additional i686 rpms 
+            # get added, but it is still handled as a single common i586 architecture.
+            required_cpeid = None
+        link_rpms_to_tree(maindir, yml, pool, arch, flavor, tree_report, supporstatus, supportstatus_override, debugdir, sourcedir, required_cpeid)
 
     for arch in yml['architectures']:
         note(f"Unpack rpms for {arch}")
