@@ -24,10 +24,10 @@ scc:
   # free: false
 
 iso:
-  publisher: 'Iggy'
-  volume_id: 'Pop'
-#  tree: 'drop'
-#  base: 'agama-installer'
+  publisher:
+  volume_id:
+#  tree: drop
+#  base: agama-installer
 
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
@@ -40,8 +40,8 @@ build_options:
 # - updateinfo_packages_only
 # - base_skip_packages
 
-installcheck:
- - ignore_errors
+#installcheck:
+# - ignore_errors
 
 # Enable collection of source and debug packages. Either "include" it
 # on main medium, "drop" it or "split" it away on extra medium.
