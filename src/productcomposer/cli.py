@@ -334,6 +334,8 @@ def parse_yaml(filename, flavor):
             'source',
             'debug',
             'repodata',
+            'set_updateinfo_from',
+            'set_updateinfo_id_prefix',
         ):
             if tag in f:
                 yml[tag] = f[tag]
