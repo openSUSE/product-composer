@@ -3,7 +3,7 @@ import shutil
 import glob
 from ..utils.loggerutils import (note, die)
 from ..utils.runhelper import run_helper
-from ..utils.cryptoutils import create_sha256_for
+from ..utils.cryptoutils import create_sha_for
 from ..config import (verbose_level, ISO_PREPARER)
 
 def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_id, arch):
@@ -49,5 +49,5 @@ def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_
     # just for the bootable image, signature is not yet applied, so ignore that error
     # FIXME: fatal=False due to unknown reported El Torrito error on s390x atm.
     run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="verify install.iso")
-    # creating .sha256 for iso file
-    create_sha256_for(workdir + '.install.iso')
+    # creating .sha256/.sha512 for iso file
+    create_sha_for(workdir + '.install.iso')

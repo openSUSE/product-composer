@@ -9,3 +9,4 @@ and explicitly pass them to the programs.
 
 CREATEREPO_CHECKSUM_TYPE: str = "sha512"
 CREATEREPO_GENERAL_COMPRESS_TYPE: str = "zstd"
+ISO_CHECKSUM_TYPE: str = "sha256"
