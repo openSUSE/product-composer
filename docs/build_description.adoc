@@ -409,6 +409,16 @@ if the prefix exists already.
 This can be used to have a common identifier for an update for many products, but
 still being able to identify the filtering for a specific product.
 
+==== skip_updateinfos_older_than
+
+Filter updateinfo data and the corresponding rpm files when the issue date is
+before a given timestamp.
+
+==== skip_updateinfos_newer_than
+
+Filter updateinfo data and the corresponding rpm files when the issue date is
+after a given timestamp.
+
 ==== block_updates_under_embargo
 
 The current default is to include maintenance updates under embargo. This option can

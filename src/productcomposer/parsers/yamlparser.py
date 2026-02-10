@@ -51,6 +51,8 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, Any]:
             'unpack',
             'set_updateinfo_from',
             'set_updateinfo_id_prefix',
+            'skip_updateinfos_older_than',
+            'skip_updateinfos_newer_than',
             'block_updates_under_embargo',
         ):
             if f.get(tag, None):
