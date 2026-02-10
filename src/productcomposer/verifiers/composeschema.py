@@ -12,6 +12,7 @@ class compose_schema_iso(BaseModel):
     tree: Optional[str] = None
     base: Optional[str] = None
     joliet: Optional[bool] = True
+    checksums: Optional[list[str]] = None
 
 
 _compose_schema_supportstatus = Literal[

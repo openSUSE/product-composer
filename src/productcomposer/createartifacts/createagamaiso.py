@@ -50,4 +50,8 @@ def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_
     # FIXME: fatal=False due to unknown reported El Torrito error on s390x atm.
     run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="verify install.iso")
     # creating .sha256/.sha512 for iso file
-    create_sha_for(workdir + '.install.iso')
+    checksums = ['sha256']
+    if isoconf['checksums']:
+        checksums = isoconf['checksums']
+    for checksum in checksums:
+        create_sha_for(workdir + ".install.iso", checksum)

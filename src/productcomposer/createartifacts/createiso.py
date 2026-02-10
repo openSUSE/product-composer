@@ -20,4 +20,8 @@ def create_iso(outdir, isoconf, workdir, application_id):
     args = ['tagmedia', '--digest', 'sha256', workdir + '.iso']
     run_helper(args, cwd=outdir, failmsg="tagmedia iso file", verbose=verbose)
     # creating .sha256/.sha512 for iso file
-    create_sha_for(workdir + ".iso")
+    checksums = ['sha256']
+    if isoconf['checksums']:
+        checksums = isoconf['checksums']
+    for checksum in checksums:
+        create_sha_for(workdir + ".iso", checksum)

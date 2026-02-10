@@ -28,6 +28,9 @@ iso:
   volume_id: 'Pop'
 #  tree: 'drop'
 #  base: 'agama-installer'
+#  checksums:
+#    - sha256
+#    - sha512
 
 build_options:
 ### For maintenance, otherwise only "the best" version of each package is picked:
