@@ -1,6 +1,7 @@
 import os
 import shutil
 import glob
+from .. import defaults
 from ..utils.loggerutils import (note, die)
 from ..utils.runhelper import run_helper
 from ..utils.cryptoutils import create_sha_for
@@ -50,4 +51,6 @@ def create_agama_iso(outdir, isoconf, build_options, pool, workdir, application_
     # FIXME: fatal=False due to unknown reported El Torrito error on s390x atm.
     run_helper(['verifymedia', workdir + '.install.iso', '--ignore', 'ISO is signed'], fatal=False, failmsg="verify install.iso")
     # creating .sha256/.sha512 for iso file
-    create_sha_for(workdir + '.install.iso')
+    checksums = isoconf['checksums'] or [defaults.ISO_CHECKSUM_TYPE]
+    for checksum in checksums:
+        create_sha_for(workdir + ".install.iso", checksum)
