@@ -266,6 +266,18 @@ For setting the iso9660 VENDOR_ID header
 
 Can be set to "drop" for creating only the iso files.
 
+===== joliet
+
+Can be set to false to skip joliet name generation.
+May be useful when running into limits, eg. due to
+file name length limits.
+
+===== checksums
+
+Define checksums to be generated. Currently supported ones
+are sha256 and sha512. sha512 is the default. List both
+in case bother are wanted.
+
 ===== base
 
 Can be used to copy the result into a pre generated iso file.
@@ -408,6 +420,16 @@ if the prefix exists already.
 
 This can be used to have a common identifier for an update for many products, but
 still being able to identify the filtering for a specific product.
+
+==== skip_updateinfos_older_than
+
+Filter updateinfo data and the corresponding rpm files when the issue date is
+before a given timestamp.
+
+==== skip_updateinfos_newer_than
+
+Filter updateinfo data and the corresponding rpm files when the issue date is
+after a given timestamp.
 
 ==== block_updates_under_embargo
 

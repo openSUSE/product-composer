@@ -12,6 +12,7 @@ class compose_schema_iso(BaseModel):
     tree: Optional[str] = None
     base: Optional[str] = None
     joliet: Optional[bool] = True
+    checksums: Optional[list[str]] = None
 
 
 _compose_schema_supportstatus = Literal[
@@ -88,6 +89,8 @@ class compose_schema(BaseModel):
 
     set_updateinfo_from: Optional[str] = None
     set_updateinfo_id_prefix: Optional[str] = ""
+    skip_updateinfos_older_than: Optional[str] = ""
+    skip_updateinfos_newer_than: Optional[str] = ""
     block_updates_under_embargo: Optional[str] = None
 
 class ComposeSchema(compose_schema, BaseModel):

@@ -45,12 +45,27 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
     updateinfo_file = os.path.join(rpmdir, subarchpath, "updateinfo.xml")
 
+    # set time limits
+    limit_time_minimum = datetime.min
+    limit_time_maximum = datetime.max
+    if len(yml['skip_updateinfos_older_than']) > 0:
+        try:
+            limit_time_minimum = datetime.strptime(yml['skip_updateinfos_older_than'], '%Y-%m-%d %H:%M')
+        except ValueError:
+            limit_time_minimum = datetime.strptime(yml['skip_updateinfos_older_than'], '%Y-%m-%d')
+    if len(yml['skip_updateinfos_newer_than']) > 0:
+        try:
+            limit_time_maximum = datetime.strptime(yml['skip_updateinfos_newer_than'], '%Y-%m-%d %H:%M')
+        except ValueError:
+            limit_time_maximum = datetime.strptime(yml['skip_updateinfos_newer_than'], '%Y-%m-%d')
+
     export_updates = {}
     for u in sorted(pool.lookup_all_updateinfos()):
         note("Add updateinfo " + u.location)
         for update in u.root.findall('update'):
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
+            issue_date = datetime.fromtimestamp(int(update.findall('issued')[0].get('date')))
 
             # drop OBS internal patchinforef element
             for pr in update.findall('patchinforef'):
@@ -72,6 +87,16 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                     src = "../" + pkgentry.get('src').removeprefix("../")
                     pkgentry.set('src', src)
 
+                # Filter updateinfos and their binaries based on configured limits
+                if (issue_date > limit_time_maximum) or (issue_date < limit_time_minimum):
+                    if os.path.exists(rpmdir + '/' + subarchpath + src):
+                        os.unlink(rpmdir + '/' + subarchpath + src)
+                    if debugdir and os.path.exists(debugdir + '/' + src):
+                        os.unlink(debugdir + '/' + src)
+                    if sourcedir and os.path.exists(sourcedir + '/' + src):
+                        os.unlink(sourcedir + '/' + src)
+                    continue
+
                 # check for embargo date
                 embargo = pkgentry.get('embargo_date')
                 if embargo is not None:
@@ -80,7 +105,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                     except ValueError:
                         embargo_time = datetime.strptime(embargo, '%Y-%m-%d')
 
-                    if embargo_time > datetime.now():
+                    if embargo_time and embargo_time > datetime.now():
                         warn(f"Update is still under embargo! {update.find('id').text}")
                         if 'block_updates_under_embargo' in yml['build_options']:
                             die("shutting down due to block_updates_under_embargo flag")
