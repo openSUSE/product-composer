@@ -243,7 +243,7 @@ any package copied there.
 
 Product composer is validating by default that a rpm package is providing
 the same product as well via a cpeid provider. It aborts when no
-matching providers is found.
+matching provider is found.
 
 This option can be used to acknowledge that no product provider for the
 product is available. Also no other product must be provided then.
@@ -275,8 +275,8 @@ file name length limits.
 ===== checksums
 
 Define checksums to be generated. Currently supported ones
-are sha256 and sha512. sha512 is the default. List both
-in case bother are wanted.
+are sha256 and sha512. sha512 is the default. Both or none
+may be listed.
 
 ===== base
 
