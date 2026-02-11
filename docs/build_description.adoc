@@ -275,7 +275,7 @@ file name length limits.
 ===== checksums
 
 Define checksums to be generated. Currently supported ones
-are sha256 and sha512. sha256 is the default. List both
+are sha256 and sha512. sha512 is the default. List both
 in case bother are wanted.
 
 ===== base
