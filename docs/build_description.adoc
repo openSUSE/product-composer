@@ -243,7 +243,7 @@ any package copied there.
 
 Product composer is validating by default that a rpm package is providing
 the same product as well via a cpeid provider. It aborts when no
-matching providers is found.
+matching provider is found.
 
 This option can be used to acknowledge that no product provider for the
 product is available. Also no other product must be provided then.
@@ -265,6 +265,18 @@ For setting the iso9660 VENDOR_ID header
 ===== tree
 
 Can be set to "drop" for creating only the iso files.
+
+===== joliet
+
+Can be set to false to skip joliet name generation.
+May be useful when running into limits, eg. due to
+file name length limits.
+
+===== checksums
+
+Define checksums to be generated. Currently supported ones
+are sha256 and sha512. sha512 is the default. Both or none
+may be listed.
 
 ===== base
 
