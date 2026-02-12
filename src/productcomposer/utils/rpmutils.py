@@ -169,6 +169,10 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
         referenced_update_rpms = {}
         for u in sorted(pool.lookup_all_updateinfos()):
             for update in u.root.findall('update'):
+                if update.get('type') == '_internal':
+                    # just used for internal tracking, eg. patchinfo.ga
+                    continue
+
                 parent = update.findall('pkglist')[0].findall('collection')[0]
                 for pkgentry in parent.findall('package'):
                     referenced_update_rpms[pkgentry.get('src')] = 1
