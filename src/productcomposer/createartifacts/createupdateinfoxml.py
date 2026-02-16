@@ -49,6 +49,10 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
     for u in sorted(pool.lookup_all_updateinfos()):
         note("Add updateinfo " + u.location)
         for update in u.root.findall('update'):
+            if update.get('type') == '_internal':
+                # just used for internal tracking, eg. patchinfo.ga
+                continue
+
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
 
