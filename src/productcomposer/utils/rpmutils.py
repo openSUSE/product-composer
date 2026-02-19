@@ -76,6 +76,8 @@ def create_package_set_cached(yml, arch, flavor, setname, pkgsetcache, pkgsets_r
         if pkgset.supportstatus.startswith('='):
             pkgset.override_supportstatus = True
             pkgset.supportstatus = pkgset.supportstatus[1:]
+    if entry['ignore_binaries_newer_than'] is not None:
+        pkgset.ignore_binaries_newer_than = entry['ignore_binaries_newer_than'].timestamp()
     if entry['packages']:
         pkgset.add_specs(entry['packages'])
     for setop in 'add', 'sub', 'intersect':
@@ -189,10 +191,10 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     empty_medium = True
     for sel in main_pkgset:
         if singlemode:
-            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
+            rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release, ignore_binaries_newer_than=sel.ignore_binaries_newer_than)
             rpms = [rpm] if rpm else []
         else:
-            rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
+            rpms = pool.lookup_all_rpms(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release, ignore_binaries_newer_than=sel.ignore_binaries_newer_than)
 
         if not rpms:
             if referenced_update_rpms is not None:

@@ -118,6 +118,22 @@ However these are handled as strings. If the string starts
 with a "=", it overrides any previously set support status
 from inherited package sets.
 
+==== ignore_binaries_newer_than
+
+Whether to ignore binaries with a buildtime newer than
+specified. A valid datetime as parsed by pydantic can
+be used.
+
+    ignore_binaries_newer_than: 2025-12-30 00:00
+
+This field is optional. When not taking all the available
+binary versions, the closest package with a valid buildtime
+is used instead.
+
+Note that newly added packages (that do not have an older
+version to fallback on) will be skipped as well, and it
+might abort the build if the `ignore_missing_packages` is
+not enabled.
 
 === Details
 

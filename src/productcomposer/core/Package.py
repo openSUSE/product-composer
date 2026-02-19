@@ -6,6 +6,7 @@ import re
 import rpm
 import functools
 
+from ..utils.loggerutils import note
 
 @functools.total_ordering
 class Package:
@@ -99,12 +100,15 @@ class Package:
         srcpkg.arch = match.group(4)
         return srcpkg
 
-    def matches(self, arch, name, op, epoch, version, release):
+    def matches(self, arch, name, op, epoch, version, release, ignore_binaries_newer_than=None):
         if name is not None and self.name != name:
             return False
         if arch is not None and self.arch != arch:
             if arch in ('src', 'nosrc') or self.arch != 'noarch':
                 return False
+        if ignore_binaries_newer_than is not None and self.buildtime > ignore_binaries_newer_than:
+            note(f"skipping package {self.name} {self.evr} due to buildtime over {ignore_binaries_newer_than}")
+            return False
         if op is None:
             return True
         # special case a missing release or epoch in the match as labelCompare
