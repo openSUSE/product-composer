@@ -62,6 +62,7 @@ compose_schema_build_option = Literal[
     'take_all_available_versions',
     'updateinfo_packages_only',
     'OBS_unordered_product_repos',
+    'discard_artifacts',
 ]
 
 compose_schema_source_and_debug = Literal['drop', 'include', 'split']

@@ -239,6 +239,12 @@ when using base iso images.
 Enabling this would result in a simply repacked base image, without
 any package copied there.
 
+===== discard_artifacts
+
+Run the full build, but remove all iso and rpm trees in the end.
+Just SBOM files remain. This is intended for test builds. The
+install check can still get used.
+
 ===== no_product_provides
 
 Product composer is validating by default that a rpm package is providing
