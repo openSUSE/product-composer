@@ -245,6 +245,11 @@ Run the full build, but remove all iso and rpm trees in the end.
 Just SBOM files remain. This is intended for test builds. The
 install check can still get used.
 
+===== enable_cmssign
+
+Creating a cms signature file. Currently only a dummy file
+to be filled by OBS intrastructure.
+
 ===== no_product_provides
 
 Product composer is validating by default that a rpm package is providing

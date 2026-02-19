@@ -203,6 +203,9 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         # detached signature
         args = ['/usr/lib/build/signdummy', '-d', repodatadir + "/repodata/repomd.xml"]
         run_helper(args, failmsg="create detached signature")
+        if 'enable_cmssign' in yml['build_options']:
+       	    args = ['/usr/lib/build/signdummy', '--cmssign', repodatadir + "/repodata/repomd.xml"]
+       	    run_helper(args, failmsg="create cms signature")
 
         # pubkey
         with open(repodatadir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
