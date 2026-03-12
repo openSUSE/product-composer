@@ -199,24 +199,25 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         if os.path.exists(maindir + '/license.tar.gz'):
             os.unlink(maindir + '/license.tar.gz')
 
-    for repodatadir in repodatadirectories:
-        # detached signature
-        args = ['/usr/lib/build/signdummy', '-d', repodatadir + "/repodata/repomd.xml"]
-        run_helper(args, failmsg="create detached signature")
-        if 'enable_cmssign' in yml['build_options']:
-       	    args = ['/usr/lib/build/signdummy', '--cmssign', repodatadir + "/repodata/repomd.xml"]
-       	    run_helper(args, failmsg="create cms signature")
+    if os.path.exists('/usr/bin/sign'):
+        for repodatadir in repodatadirectories:
+            # detached signature
+            args = ['/usr/bin/sign', '-d', repodatadir + "/repodata/repomd.xml"]
+            run_helper(args, failmsg="create detached signature")
+            if 'enable_cmssign' in yml['build_options']:
+                args = ['/usr/bin/sign', '--cmssign', repodatadir + "/repodata/repomd.xml"]
+                run_helper(args, failmsg="create cms signature")
+            # pubkey
+            with open(repodatadir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
+                args = ['/usr/bin/sign', '-p']
+                run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
-        # pubkey
-        with open(repodatadir + "/repodata/repomd.xml.key", 'w') as pubkey_file:
-            args = ['/usr/lib/build/signdummy', '-p']
-            run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
+        for workdir in workdirectories:
+            if os.path.exists(workdir + '/CHECKSUMS'):
+                args = ['/usr/bin/sign', '-d', workdir + '/CHECKSUMS']
+                run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
     for workdir in workdirectories:
-        if os.path.exists(workdir + '/CHECKSUMS'):
-            args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
-            run_helper(args, failmsg="create detached signature for CHECKSUMS")
-
         application_id = product_base_dir
         # When using the baseiso feature, the primary media should be
         # the base iso, with the packages added.
@@ -283,7 +284,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     # drop everything except selected meta data. intended for test builds
     if 'discard_artifacts' in yml['build_options']:
         for workdir in workdirectories:
-            for suffix in [ "", ".iso", ".install.iso" ]:
+            for suffix in ["", ".iso", ".install.iso"]:
                 if os.path.exists(workdir + suffix):
                     warn("discard_artifacts enabled, removing " + workdir + suffix)
                     shutil.rmtree(workdir + suffix)
