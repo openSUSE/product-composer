@@ -284,7 +284,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     # drop everything except selected meta data. intended for test builds
     if 'discard_artifacts' in yml['build_options']:
         for workdir in workdirectories:
-            for suffix in [ "", ".iso", ".install.iso" ]:
+            for suffix in ["", ".iso", ".install.iso"]:
                 if os.path.exists(workdir + suffix):
                     warn("discard_artifacts enabled, removing " + workdir + suffix)
                     shutil.rmtree(workdir + suffix)
