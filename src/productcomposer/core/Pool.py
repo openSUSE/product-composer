@@ -46,13 +46,13 @@ class Pool:
                     pkg = self.make_rpm(fname, rpm_ts=ts)
                     self.add_rpm(pkg, os.path.join(reldirpath, filename))
 
-    def lookup_all_rpms(self, arch, name, op=None, epoch=None, version=None, release=None):
+    def lookup_all_rpms(self, arch, name, op=None, epoch=None, version=None, release=None, ignore_binaries_newer_than=None):
         if name not in self.rpms:
             return []
-        return [rpm for rpm in self.rpms[name] if rpm.matches(arch, name, op, epoch, version, release)]
+        return [rpm for rpm in self.rpms[name] if rpm.matches(arch, name, op, epoch, version, release, ignore_binaries_newer_than=ignore_binaries_newer_than)]
 
-    def lookup_rpm(self, arch, name, op=None, epoch=None, version=None, release=None):
-        return max(self.lookup_all_rpms(arch, name, op, epoch, version, release), default=None)
+    def lookup_rpm(self, arch, name, op=None, epoch=None, version=None, release=None, ignore_binaries_newer_than=None):
+        return max(self.lookup_all_rpms(arch, name, op, epoch, version, release, ignore_binaries_newer_than=ignore_binaries_newer_than), default=None)
 
     def lookup_all_updateinfos(self):
         return self.updateinfos.values()

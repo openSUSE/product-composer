@@ -10,10 +10,12 @@ from ..wrappers import ModifyrepoWrapper
 from ..config import ET_ENCODING
 
 # create a fake package entry from an updateinfo package spec
-def create_updateinfo_package(pkgentry):
+def create_updateinfo_package(pkgentry, issued_date=None):
     entry = Package()
     for tag in ('name', 'epoch', 'version', 'release', 'arch'):
         setattr(entry, tag, pkgentry.get(tag))
+    if issued_date is not None:
+        setattr(entry, 'buildtime', issued_date)
     return entry
 
 # Add updateinfo.xml to metadata
@@ -55,6 +57,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
             needed = False
             parent = update.findall('pkglist')[0].findall('collection')[0]
+            issued_date = int(update.find('issued').get("date"))
 
             # drop OBS internal patchinforef element
             for pr in update.findall('patchinforef'):
@@ -124,7 +127,7 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
 
                 # check if we should have this package
                 if name in main_pkgset_names and not archsubdir:
-                    updatepkg = create_updateinfo_package(pkgentry)
+                    updatepkg = create_updateinfo_package(pkgentry, issued_date=issued_date)
                     if main_pkgset.matchespkg(None, updatepkg):
                         warn(f"package {updatepkg} not found")
                         missing_package = True
