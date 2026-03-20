@@ -237,10 +237,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                     iso_config['joliet'] = False
                 create_iso(outdir, iso_config, workdir, application_id)
 
-            # cleanup
-            if yml['iso']['tree'] == 'drop':
-                shutil.rmtree(workdir)
-
     # create SBOM data
     generate_sbom_call = None
     if os.path.exists("/usr/lib/build/generate_sbom"):
@@ -274,13 +270,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
-    # cleanup main repodata if wanted and existing
-    if yml['repodata'] and yml['repodata'] != 'all':
-        for workdir in workdirectories:
-            repodatadir = workdir + "/repodata"
-            if os.path.exists(repodatadir):
-                shutil.rmtree(repodatadir)
-
     # drop everything except selected meta data. intended for test builds
     if 'discard_artifacts' in yml['build_options']:
         for workdir in workdirectories:
@@ -288,4 +277,18 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                 if os.path.exists(workdir + suffix):
                     warn("discard_artifacts enabled, removing " + workdir + suffix)
                     shutil.rmtree(workdir + suffix)
+        return
+
+    # drop just the entire tree, we have the iso already
+    if yml['iso'] and yml['iso']['tree'] == 'drop':
+        for workdir in workdirectories:
+             shutil.rmtree(workdir)
+        return
+
+    # cleanup main repodata if wanted and existing
+    if yml['repodata'] and yml['repodata'] != 'all':
+        for workdir in workdirectories:
+            repodatadir = workdir + "/repodata"
+            if os.path.exists(repodatadir):
+                shutil.rmtree(repodatadir)
 
