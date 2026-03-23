@@ -217,6 +217,18 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                 args = ['/usr/bin/sign', '-d', workdir + '/CHECKSUMS']
                 run_helper(args, failmsg="create detached signature for CHECKSUMS")
 
+    # create SBOM data
+    generate_sbom_call = None
+    if os.path.exists("/usr/lib/build/generate_sbom"):
+        generate_sbom_call = ["/usr/lib/build/generate_sbom"]
+
+    # Take sbom generation from OBS server
+    # Con: build results are not reproducible
+    # Pro: SBOM formats are constant changing, we don't need to adapt always all distributions for that
+    if os.path.exists("/.build/generate_sbom"):
+        # unfortunatly, it is not exectuable by default
+        generate_sbom_call = ['env', 'BUILD_DIR=/.build', 'perl', '/.build/generate_sbom']
+
     for workdir in workdirectories:
         application_id = product_base_dir
         # When using the baseiso feature, the primary media should be
@@ -237,38 +249,26 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                     iso_config['joliet'] = False
                 create_iso(outdir, iso_config, workdir, application_id)
 
-    # create SBOM data
-    generate_sbom_call = None
-    if os.path.exists("/usr/lib/build/generate_sbom"):
-        generate_sbom_call = ["/usr/lib/build/generate_sbom"]
+        if generate_sbom_call:
+            spdx_distro = f"{yml['name']}-{yml['version']}"
+            note(f"Creating sboom data for {spdx_distro}")
+            # SPDX
+            args = generate_sbom_call + [
+                     "--format", 'spdx',
+                     "--distro", spdx_distro,
+                     "--product", workdir
+                   ]
+            with open(workdir + ".spdx.json", 'w') as sbom_file:
+                run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
-    # Take sbom generation from OBS server
-    # Con: build results are not reproducible
-    # Pro: SBOM formats are constant changing, we don't need to adapt always all distributions for that
-    if os.path.exists("/.build/generate_sbom"):
-        # unfortunatly, it is not exectuable by default
-        generate_sbom_call = ['env', 'BUILD_DIR=/.build', 'perl', '/.build/generate_sbom']
-
-    if generate_sbom_call:
-        spdx_distro = f"{yml['name']}-{yml['version']}"
-        note(f"Creating sboom data for {spdx_distro}")
-        # SPDX
-        args = generate_sbom_call + [
-                 "--format", 'spdx',
-                 "--distro", spdx_distro,
-                 "--product", maindir
-               ]
-        with open(maindir + ".spdx.json", 'w') as sbom_file:
-            run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
-
-        # CycloneDX
-        args = generate_sbom_call + [
-                  "--format", 'cyclonedx',
-                  "--distro", spdx_distro,
-                  "--product", maindir
-               ]
-        with open(maindir + ".cdx.json", 'w') as sbom_file:
-            run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
+            # CycloneDX
+            args = generate_sbom_call + [
+                      "--format", 'cyclonedx',
+                      "--distro", spdx_distro,
+                      "--product", workdir
+                   ]
+            with open(workdir + ".cdx.json", 'w') as sbom_file:
+                run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
 
     # drop everything except selected meta data. intended for test builds
     if 'discard_artifacts' in yml['build_options']:
