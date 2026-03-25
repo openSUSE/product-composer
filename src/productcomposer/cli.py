@@ -666,28 +666,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
             args = ['/usr/lib/build/signdummy', '-p']
             run_helper(args, stdout=pubkey_file, failmsg="write signature public key")
 
-    for workdir in workdirectories:
-        if os.path.exists(workdir + '/CHECKSUMS'):
-            args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
-            run_helper(args, failmsg="create detached signature for CHECKSUMS")
-
-        application_id = product_base_dir
-        # When using the baseiso feature, the primary media should be
-        # the base iso, with the packages added.
-        # Other medias/workdirs would then be generated as usual, as
-        # presumably you wouldn't need a bootable iso for source and
-        # debuginfo packages.
-        if workdir == maindir and 'base' in yml.get('iso', {}):
-            agama_arch = yml['architectures'][0]
-            note(f"Export main tree into agama iso file for {agama_arch}")
-            create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, agama_arch)
-        elif 'iso' in yml:
-            create_iso(outdir, yml, pool, flavor, workdir, application_id);
-
-        # cleanup
-        if yml.get('iso', {}).get('tree') == 'drop':
-            shutil.rmtree(workdir)
-
     # create SBOM data
     generate_sbom_call = None
     if os.path.exists("/usr/lib/build/generate_sbom"):
@@ -720,6 +698,28 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, vcs=None, disturl=N
                ]
         with open(maindir + ".cdx.json", 'w') as sbom_file:
             run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for CycloneDX")
+
+    for workdir in workdirectories:
+        if os.path.exists(workdir + '/CHECKSUMS'):
+            args = ['/usr/lib/build/signdummy', '-d', workdir + '/CHECKSUMS']
+            run_helper(args, failmsg="create detached signature for CHECKSUMS")
+
+        application_id = product_base_dir
+        # When using the baseiso feature, the primary media should be
+        # the base iso, with the packages added.
+        # Other medias/workdirs would then be generated as usual, as
+        # presumably you wouldn't need a bootable iso for source and
+        # debuginfo packages.
+        if workdir == maindir and 'base' in yml.get('iso', {}):
+            agama_arch = yml['architectures'][0]
+            note(f"Export main tree into agama iso file for {agama_arch}")
+            create_agama_iso(outdir, yml, pool, flavor, workdir, application_id, agama_arch)
+        elif 'iso' in yml:
+            create_iso(outdir, yml, pool, flavor, workdir, application_id);
+
+        # cleanup
+        if yml.get('iso', {}).get('tree') == 'drop':
+            shutil.rmtree(workdir)
 
     # cleanup main repodata if wanted and existing
     if 'repodata' in yml and yml['repodata'] != 'all':
