@@ -7,8 +7,9 @@ import rpm
 
 
 class PkgSelect:
-    def __init__(self, spec, supportstatus=None):
+    def __init__(self, spec, supportstatus=None, ignore_binaries_newer_than=None):
         self.supportstatus = supportstatus
+        self.ignore_binaries_newer_than = ignore_binaries_newer_than
         match = re.match(r'([^><=]*)([><=]=?)(.*)', spec.replace(' ', ''))
         if match:
             self.name = match.group(1)
@@ -31,7 +32,7 @@ class PkgSelect:
             self.release = None
 
     def matchespkg(self, arch, pkg):
-        return pkg.matches(arch, self.name, self.op, self.epoch, self.version, self.release)
+        return pkg.matches(arch, self.name, self.op, self.epoch, self.version, self.release, ignore_binaries_newer_than=self.ignore_binaries_newer_than)
 
     @staticmethod
     def _sub_ops(op1, op2):
@@ -133,6 +134,7 @@ class PkgSelect:
         out.version = self.version
         out.release = self.release
         out.supportstatus = self.supportstatus
+        out.ignore_binaries_newer_than = self.ignore_binaries_newer_than
         return out
 
     def __str__(self):
@@ -147,8 +149,8 @@ class PkgSelect:
 
     def __hash__(self):
         if self.op:
-            return hash((self.name, self.op, self.epoch, self.version, self.release))
-        return hash(self.name)
+            return hash((self.name, self.op, self.epoch, self.version, self.release, self.ignore_binaries_newer_than))
+        return hash((self.name, self.ignore_binaries_newer_than))
 
     def __eq__(self, other):
         if self.name != other.name:
