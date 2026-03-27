@@ -54,6 +54,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             case _:
                 die("Bad debug option, must be either 'include', 'split' or 'drop'")
 
+    # warning must happen before link_rpms_to_tree or we run into an error and abort
+    if 'skip_updateinfos' not in yml['build_options']:
+        if len(pool.lookup_all_updateinfos()):
+	    # We found updateinfos
+    	    if 'take_all_available_versions' not in yml['build_options']:
+            	die(f"updateinfo information will be used, but take_all_available_versions is not enabled. Either use take_all_available_versions or skip_updateinfos as build_option.")
+
     for arch in yml['architectures']:
         note(f"Linking rpms for {arch}")
         required_cpeid = get_cpeid(yml)
