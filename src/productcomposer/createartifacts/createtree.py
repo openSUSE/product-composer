@@ -236,6 +236,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         # unfortunatly, it is not exectuable by default
         generate_sbom_call = ['env', 'BUILD_DIR=/.build', 'perl', '/.build/generate_sbom']
 
+    if vcs:
+        repos.append('--vcs')
+        repos.append(vcs)
+    if disturl:
+        repos.append('--disturl')
+        repos.append(disturl)
+
     for workdir in workdirectories:
         application_id = product_base_dir
         # When using the baseiso feature, the primary media should be
