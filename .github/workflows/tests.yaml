@@ -15,29 +15,33 @@ jobs:
     container: registry.suse.com/bci/python:3.11
 
     steps:
-      - name: Install packages
-        run: |
-            zypper -n install python311-pydantic python311-pytest python311-setuptools python311-rpm python311-PyYAML python311-build python311-pyflakes python311-flake8
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-
-      - name: Run package build
+      - name: Install System Dependencies
         run: |
-          pyproject-build
+          zypper -n install python311-pydantic python311-pytest \
+                            python311-setuptools python311-rpm \
+                            python311-PyYAML python311-build \
+                            python311-pyflakes python311-flake8
 
-      - name: Run flake8
-        run: |
-          flake8
+      - name: Run Linting (flake8)
+        run: flake8 .
 
-      - name: Run tests
-        run: |
-          pytest -v
+      - name: Fix git ownership
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Run basic example verification
+      - name: Build Package
+        run: pyproject-build
+
+      - name: Run Pytest
+        run: pytest -v
+
+      - name: Verify Examples
         run: |
+          # --system-site-packages is key here to use the zypper-installed libs
           python3 -m venv venv --system-site-packages
           source venv/bin/activate
           pip install --no-dependencies -e .
           productcomposer verify examples/ftp.productcompose
-
 
