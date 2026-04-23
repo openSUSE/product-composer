@@ -187,6 +187,7 @@ def link_rpms_to_tree(rpmdir, yml, pool, arch, flavor, tree_report, supportstatu
     missing_package = None
     found_matching_cpeid = None
     empty_medium = True
+    note("Linking all rpms")
     for sel in main_pkgset:
         if singlemode:
             rpm = pool.lookup_rpm(arch, sel.name, sel.op, sel.epoch, sel.version, sel.release)
