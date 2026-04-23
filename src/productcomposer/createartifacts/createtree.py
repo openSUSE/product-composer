@@ -132,11 +132,13 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     # the tools read the subdirectory of the maindir from environment variable
     os.environ['ROOT_ON_CD'] = '.'
     if os.path.exists("/usr/bin/mk_changelog"):
+        note("Running mk_changelog")
         args = ["/usr/bin/mk_changelog", maindir]
         run_helper(args)
 
     # ARCHIVES.gz
     if os.path.exists("/usr/bin/mk_listings"):
+        note("Running mk_listings")
         args = ["/usr/bin/mk_listings", maindir]
         run_helper(args)
 
@@ -145,13 +147,17 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     mediaident = product_base_dir
     # FIXME: calculate from product provides
     mediaproducts = [yml['name'] + ' ' + str(yml['version']) + '-1']
+    note("Create media directory")
     create_media_dir(maindir, mediavendor, mediaident, mediaproducts)
 
+    note("Create CHECKSUMS file")
     create_checksums_file(maindir)
 
     for repodatadir in repodatadirectories:
         if os.path.exists(f"{repodatadir}/repodata"):
+            note("Create AppStream Data")
             create_appstream(repodatadir)
+            note("Create susedata meta data")
             create_susedata_xml(repodatadir, yml, supporstatus, eulas)
 
     if yml['installcheck']:
@@ -170,6 +176,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             run_helper(args, fatal=('ignore_errors' not in yml['installcheck']), failmsg="run installcheck validation")
 
     if 'skip_updateinfos' not in yml['build_options']:
+        note("Processing updateinfo data")
         if yml['repodata']:
             if yml['repodata'] == 'all':
                 create_updateinfo_xml(maindir, yml, pool, flavor, debugdir, sourcedir)
@@ -207,6 +214,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             os.unlink(maindir + '/license.tar.gz')
 
     if os.path.exists('/usr/bin/sign'):
+        note("Creating signatures")
         for repodatadir in repodatadirectories:
             # detached signature
             args = ['/usr/bin/sign', '-d', repodatadir + "/repodata/repomd.xml"]
@@ -261,11 +269,12 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                     # Ensure that joliet stays disabled on non-primary
                     # media
                     iso_config['joliet'] = False
+                note("Creating ISO file")
                 create_iso(outdir, iso_config, workdir, application_id)
 
         if generate_sbom_call:
             spdx_distro = f"{yml['name']}-{yml['version']}"
-            note(f"Creating sboom data for {spdx_distro}")
+            note(f"Creating SPDX sboom data for {spdx_distro}")
             # SPDX
             args = generate_sbom_call + [
                      "--format", 'spdx',
@@ -276,6 +285,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
                 run_helper(args, stdout=sbom_file, failmsg="run generate_sbom for SPDX")
 
             # CycloneDX
+            note(f"Creating CycloneDX sboom data for {spdx_distro}")
             args = generate_sbom_call + [
                       "--format", 'cyclonedx',
                       "--distro", spdx_distro,
@@ -296,6 +306,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
     # drop just the entire tree, we have the iso already
     if yml['iso'] and yml['iso']['tree'] == 'drop':
         for workdir in workdirectories:
+            note(f"Dropping {workdir}")
             shutil.rmtree(workdir)
         return
 
@@ -304,5 +315,6 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
         for workdir in workdirectories:
             repodatadir = workdir + "/repodata"
             if os.path.exists(repodatadir):
+                note(f"Removing {repodatadir}")
                 shutil.rmtree(repodatadir)
 

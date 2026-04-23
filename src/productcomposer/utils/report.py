@@ -27,7 +27,7 @@ def write_report_file(tree_report, directory, outfile):
             val = getattr(entry, tag, None)
             if val is None or val == '':
                 continue
-            if tag == 'epoch' and val == 0:
+            if tag == 'epoch' and str(val) == '0':
                 continue
             if tag == 'arch':
                 binary.set('binaryarch', str(val))
