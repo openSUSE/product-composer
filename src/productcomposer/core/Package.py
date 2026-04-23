@@ -23,6 +23,7 @@ class Package:
             setattr(self, tag, val)
         if not self.sourcerpm:
             self.arch = 'nosrc' if h['nosource'] or h['nopatch'] else 'src'
+        self.epoch = str(self.epoch) if self.epoch else '0'
 
     def __eq__(self, other):
         return (self.name, self.evr) == (other.name, other.evr)
