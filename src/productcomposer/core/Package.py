@@ -61,12 +61,18 @@ class Package:
         if self.location is None:
             return None
         if rpm_ts is None:
-            rpm_ts = rpm.TransactionSet()
-            rpm_ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES)
+            rpm_ts = self.create_rpm_ts()
         fd = os.open(self.location, os.O_RDONLY)
         h = rpm_ts.hdrFromFdno(fd)
         os.close(fd)
         return h
+
+    @staticmethod
+    def create_rpm_ts():
+        ts = rpm.TransactionSet()
+        # speed up reading the rpm headers
+        ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES | rpm._RPMVSF_NODIGESTS)
+        return ts
 
     @staticmethod
     def _cpeid_hexdecode(p):
