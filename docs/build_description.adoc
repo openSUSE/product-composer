@@ -39,6 +39,15 @@ to enable the build.
 Enables iso file generation and requires configuration of
 iso9660 headers.
 
+=== build_options
+
+The global build_options can be extended by further options
+per flavor.
+
+=== remove_build_options
+
+To remove a global set option again
+
 === content
 
 content defines the packagesets to be used as entry

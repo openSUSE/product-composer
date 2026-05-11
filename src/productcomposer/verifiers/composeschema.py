@@ -85,6 +85,7 @@ class compose_schema(BaseModel):
     debug: Optional[compose_schema_source_and_debug] = None
     source: Optional[compose_schema_source_and_debug] = None
     build_options: Optional[list[compose_schema_build_option]] = []
+    remove_build_options: Optional[list[compose_schema_build_option]] = []
     scc: Optional[compose_schema_scc] = None
     iso: Optional[compose_schema_iso] = None
     installcheck: Optional[list[Literal['ignore_errors']]] | None = None
