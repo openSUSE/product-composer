@@ -61,6 +61,10 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, Any]:
             for option in f['build_options']:
                 yml['build_options'].append(option)
 
+        if 'remove_build_options' in f:
+            for option in f['remove_build_options']:
+                yml['build_options'].remove(option)
+
         if f['iso']:
             if not yml['iso']:
                 yml['iso'] = compose_schema_iso().dict()
