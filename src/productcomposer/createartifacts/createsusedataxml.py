@@ -31,7 +31,7 @@ def generate_du_data(pkg, maxdepth):
             (basename, filesize, cookie) = filedata
             if cookie:
                 if cookie in seen:
-                    next
+                    continue
                 seen.add(cookie)
             # we need to report it in kilobyte.
             # Always adding one kilobyte to be on the safe side
@@ -45,7 +45,7 @@ def generate_du_data(pkg, maxdepth):
         depth = 0
         for comp in dir.split('/'):
             if comp == '' and subdir != '':
-                next
+                continue
             subdir += comp + '/'
             if subdir not in dudata_size:
                 dudata_size[subdir] = 0
