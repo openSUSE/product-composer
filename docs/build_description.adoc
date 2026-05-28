@@ -194,6 +194,9 @@ By default only "the best" version of each rpm is taken.
 Use this switch to put all candidates on the medium.
 For example for maintenance repositories.
 
+In case all binaries from multiple repositories shall be taken,
+you also need OBS_unordered_product_repos option in addition.
+
 ===== OBS_unordered_product_repos
 
 OBS is by default filtering rpm packages based on the repository
