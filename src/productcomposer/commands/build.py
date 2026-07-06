@@ -67,9 +67,15 @@ class BuildCommand:
             directory = os.path.dirname(args.filename)
         reposdir = args.reposdir if args.reposdir else directory + "/repos"
 
-        supportstatus_fn = os.path.join(directory, 'supportstatus.txt')
-        if os.path.isfile(supportstatus_fn):
-            parse_supportstatus(supportstatus_fn, supportstatus_override)
+        if yml['supportstatus_override_from']:  # can be None, when set to "null" in yaml file
+            supportstatus_fn = os.path.join(directory, yml['supportstatus_override_from'])
+            if yml['supportstatus_override_from'] == '___DEFAULT___':
+                if os.path.isfile(supportstatus_fn):
+                    parse_supportstatus(supportstatus_fn, 'supportstatus.txt')
+            else:
+                if not os.path.isfile(supportstatus_fn):
+                    die(f'Defined supportstatus file does not exist {supportstatus_fn}')
+                parse_supportstatus(supportstatus_fn, supportstatus_override)
 
         if args.euladir and os.path.isdir(args.euladir):
             parse_eulas(args.euladir, eulas)

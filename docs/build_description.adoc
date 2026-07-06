@@ -98,6 +98,14 @@ name.
 Lists the architectures where the set is to be used. The
 default is for all architectures.
 
+==== supportstatus_override_from
+
+Can be used to define an external file to read supportstatus
+values.  This override any setting defined inside of the
+productcompose file. The default is set to "supportstatus.txt".
+Set it to 'null' to ignore an existing file, eg. per flavor
+setting.
+
 ==== flavor
 
 Lists the flavors where the set is to be used. The

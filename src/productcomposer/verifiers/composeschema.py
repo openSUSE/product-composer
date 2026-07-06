@@ -87,6 +87,7 @@ class compose_schema(BaseModel):
     build_options: Optional[list[compose_schema_build_option]] = []
     remove_build_options: Optional[list[compose_schema_build_option]] = []
     scc: Optional[compose_schema_scc] = None
+    supportstatus_override_from: Optional[str] = '___DEFAULT___'
     iso: Optional[compose_schema_iso] = None
     installcheck: Optional[list[Literal['ignore_errors']]] | None = None
 

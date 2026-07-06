@@ -56,6 +56,10 @@ def parse_yaml(filename: str, flavor: str | None) -> Dict[str, Any]:
             if f.get(tag, None):
                 yml[tag] = f[tag]
 
+        # for backward compability, we need to stick with our default value.
+        if f.get('supportstatus_override_from', '___DEFAULT___') != '___DEFAULT___':
+            yml['supportstatus_override_from'] = f['supportstatus_override_from']
+
         # Merge build_options instead of replacing global defined set
         if 'build_options' in f:
             for option in f['build_options']:

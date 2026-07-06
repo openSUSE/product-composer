@@ -875,13 +875,22 @@ to enable the build.</p></div>
 iso9660 headers.</p></div>
 </div>
 <div class="sect2">
-<h3 id="_content">5.5. content</h3>
+<h3 id="_build_options_2">5.5. build_options</h3>
+<div class="paragraph"><p>The global build_options can be extended by further options
+per flavor.</p></div>
+</div>
+<div class="sect2">
+<h3 id="_remove_build_options">5.6. remove_build_options</h3>
+<div class="paragraph"><p>To remove a global set option again</p></div>
+</div>
+<div class="sect2">
+<h3 id="_content">5.7. content</h3>
 <div class="paragraph"><p>content defines the packagesets to be used as entry
 point for the medium.</p></div>
 <div class="paragraph"><p>The default is just to use the "main" packageset.</p></div>
 </div>
 <div class="sect2">
-<h3 id="_unpack">5.6. unpack</h3>
+<h3 id="_unpack">5.8. unpack</h3>
 <div class="paragraph"><p>unpack defines the packagesets to be used for extracting
 the content of the rpm packages directly on the medium.</p></div>
 <div class="paragraph"><p>These rpm packages need to provide these files below</p></div>
@@ -891,9 +900,15 @@ the content of the rpm packages directly on the medium.</p></div>
 </div></div>
 <div class="paragraph"><p>Currently it gets only extracted to the first/main medium,
 but not on source or debug media.</p></div>
+<div class="paragraph"><p>When the build produces an agama-based iso (via <code>iso.base</code>),
+files shipped at <code>/usr/lib/skelcd/CD0/</code> in the unpacked rpms
+are placed at the <strong>root</strong> of the resulting iso, alongside the
+agama installer layout. This is the right place for files
+that the user should see immediately when mounting the
+medium, such as a README.</p></div>
 </div>
 <div class="sect2">
-<h3 id="_packagesets">5.7. packagesets</h3>
+<h3 id="_packagesets">5.9. packagesets</h3>
 <div class="paragraph"><p>The packagesets definitions. A packageset lists rpm names
 to be put on the medium.</p></div>
 <div class="paragraph"><p>There is usually one master list and in addition there
@@ -903,44 +918,52 @@ architectures.</p></div>
 <div class="paragraph"><p>The packageset requires at least a packages definition,
 but may optionaly also a name, flavors or architectures.</p></div>
 <div class="sect3">
-<h4 id="_name">5.7.1. name</h4>
+<h4 id="_name">5.9.1. name</h4>
 <div class="paragraph"><p>Defines the name of the package set. <em>main</em> is the default
 name.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_architecture">5.7.2. architecture</h4>
+<h4 id="_architecture">5.9.2. architecture</h4>
 <div class="paragraph"><p>Lists the architectures where the set is to be used. The
 default is for all architectures.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_flavor">5.7.3. flavor</h4>
+<h4 id="_supportstatus_override_from">5.9.3. supportstatus_override_from</h4>
+<div class="paragraph"><p>Can be used to define an external file to read supportstatus
+values.  This override any setting defined inside of the
+productcompose file. The default is set to "supportstatus.txt".
+Set it to None to ignore an existing file, eg. per flavor
+setting.</p></div>
+</div>
+<div class="sect3">
+<h4 id="_flavor">5.9.4. flavor</h4>
 <div class="paragraph"><p>Lists the flavors where the set is to be used. The
 default is for all flavors.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_add">5.7.4. add</h4>
+<h4 id="_add">5.9.5. add</h4>
 <div class="paragraph"><p>Can be used to add further packagesets by specifing
 their names.</p></div>
 <div class="paragraph"><p>A special packageset called <em><em>all</em></em> will add all
 package names local available.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_sub">5.7.5. sub</h4>
+<h4 id="_sub">5.9.6. sub</h4>
 <div class="paragraph"><p>Can be used to remove packages from the specified
 packageset names.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_intersect">5.7.6. intersect</h4>
+<h4 id="_intersect">5.9.7. intersect</h4>
 <div class="paragraph"><p>Can be used to filter packages with specified package
 set lists.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_packages">5.7.7. packages</h4>
+<h4 id="_packages">5.9.8. packages</h4>
 <div class="paragraph"><p>Lists all package names to be added. This is just the rpm
 name, not the file name.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_supportstatus">5.7.8. supportstatus</h4>
+<h4 id="_supportstatus">5.9.9. supportstatus</h4>
 <div class="paragraph"><p>Define support status level for the packages listed in
 packages. Valid support levels are l3, l2, unsupported.
 However these are handled as strings. If the string starts
@@ -949,40 +972,40 @@ from inherited package sets.</p></div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_details">5.8. Details</h3>
+<h3 id="_details">5.10. Details</h3>
 <div class="sect3">
-<h4 id="_name_2">5.8.1. name</h4>
+<h4 id="_name_2">5.10.1. name</h4>
 <div class="paragraph"><p>The product name.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_version">5.8.2. version</h4>
+<h4 id="_version">5.10.2. version</h4>
 <div class="paragraph"><p>The product version</p></div>
 </div>
 <div class="sect3">
-<h4 id="_version_from_package">5.8.3. version_from_package</h4>
+<h4 id="_version_from_package">5.10.3. version_from_package</h4>
 <div class="paragraph"><p>A package name which will be used to determine the product version</p></div>
 </div>
 <div class="sect3">
-<h4 id="_update">5.8.4. update</h4>
+<h4 id="_update">5.10.4. update</h4>
 <div class="paragraph"><p>Optional update level string for CPE</p></div>
 </div>
 <div class="sect3">
-<h4 id="_edition">5.8.5. edition</h4>
+<h4 id="_edition">5.10.5. edition</h4>
 <div class="paragraph"><p>Optional edition string for CPE</p></div>
 </div>
 <div class="sect3">
-<h4 id="_summary">5.8.6. summary</h4>
+<h4 id="_summary">5.10.6. summary</h4>
 <div class="paragraph"><p>The product name in explaining words. It will be presented to the
 user on overview screens</p></div>
 </div>
 <div class="sect3">
-<h4 id="_product_type">5.8.7. product-type</h4>
+<h4 id="_product_type">5.10.7. product-type</h4>
 <div class="paragraph"><p>Either <em>base</em> for operation systems or <em>module</em> for any product
 depending on any existing installation.</p></div>
 <div class="paragraph"><p><em>extension</em> is handled as alias for <em>module</em>.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_architectures">5.8.8. architectures</h4>
+<h4 id="_architectures">5.10.8. architectures</h4>
 <div class="paragraph"><p>An array of the master architectures to be put into the repository.
 This can be used to build a single repository usable for many
 hardware architectures.</p></div>
@@ -992,24 +1015,26 @@ if the package is not found natively.</p></div>
 are listed for each flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_bcntsynctag">5.8.9. bcntsynctag</h4>
+<h4 id="_bcntsynctag">5.10.9. bcntsynctag</h4>
 <div class="paragraph"><p>Optionaly defines a bcntsynctag for OBS. OBS will sync the build
 counter over all packages in same repository and architecture
 according to this tag.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_milestone">5.8.10. milestone</h4>
+<h4 id="_milestone">5.10.10. milestone</h4>
 <div class="paragraph"><p>Optionaly defines a milestone which will be used by OBS at release
 time. This can be used to turn candidate builds into a Beta1 for
 example</p></div>
 </div>
 <div class="sect3">
-<h4 id="_build_options_2">5.8.11. build_options</h4>
+<h4 id="_build_options_3">5.10.11. build_options</h4>
 <div class="sect4">
 <h5 id="_take_all_available_versions">take_all_available_versions</h5>
 <div class="paragraph"><p>By default only "the best" version of each rpm is taken.
 Use this switch to put all candidates on the medium.
 For example for maintenance repositories.</p></div>
+<div class="paragraph"><p>In case all binaries from multiple repositories shall be taken,
+you also need OBS_unordered_product_repos option in addition.</p></div>
 </div>
 <div class="sect4">
 <h5 id="_obs_unordered_product_repos">OBS_unordered_product_repos</h5>
@@ -1085,7 +1110,7 @@ solutions like Multi-Linux-Manager.</p></div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_iso_2">5.8.12. iso</h4>
+<h4 id="_iso_2">5.10.12. iso</h4>
 <div class="sect4">
 <h5 id="_publisher">publisher</h5>
 <div class="paragraph"><p>For setting the iso9660 PUBLISHER header</p></div>
@@ -1130,7 +1155,7 @@ main repository.</p></div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_installcheck">5.8.13. installcheck</h4>
+<h4 id="_installcheck">5.10.13. installcheck</h4>
 <div class="paragraph"><p>Runs a repository closure test for each architecture. This will
 report any missing dependencies and abort.</p></div>
 <div class="sect4">
@@ -1139,7 +1164,7 @@ report any missing dependencies and abort.</p></div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_debug">5.8.14. debug</h4>
+<h4 id="_debug">5.10.14. debug</h4>
 <div class="paragraph"><p>Configure the handling of debuginfo and debugsource rpms.
 Use either</p></div>
 <div class="literalblock">
@@ -1161,7 +1186,7 @@ Use either</p></div>
 <div class="paragraph"><p>This default setting may get specified per flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_packages_2">5.8.15. packages</h4>
+<h4 id="_packages_2">5.10.15. packages</h4>
 <div class="paragraph"><p>The package list. It can contain either simple name or it can
 be extended by a &gt;, &gt;=, =, &lt;, &#8656; operator to specify a
 specific version constraint.</p></div>
@@ -1176,21 +1201,21 @@ matches any release.</p></div>
 or architectures.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_product_compose_schema">5.8.16. product_compose_schema</h4>
+<h4 id="_product_compose_schema">5.10.16. product_compose_schema</h4>
 <div class="paragraph"><p>Defines the level of the yaml syntax.
 Please expect incompatible changes at any time atm.</p></div>
 <div class="paragraph"><p>This will be used to provide backward compability once
 we stabilized.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_product_directory_name">5.8.17. product_directory_name</h4>
+<h4 id="_product_directory_name">5.10.17. product_directory_name</h4>
 <div class="paragraph"><p>Can be used to specify a directory or medium name manually.
 The default is "name-version".</p></div>
 <div class="paragraph"><p>The directory name will always be suffixed by the architecture
 and build number.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_source">5.8.18. source</h4>
+<h4 id="_source">5.10.18. source</h4>
 <div class="paragraph"><p>Configure the handling of src or nosrc rpms for the picked binaries.
 Use either</p></div>
 <div class="literalblock">
@@ -1213,7 +1238,7 @@ the ignore_missing_packages built option is used.</p></div>
 <div class="paragraph"><p>This default setting may get specified per flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_repodata">5.8.19. repodata</h4>
+<h4 id="_repodata">5.10.19. repodata</h4>
 <div class="paragraph"><p>Write architecture specific repository meta data into the architecture
 specific sub directories. This way a client needs to process less
 data. The disadvantage is that different URL&#8217;s need to be handled
@@ -1233,25 +1258,25 @@ and includes all architectures.</p></div>
 <div class="paragraph"><p>This may get specified per flavor.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_vendor">5.8.20. vendor</h4>
+<h4 id="_vendor">5.10.20. vendor</h4>
 <div class="paragraph"><p>Defines the company responsible for the content. Can be for example
 openSUSE or SUSE. It is used by the install stack.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_set_updateinfo_from">5.8.21. set_updateinfo_from</h4>
+<h4 id="_set_updateinfo_from">5.10.21. set_updateinfo_from</h4>
 <div class="paragraph"><p>Can be set to replace the "from" attribute in updateinfo.xml files with a fixed value.
 This is shown as patch provider by zypp stack. Otherwise the value stays, OBS is setting
 the packager from _patchinfo file here by default.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_set_updateinfo_id_prefix">5.8.22. set_updateinfo_id_prefix</h4>
+<h4 id="_set_updateinfo_id_prefix">5.10.22. set_updateinfo_id_prefix</h4>
 <div class="paragraph"><p>Sets a fixed prefix to all id&#8217;s of included updateinfo data. It is not adding again
 if the prefix exists already.</p></div>
 <div class="paragraph"><p>This can be used to have a common identifier for an update for many products, but
 still being able to identify the filtering for a specific product.</p></div>
 </div>
 <div class="sect3">
-<h4 id="_block_updates_under_embargo">5.8.23. block_updates_under_embargo</h4>
+<h4 id="_block_updates_under_embargo">5.10.23. block_updates_under_embargo</h4>
 <div class="paragraph"><p>The current default is to include maintenance updates under embargo. This option can
 be set to abort when an embargo date is in future.</p></div>
 </div>
@@ -1263,7 +1288,7 @@ be set to abort when an embargo date is in future.</p></div>
 <div id="footer">
 <div id="footer-text">
 Last updated
- 2025-05-02 11:43:20 CEST
+ 2026-03-31 15:53:41 CEST
 </div>
 </div>
 </body>
