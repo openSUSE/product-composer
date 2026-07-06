@@ -177,12 +177,11 @@ def create_updateinfo_xml(rpmdir, yml, pool, flavor, debugdir, sourcedir, archsu
                 export_updates[update_id] = update
 
     if export_updates:
-        uitemp = open(updateinfo_file, 'x')
-        uitemp.write("<updates>\n  ")
-        for update in sorted(export_updates):
-            uitemp.write(ET.tostring(export_updates[update], encoding=ET_ENCODING))
-        uitemp.write("</updates>\n")
-        uitemp.close()
+        with open(updateinfo_file, 'x') as uitemp:
+            uitemp.write("<updates>\n  ")
+            for update in sorted(export_updates):
+                uitemp.write(ET.tostring(export_updates[update], encoding=ET_ENCODING))
+            uitemp.write("</updates>\n")
 
         mr = ModifyrepoWrapper(
                 file=updateinfo_file,
