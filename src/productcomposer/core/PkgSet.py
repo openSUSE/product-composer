@@ -12,6 +12,7 @@ class PkgSet:
         self.byname = None
         self.supportstatus = None
         self.override_supportstatus = False
+        self.ignore_binaries_newer_than = None
 
     def _create_byname(self):
         byname = {}
@@ -29,7 +30,7 @@ class PkgSet:
 
     def add_specs(self, specs):
         for spec in specs:
-            sel = PkgSelect(spec, supportstatus=self.supportstatus)
+            sel = PkgSelect(spec, supportstatus=self.supportstatus, ignore_binaries_newer_than=self.ignore_binaries_newer_than)
             self.pkgs.append(sel)
         self.byname = None
 
