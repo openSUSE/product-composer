@@ -277,7 +277,7 @@ def create_tree(outdir, product_base_dir, yml, pool, flavor, tree_report, suppor
             note(f"Creating SPDX sboom data for {spdx_distro}")
             # SPDX
             args = generate_sbom_call + [
-                     "--format", 'spdx',
+                     "--format", 'spdx3',
                      "--distro", spdx_distro,
                      "--product", workdir
                    ]
